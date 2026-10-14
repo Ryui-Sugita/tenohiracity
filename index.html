@@ -1,0 +1,2907 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>てのひら都市</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="スマホのブラウザで遊べる都市づくりシミュレーション。道路を引き、区画を指定して、村を政令指定都市まで育てよう。">
+<meta name="theme-color" content="#d9e4e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1519" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="てのひら都市">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Dela+Gothic+One&display=swap">
+<style>
+/* Layout: the board fills the screen; a HUD strip floats on top, the tool dock sits at the bottom, sheets rise above the dock. */
+:root {
+  --bg: #d9e4e8;
+  --panel: #fbfcfc;
+  --panel-2: #edf1f3;
+  --ink: #17212b;
+  --muted: #5b6977;
+  --line: rgba(23, 33, 43, .13);
+  --accent: #0a5fc0;
+  --accent-ink: #ffffff;
+  --accent-soft: #dbe8fa;
+  --res: #2f9655;
+  --com: #d4466b;
+  --ind: #4766cc;
+  --good: #2b8a3e;
+  --warn: #b85600;
+  --bad: #c92a2a;
+  --shadow: 0 1px 2px rgba(15, 25, 35, .10), 0 6px 18px rgba(15, 25, 35, .10);
+  --f-display: "Dela Gothic One", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  --dock-h: 106px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1519; --panel: #182027; --panel-2: #222c34; --ink: #e5ecf1; --muted: #9aa8b5;
+    --line: rgba(229, 236, 241, .13); --accent: #5ea6ff; --accent-ink: #06121f; --accent-soft: #1b3352;
+    --res: #4cc27a; --com: #ff7d9d; --ind: #8aa4ff; --good: #5cc27a; --warn: #ffa94d; --bad: #ff6b6b;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1519; --panel: #182027; --panel-2: #222c34; --ink: #e5ecf1; --muted: #9aa8b5;
+  --line: rgba(229, 236, 241, .13); --accent: #5ea6ff; --accent-ink: #06121f; --accent-soft: #1b3352;
+  --res: #4cc27a; --com: #ff7d9d; --ind: #8aa4ff; --good: #5cc27a; --warn: #ffa94d; --bad: #ff6b6b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+
+html {
+  box-sizing: border-box;
+  height: 100%;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  background: var(--bg);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.5 var(--f-body);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+}
+[hidden] { display: none !important; }
+button, input { font: inherit; color: inherit; }
+button { touch-action: manipulation; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* ---------- HUD ---------- */
+.hud {
+  position: absolute; top: 8px; left: 8px; right: 8px; max-width: 620px; margin: 0 auto;
+  display: flex; align-items: stretch;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+  overflow: hidden; z-index: 5;
+}
+.seg {
+  display: flex; flex-direction: column; justify-content: center; gap: 1px;
+  padding: 5px 10px; min-width: 0; overflow: hidden; border: 0; border-right: 1px solid var(--line); background: none; text-align: left;
+}
+.seg:last-child { border-right: 0; }
+.seg .k { font-size: 10px; line-height: 1.2; color: var(--muted); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg .v { font: 400 16px/1.15 var(--f-display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg .d { font-size: 10px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
+.seg .d.up { color: var(--good); }
+.seg .d.down { color: var(--bad); }
+.seg-money { flex: 1.25 1 0; }
+.seg-pop { flex: 1 1 0; }
+.seg-date { flex: 0 0 auto; }
+.v.neg { color: var(--bad); }
+.seg-rci { flex: 0 0 auto; flex-direction: row; align-items: stretch; gap: 5px; padding: 5px 8px; }
+.rci-col { display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: 2px; }
+.rci-bar { position: relative; width: 8px; height: 28px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
+.rci-bar::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line); }
+.rci-bar i { position: absolute; left: 0; right: 0; height: 0; border-radius: 2px; }
+.rci-col b { font-size: 9px; line-height: 1; font-weight: 700; color: var(--muted); }
+.rci-r i { background: var(--res); } .rci-c i { background: var(--com); } .rci-i i { background: var(--ind); }
+.seg-speed { flex: 0 0 auto; align-items: center; width: 52px; padding: 4px 6px; color: var(--ink); }
+.seg-speed svg { width: 22px; height: 18px; fill: currentColor; }
+.seg-speed .k { text-align: center; }
+.seg-speed[data-speed="0"] { color: var(--warn); }
+
+/* ---------- side buttons ---------- */
+.side {
+  position: absolute; right: 8px; top: 74px; display: flex; flex-direction: column; gap: 8px; z-index: 4;
+}
+.side button {
+  width: 50px; height: 50px; display: grid; place-items: center; align-content: center; gap: 1px;
+  border-radius: 14px; border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); padding: 0;
+}
+.side button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.side button span { font-size: 10px; line-height: 1; font-weight: 700; }
+.side button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.side button:disabled { opacity: .4; cursor: default; }
+
+/* ---------- legend ---------- */
+.legend {
+  position: absolute; left: 8px; right: 66px; top: 74px; z-index: 4; max-width: 440px; margin: 0 auto;
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); font-size: 11px;
+}
+.legend h3 { margin: 0; font-size: 12px; white-space: nowrap; }
+.legend .lo, .legend .hi { color: var(--muted); white-space: nowrap; }
+.legend .ramp { flex: 1; min-width: 40px; display: flex; height: 10px; border-radius: 3px; overflow: hidden; }
+.legend .ramp i { flex: 1; }
+.legend .keys { flex: 1; display: flex; gap: 12px; }
+.legend .keys span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.legend .keys i { width: 12px; height: 12px; border-radius: 3px; }
+.legend .x { flex: 0 0 auto; width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--panel-2); font-size: 15px; line-height: 1; padding: 0; }
+.legend:not([hidden]) ~ .toasts { top: 120px; }
+
+/* ---------- toasts ---------- */
+.toasts {
+  position: absolute; top: 74px; left: 8px; right: 66px; max-width: 440px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 6px; z-index: 6; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 8px; padding: 9px 12px; pointer-events: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+  font-size: 13px; line-height: 1.45; animation: toast-in .22s ease-out;
+}
+.toast .dot { flex: 0 0 auto; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--accent); }
+.toast.warn .dot { background: var(--warn); }
+.toast.bad .dot { background: var(--bad); }
+.toast.good .dot { background: var(--good); }
+.toast p { margin: 0; flex: 1; min-width: 0; }
+.toast button { flex: 0 0 auto; border: 0; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 8px; }
+.toast.out { opacity: 0; transform: translateY(-6px); transition: opacity .25s, transform .25s; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* ---------- tutorial ---------- */
+.tut {
+  position: absolute; left: 8px; bottom: calc(var(--dock-h) + 8px); z-index: 4; width: 236px; max-width: calc(100% - 80px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
+}
+.tut-head { display: flex; align-items: center; gap: 6px; padding: 8px 6px 8px 12px; }
+.tut-head button.title { flex: 1; text-align: left; border: 0; background: none; padding: 0; font-weight: 700; font-size: 13px; }
+.tut-head .count { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tut-head .x { border: 0; background: none; width: 28px; height: 28px; border-radius: 8px; color: var(--muted); font-size: 18px; line-height: 1; }
+.tut ol { list-style: none; margin: 0; padding: 0 12px 10px; display: flex; flex-direction: column; gap: 5px; }
+.tut li { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 1.35; }
+.tut li i { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-style: normal; font-size: 10px; }
+.tut li.done { color: var(--muted); }
+.tut li.done i { background: var(--good); border-color: var(--good); color: #fff; }
+.tut li.done span { text-decoration: line-through; }
+.tut.min ol { display: none; }
+.tut-next { display: none; padding: 0 12px 10px; font-size: 12px; line-height: 1.45; }
+.tut-next b { display: block; font-size: 13px; }
+.tut-next span { color: var(--muted); }
+.tut.min .tut-next { display: block; }
+.tut.min .tut-head { padding-bottom: 2px; }
+
+/* ---------- dock ---------- */
+.dock {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(15, 25, 35, .08);
+  padding: 5px 0 8px;
+}
+.hint {
+  display: flex; align-items: center; gap: 8px; min-height: 20px;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px)) 4px max(12px, env(safe-area-inset-left, 0px));
+  font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden;
+}
+.hint b { color: var(--ink); }
+.hint span { overflow: hidden; text-overflow: ellipsis; }
+.hint .cost { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
+.hint .cost.bad { color: var(--bad); }
+.hint .cost.muted { font-weight: 400; color: var(--muted); flex: 0 0 auto; }
+.tools {
+  display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  padding: 0 10px; scroll-padding: 0 10px; touch-action: pan-x; overscroll-behavior-x: contain;
+}
+.tools::-webkit-scrollbar { display: none; }
+.tools .sep { flex: 0 0 1px; align-self: stretch; margin: 6px 2px; background: var(--line); }
+.tool {
+  position: relative; flex: 0 0 auto; width: 64px; height: 72px; padding: 3px 2px 4px;
+  display: grid; grid-template-rows: 38px auto auto; justify-items: center; align-content: center;
+  border-radius: 12px; border: 1.5px solid transparent; background: var(--panel-2);
+}
+.tool canvas, .tool svg { width: 48px; height: 36px; align-self: end; }
+.tool svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; padding: 4px 8px 2px; }
+.tool .nm { font-size: 11px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
+.tool .pr { font-size: 10px; line-height: 1.2; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tool[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.tool.poor .pr { color: var(--bad); }
+.tool[data-zone]::after { content: ""; position: absolute; left: 14px; right: 14px; top: 3px; height: 3px; border-radius: 2px; background: var(--zc); }
+
+/* ---------- sheets ---------- */
+.sheet {
+  position: absolute; left: 8px; right: 8px; bottom: calc(var(--dock-h) + 8px); z-index: 7;
+  max-width: 520px; margin: 0 auto; max-height: calc(100% - var(--dock-h) - 82px);
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
+  animation: sheet-in .2s ease-out;
+}
+@keyframes sheet-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.sheet > header { display: flex; align-items: center; gap: 8px; padding: 10px 8px 6px 16px; border-bottom: 1px solid var(--line); }
+.sheet h2 { flex: 1; margin: 0; font: 400 17px/1.3 var(--f-display); text-wrap: balance; }
+.sheet .close { width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--panel-2); font-size: 20px; line-height: 1; }
+.sheet-body { overflow-y: auto; padding: 12px 16px 16px; touch-action: pan-y; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; }
+.sheet section h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 0; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; padding-left: 12px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.kv .sum { border-top: 1px solid var(--line); padding-top: 5px; margin-top: 2px; }
+.kv .pos { color: var(--good); } .kv .neg { color: var(--bad); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
+.tag.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.tag.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); font-weight: 700; }
+.reasons { margin: 0; padding-left: 1.2em; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.meter { position: relative; height: 10px; border-radius: 5px; background: var(--panel-2); overflow: hidden; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--accent); }
+.meter.over i { background: var(--bad); }
+.meter-cap { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input { flex: 1; accent-color: var(--accent); height: 28px; }
+.slider-row output { font: 400 20px/1 var(--f-display); min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel-2); border-radius: 12px; padding: 10px 14px; font-weight: 700; font-size: 14px;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--bad); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1 1 auto; }
+.layer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.layer-grid button { padding: 10px 6px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--panel-2); font-weight: 700; font-size: 13px; }
+.layer-grid button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+.switch-row input { width: 22px; height: 22px; accent-color: var(--accent); }
+.name-row { display: flex; align-items: center; gap: 8px; }
+.name-row input {
+  flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2);
+  font-size: 16px; -webkit-user-select: text; user-select: text;
+}
+.name-row .suffix { font: 400 18px/1 var(--f-display); }
+.help { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.6; }
+.confirm { padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--bad) 10%, transparent); display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+
+/* charts */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.chart .ch-grid { stroke: var(--line); stroke-width: 1; }
+.chart .ch-zero { stroke: var(--muted); stroke-width: 1; opacity: .5; }
+.chart .ch-area { fill: var(--accent); fill-opacity: .1; }
+.chart .ch-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .ch-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+.chart .ch-txt { fill: var(--muted); font-size: 10px; font-family: var(--f-body); }
+.chart .ch-end { fill: var(--ink); font-size: 11px; font-weight: 700; font-family: var(--f-body); }
+.chart .ch-cross { stroke: var(--muted); stroke-width: 1; }
+.chart .tip {
+  position: absolute; top: 0; pointer-events: none; padding: 4px 8px; border-radius: 8px; white-space: nowrap;
+  background: var(--ink); color: var(--panel); font-size: 11px; font-variant-numeric: tabular-nums; transform: translateX(-50%);
+}
+.chart .empty { margin: 0; padding: 18px 0; text-align: center; font-size: 12px; color: var(--muted); }
+
+/* ---------- welcome ---------- */
+.welcome {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 9; max-width: 460px; margin: 0 auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow);
+  padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.welcome .eyebrow { margin: 0; font-size: 11px; letter-spacing: .14em; color: var(--muted); font-weight: 700; }
+.welcome h1 { margin: -4px 0 0; font: 400 30px/1.15 var(--f-display); letter-spacing: .02em; }
+.welcome p.lead { margin: 0; font-size: 14px; line-height: 1.6; }
+.welcome label { font-size: 12px; font-weight: 700; color: var(--muted); }
+.welcome .zones { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.welcome .zones span { display: inline-flex; align-items: center; gap: 5px; }
+.welcome .zones i { width: 10px; height: 10px; border-radius: 3px; }
+body.intro .dock, body.intro .side, body.intro .hud, body.intro .tut { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .sheet { animation: none; }
+  .toast.out { transition: none; }
+}
+@media (min-width: 700px) {
+  .tools { justify-content: safe center; }
+}
+@media (max-height: 520px) {
+  .side { top: 66px; gap: 6px; }
+  .side button { width: 44px; height: 44px; border-radius: 12px; }
+  .side button span { display: none; }
+  .legend { top: 66px; }
+  .toasts { top: 66px; }
+  .legend:not([hidden]) ~ .toasts { top: 110px; }
+  .tut.min .tut-next span { display: none; }
+}
+.welcome { max-height: calc(100% - 16px); overflow-y: auto; }
+</style>
+</head>
+<body class="intro">
+<div id="app">
+  <canvas id="view" aria-label="都市の地図"></canvas>
+
+  <header class="hud" id="hud">
+    <div class="seg seg-money"><span class="k">資金</span><span class="v" id="hud-money">¥0</span><span class="d" id="hud-net">±¥0／月</span></div>
+    <div class="seg seg-pop"><span class="k" id="hud-city">—</span><span class="v" id="hud-pop">0</span><span class="d">人口</span></div>
+    <div class="seg seg-date"><span class="k" id="hud-year">—</span><span class="v" id="hud-month">—</span><span class="d" id="hud-day">1日</span></div>
+    <div class="seg seg-rci" id="hud-rci" title="需要（住宅・商業・工業）">
+      <div class="rci-col rci-r"><div class="rci-bar"><i></i></div><b>住</b></div>
+      <div class="rci-col rci-c"><div class="rci-bar"><i></i></div><b>商</b></div>
+      <div class="rci-col rci-i"><div class="rci-bar"><i></i></div><b>工</b></div>
+    </div>
+    <button class="seg seg-speed" id="btn-speed" type="button" aria-label="ゲーム速度を切り替え"><svg viewBox="0 0 24 18" id="speed-icon"></svg><span class="k" id="speed-label">普通</span></button>
+  </header>
+
+  <nav class="side" id="side">
+    <button type="button" id="btn-layer" aria-pressed="false" aria-label="マップ表示">
+      <svg viewBox="0 0 24 24"><path d="M12 3 2.5 8 12 13l9.5-5z"/><path d="m2.5 12.5 9.5 5 9.5-5"/><path d="m2.5 16.5 9.5 5 9.5-5" opacity=".5"/></svg><span>表示</span></button>
+    <button type="button" id="btn-budget" aria-label="市政・予算">
+      <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>市政</span></button>
+    <button type="button" id="btn-undo" aria-label="元に戻す">
+      <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>戻す</span></button>
+    <button type="button" id="btn-menu" aria-label="メニュー">
+      <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>設定</span></button>
+  </nav>
+
+  <div class="legend" id="legend" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <aside class="tut" id="tut" hidden></aside>
+
+  <section class="sheet" id="sheet" hidden aria-labelledby="sheet-title">
+    <header><h2 id="sheet-title"></h2><button type="button" class="close" id="sheet-close" aria-label="閉じる">×</button></header>
+    <div class="sheet-body" id="sheet-body"></div>
+  </section>
+
+  <footer class="dock" id="dock">
+    <div class="hint" id="hint"></div>
+    <div class="tools" id="tools" role="toolbar" aria-label="ツール"></div>
+  </footer>
+
+  <div class="welcome" id="welcome" hidden>
+    <p class="eyebrow">都市づくりシミュレーション</p>
+    <h1>てのひら都市</h1>
+    <p class="lead">発電所を建て、道路を引き、区画を指定する。人が集まり、村は町に、町は市に育っていきます。目標は政令指定都市（人口50万人）。</p>
+    <div class="zones"><span><i style="background:var(--res)"></i>住宅地</span><span><i style="background:var(--com)"></i>商業地</span><span><i style="background:var(--ind)"></i>工業地</span></div>
+    <label for="city-name">まちの名前</label>
+    <div class="name-row"><input id="city-name" maxlength="8" autocomplete="off" enterkeyhint="done"><span class="suffix">村</span></div>
+    <div class="btn-row">
+      <button type="button" class="btn" id="btn-reroll">別の土地にする</button>
+      <button type="button" class="btn primary" id="btn-start">この土地ではじめる</button>
+    </div>
+    <p class="note">1本指でツールを使い、2本指で地図を動かします。進行はこのブラウザに自動保存されます。</p>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   定数
+   ========================================================= */
+const N = 64, NN = N * N, HW = 32, HH = 16;
+const ZMIN = 0.09, ZMAX = 2.6;
+const START_YEAR = new Date().getFullYear();
+const SAVE_KEY = 'tenohira-city/v1';
+const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
+const T = { EMPTY: 0, ROAD: 1, WIRE: 2, RES: 3, COM: 4, IND: 5, PARK: 6, POLICE: 7, FIRE: 8, SCHOOL: 9, HOSP: 10, COAL: 11, SOLAR: 12 };
+const isZone = t => t >= 3 && t <= 5;
+const isPlant = t => t === 11 || t === 12;
+const BLD = {
+  6:  { name: '公園', size: 1, cost: 100, upkeep: 3, use: 0 },
+  7:  { name: '警察署', size: 1, cost: 500, upkeep: 40, use: 2, radius: 10, cov: 'police' },
+  8:  { name: '消防署', size: 1, cost: 500, upkeep: 40, use: 2, radius: 10, cov: 'fire' },
+  9:  { name: '学校', size: 2, cost: 1500, upkeep: 100, use: 4, radius: 12, cov: 'school' },
+  10: { name: '病院', size: 2, cost: 2500, upkeep: 150, use: 6, radius: 12, cov: 'health' },
+  11: { name: '火力発電所', size: 2, cost: 3000, upkeep: 60, supply: 1000 },
+  12: { name: '太陽光発電所', size: 2, cost: 5000, upkeep: 20, supply: 450 },
+};
+const POP = [0, 20, 90, 300, 800];
+const JOBS_C = [0, 25, 100, 350, 900];
+const JOBS_I = [0, 40, 120, 300, 300];
+const LEVEL_NAME = {
+  3: ['空き地', '一戸建て', 'アパート', 'マンション', 'タワーマンション'],
+  4: ['空き地', '商店', 'オフィス', 'オフィスビル', '超高層ビル'],
+  5: ['空き地', '倉庫', '工場', '大規模工場', '大規模工場'],
+};
+const ZONE_NAME = { 3: '住宅地', 4: '商業地', 5: '工業地' };
+const RANKS = [
+  { min: 0, suffix: '村', label: '村' },
+  { min: 10000, suffix: '町', label: '町' },
+  { min: 50000, suffix: '市', label: '市' },
+  { min: 200000, suffix: '市', label: '中核市' },
+  { min: 500000, suffix: '市', label: '政令指定都市' },
+];
+const NAMES = ['あおば', 'みなと', 'さくら', 'ひかり', 'かえで', 'つばさ', 'みどり', 'あさひ', 'なぎさ', 'すずかけ'];
+
+/* map colours (the board keeps its own palette in both themes) */
+const C = {
+  grass: ['#8cbf67', '#88bb63', '#90c36b'],
+  forest: '#77ad55', sand: '#e4d7a3',
+  water: '#3a8cc4', shallow: '#5ea9d8', wave: 'rgba(255,255,255,.42)',
+  curb: '#d2cfc6', asphalt: '#5e646b', mark: '#f4ead0', bridge: '#c4beb0', rail: '#6f6a61',
+  zone: { 3: '#d0eab6', 4: '#f7d0d9', 5: '#d0daf5' },
+  zoneLine: { 3: '#3c9a5c', 4: '#d64a6e', 5: '#4a68cb' },
+  lot: { 3: '#a9d389', 4: '#d9d6cf', 5: '#bdb9b0' },
+  concrete: '#d6d3ca', park: '#7cc35a', yard: '#dcc897', gravel: '#bab5aa', plant: '#aca79d',
+  trunk: '#7a5634', crown: ['#3f8a3a', '#4a9742', '#367f3a'], crownHi: 'rgba(178,226,128,.55)',
+  pole: '#6b5a48', wire: 'rgba(35,35,35,.55)',
+  soilL: '#9c7952', soilR: '#7c5c3e', sideWaterL: '#3a7fae', sideWaterR: '#2c6890',
+};
+const HOUSE_WALL = ['#f5f0e6', '#ece4d4', '#f3f3ef', '#e9dccb', '#e0e8ec', '#f2e5da'];
+const HOUSE_ROOF = ['#4b515c', '#82503d', '#3e5f80', '#8f8b82', '#6d4040', '#566270'];
+const APT = ['#efe9de', '#e3e7eb', '#ebdac6', '#dbe3d9', '#f0e2d0'];
+const MANSION = ['#e7e3db', '#d6dce3', '#eadccb', '#cfd7de'];
+const TOWER = ['#c8d3dd', '#d9d3c9', '#b7c5d3', '#d4dbe0'];
+const SHOP = ['#f4e4c9', '#e8f0f4', '#f7dcdc', '#e5efdf'];
+const AWNING = ['#d6466b', '#2e8c69', '#df8a1d', '#3a6ed0'];
+const OFFICE = ['#9ab8d1', '#a6c2c9', '#aeb9cb', '#8eaec6'];
+const SKY = ['#78a3c9', '#8cb1cb', '#6489b2', '#a1bccf'];
+const FACTORY = ['#cdc5b4', '#b9c2c8', '#cfc2a7', '#c3bfb6'];
+const CAR_COL = ['#f1f3f5', '#ced4da', '#e03131', '#1c7ed6', '#343a40', '#f59f00', '#f1f3f5', '#2b8a3e'];
+const WIN_L = '#41566b', WIN_R = '#33465a', GLASS_L = '#e6f2fb', GLASS_R = '#bcd3e6';
+
+/* overlays: sequential single-hue ramps, light → dark */
+const LAYERS = {
+  none:    { name: 'なし' },
+  power:   { name: '電力', keys: [['#f5c518', '電気あり'], ['#e03131', '電気なし']] },
+  lv:      { name: '地価', ramp: ['#eef7e4', '#cbe8ad', '#9dd27a', '#68b552', '#368f3a', '#17632b'], lo: '安い', hi: '高い' },
+  poll:    { name: '汚染', ramp: ['#f4ecdb', '#e5d0a2', '#d0ab66', '#b3823a', '#8a5a1f', '#5e3812'], lo: '少ない', hi: 'ひどい' },
+  crime:   { name: '犯罪', ramp: ['#fde4e0', '#f8b6ac', '#ef7d6e', '#da483b', '#b12623', '#7b1717'], lo: '安全', hi: '危険' },
+  traffic: { name: '交通量', ramp: ['#fff0d6', '#ffd38a', '#ffab45', '#f07b1a', '#c9520c', '#8f3307'], lo: '空いている', hi: '渋滞' },
+  police:  { name: '警察', ramp: ['#e3eefc', '#b8d4f7', '#86b4ef', '#5591e0', '#2c6ec7', '#174c97'], lo: '範囲外', hi: '手厚い' },
+  fire:    { name: '消防', ramp: ['#fde8dc', '#f9c3a5', '#f39668', '#e4683a', '#c24519', '#8c2c0c'], lo: '範囲外', hi: '手厚い' },
+  school:  { name: '学校', ramp: ['#efe6fa', '#d6c2f2', '#b897e6', '#956bd4', '#7046b8', '#4d2c8a'], lo: '範囲外', hi: '手厚い' },
+  health:  { name: '病院', ramp: ['#ddf4f1', '#ade5dd', '#72cfc3', '#3fb1a4', '#1f8c80', '#0f625a'], lo: '範囲外', hi: '手厚い' },
+};
+
+const TOOLS = {
+  select:   { name: '調べる', kind: 'select', hint: 'タップで調べる・ドラッグで移動・2本指でズーム' },
+  bulldoze: { name: '撤去', kind: 'rect', unit: 2, hint: 'なぞった範囲を更地にする（¥2/マス）' },
+  road:     { name: '道路', kind: 'line', unit: 10, hint: 'なぞって敷く。川の上は橋（¥60/マス）' },
+  wire:     { name: '送電線', kind: 'line', unit: 5, hint: '道路のない場所へ電気を届ける' },
+  res:      { name: '住宅地', kind: 'rect', zone: T.RES, unit: 5, hint: '道路から2マス以内に。電気が届くと家が建つ' },
+  com:      { name: '商業地', kind: 'rect', zone: T.COM, unit: 5, hint: '店やオフィス。人口が増えると発展する' },
+  ind:      { name: '工業地', kind: 'rect', zone: T.IND, unit: 5, hint: '工場。働く場所になるが汚染が出る' },
+  coal:     { name: '火力発電', kind: 'place', b: T.COAL, hint: '電力1,000。安いが汚染が出る（¥60/月）' },
+  solar:    { name: '太陽光', kind: 'place', b: T.SOLAR, hint: '電力450。汚染なし（¥20/月）' },
+  park:     { name: '公園', kind: 'place', b: T.PARK, hint: 'まわりの地価を上げ、汚染をやわらげる' },
+  police:   { name: '警察署', kind: 'place', b: T.POLICE, hint: '半径10マスの犯罪を減らす（¥40/月）' },
+  fire:     { name: '消防署', kind: 'place', b: T.FIRE, hint: '半径10マスの火事を防ぐ（¥40/月）' },
+  school:   { name: '学校', kind: 'place', b: T.SCHOOL, hint: '地価を上げ、高層住宅の条件になる（¥100/月）' },
+  hosp:     { name: '病院', kind: 'place', b: T.HOSP, hint: '地価と住みやすさを上げる（¥150/月）' },
+};
+const TOOL_GROUPS = [['select', 'bulldoze'], ['road', 'wire'], ['res', 'com', 'ind'], ['coal', 'solar'], ['park', 'police', 'fire', 'school', 'hosp']];
+const TOOL_KEYS = TOOL_GROUPS.flat();
+
+/* =========================================================
+   ユーティリティ
+   ========================================================= */
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hash2(x, y) {
+  let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+const rand = Math.random;
+const yen = n => (n < 0 ? '−¥' : '¥') + Math.abs(Math.round(n)).toLocaleString('ja-JP');
+const num = n => Math.round(n).toLocaleString('ja-JP');
+function compact(n) {
+  const a = Math.abs(n), s = n < 0 ? '−' : '';
+  if (a >= 1e8) return s + (a / 1e8).toFixed(a >= 1e9 ? 0 : 1).replace(/\.0$/, '') + '億';
+  if (a >= 1e4) return s + (a / 1e4).toFixed(a >= 1e5 ? 0 : 1).replace(/\.0$/, '') + '万';
+  return s + num(a);
+}
+const $ = s => document.querySelector(s);
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function rgbHex(r, g, b) {
+  const c = v => clamp(Math.round(v), 0, 255);
+  return '#' + ((1 << 24) | (c(r) << 16) | (c(g) << 8) | c(b)).toString(16).slice(1);
+}
+function shade(h, f) {
+  const [r, g, b] = hexToRgb(h);
+  return f >= 1 ? rgbHex(r + (255 - r) * (f - 1), g + (255 - g) * (f - 1), b + (255 - b) * (f - 1)) : rgbHex(r * f, g * f, b * f);
+}
+const palCache = new Map();
+function pal(h) {
+  let p = palCache.get(h);
+  if (!p) { p = [shade(h, 1.12), h, shade(h, 0.78)]; palCache.set(h, p); }
+  return p;
+}
+function b64(u8) {
+  let s = '';
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function unb64(str) {
+  const bin = atob(str), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+const inb = (x, y) => x >= 0 && y >= 0 && x < N && y < N;
+
+/* =========================================================
+   ゲーム状態
+   ========================================================= */
+let S = null;
+function blankState(seed, name) {
+  return {
+    v: 1, seed, name, money: 20000, year: START_YEAR, month: 4, day: 1, tax: 7, disasters: true,
+    rank: 0, seen: {}, fy: { inc: 0, exp: 0 }, tut: {}, tutDone: false, tutClosed: false, tutMin: true, history: [],
+    terrain: new Uint8Array(NN), tree: new Uint8Array(NN), type: new Uint8Array(NN), level: new Uint8Array(NN),
+    variant: new Uint8Array(NN), fire: new Uint8Array(NN), owner: new Int32Array(NN).fill(-1),
+  };
+}
+const D = {
+  powered: new Uint8Array(NN), access: new Uint8Array(NN), lv: new Uint8Array(NN), poll: new Uint8Array(NN),
+  crime: new Uint8Array(NN), traffic: new Uint8Array(NN), shallow: new Uint8Array(NN), beach: new Uint8Array(NN),
+  waterBonus: new Uint8Array(NN),
+  cov: { police: new Uint8Array(NN), fire: new Uint8Array(NN), school: new Uint8Array(NN), health: new Uint8Array(NN), park: new Uint8Array(NN) },
+};
+const ST = {
+  pop: 0, jc: 0, ji: 0, developed: 0, dr: 0, dc: 0, di: 0, supply: 0, demand: 0, unpowered: 0, noRoad: 0,
+  inc: { res: 0, com: 0, ind: 0 }, exp: {}, net: 0, cnt: {}, zones: { 3: 0, 4: 0, 5: 0 }, roads: 0, bridges: 0, wires: 0,
+  crimeHigh: 0, pollHigh: 0, jam: 0, burning: 0,
+};
+const undoStack = [];
+let speed = 0, started = false;
+
+/* =========================================================
+   地形生成
+   ========================================================= */
+function genTerrain(seed) {
+  const r = mulberry32(seed);
+  const terrain = S.terrain, tree = S.tree;
+  terrain.fill(0); tree.fill(0);
+  const mk = g0 => {
+    const W = g0 + 2, g = new Float32Array(W * W);
+    for (let k = 0; k < g.length; k++) g[k] = r();
+    return (x, y) => {
+      const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi;
+      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+      const a = g[yi * W + xi], b = g[yi * W + xi + 1], c = g[(yi + 1) * W + xi], d = g[(yi + 1) * W + xi + 1];
+      return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+    };
+  };
+  const h1 = mk(4), h2 = mk(8), h3 = mk(16), t1 = mk(6), t2 = mk(12);
+  const sea = 0.27 + r() * 0.06;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const u = x / N, v = y / N, i = y * N + x;
+    let h = h1(u * 4, v * 4) * 0.55 + h2(u * 8, v * 8) * 0.3 + h3(u * 16, v * 16) * 0.15;
+    h += (0.36 - Math.hypot(u - 0.5, v - 0.5)) * 0.3;
+    if (h < sea) terrain[i] = 1;
+    const tv = t1(u * 6, v * 6) * 0.65 + t2(u * 12, v * 12) * 0.35;
+    if (!terrain[i] && tv > 0.6) tree[i] = 1;
+  }
+  if (r() < 0.75) {
+    const horiz = r() < 0.5;
+    let p = N * 0.25 + r() * N * 0.5, dir = (r() - 0.5) * 0.6;
+    for (let s = -2; s < N + 2; s++) {
+      dir = clamp(dir + (r() - 0.5) * 0.35, -0.7, 0.7);
+      p += dir;
+      if (p < 4) { p = 4; dir = Math.abs(dir); }
+      if (p > N - 6) { p = N - 6; dir = -Math.abs(dir); }
+      if (s < 0 || s >= N) continue;
+      const q = Math.floor(p);
+      for (let k = 0; k < 2; k++) {
+        const x = horiz ? s : q + k, y = horiz ? q + k : s, i = y * N + x;
+        terrain[i] = 1; tree[i] = 0;
+      }
+    }
+  }
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    if (!terrain[i]) continue;
+    let w = 0;
+    for (let d = 0; d < 4; d++) { const nx = x + DX[d], ny = y + DY[d]; if (inb(nx, ny) && terrain[ny * N + nx]) w++; }
+    if (w === 0) terrain[i] = 0;
+  }
+}
+
+function computeStatic() {
+  const dist = new Uint8Array(NN).fill(255), q = new Int32Array(NN);
+  let qh = 0, qt = 0;
+  for (let i = 0; i < NN; i++) if (S.terrain[i]) { dist[i] = 0; q[qt++] = i; }
+  while (qh < qt) {
+    const c = q[qh++], cx = c % N, cy = (c / N) | 0;
+    if (dist[c] >= 5) continue;
+    for (let d = 0; d < 4; d++) {
+      const nx = cx + DX[d], ny = cy + DY[d];
+      if (!inb(nx, ny)) continue;
+      const n = ny * N + nx;
+      if (dist[n] > dist[c] + 1) { dist[n] = dist[c] + 1; q[qt++] = n; }
+    }
+  }
+  const bonus = [0, 45, 36, 26, 16, 8];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    D.waterBonus[i] = dist[i] <= 5 ? bonus[dist[i]] : 0;
+    let land = 0, water = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = x + dx, ny = y + dy;
+      if (!inb(nx, ny)) continue;
+      if (S.terrain[ny * N + nx]) water++; else if (Math.abs(dx) + Math.abs(dy) === 1) land++;
+    }
+    D.shallow[i] = S.terrain[i] && land > 0 ? 1 : 0;
+    D.beach[i] = !S.terrain[i] && water > 0 ? 1 : 0;
+  }
+}
+
+/* =========================================================
+   シミュレーション
+   ========================================================= */
+function consumption(i) {
+  const t = S.type[i];
+  if (isZone(t)) return S.level[i];
+  if (t >= 6 && S.owner[i] === i) return BLD[t].use || 0;
+  return 0;
+}
+
+const _q = new Int32Array(NN), _mark = new Int32Array(NN), _seen = new Uint8Array(NN);
+let markGen = 0;
+function computePower() {
+  const pw = D.powered;
+  pw.fill(0); _seen.fill(0);
+  let supply = 0, demand = 0;
+  for (let i = 0; i < NN; i++) demand += consumption(i);
+  for (let i = 0; i < NN; i++) {
+    if (!isPlant(S.type[i]) || _seen[i]) continue;
+    let qh = 0, qt = 0, cap = 0;
+    const plants = [];
+    _q[qt++] = i; _seen[i] = 1;
+    while (qh < qt) {
+      const c = _q[qh++], ct = S.type[c];
+      if (isPlant(ct)) { plants.push(c); if (S.owner[c] === c) cap += BLD[ct].supply; }
+      const cx = c % N, cy = (c / N) | 0;
+      for (let d = 0; d < 4; d++) {
+        const nx = cx + DX[d], ny = cy + DY[d];
+        if (!inb(nx, ny)) continue;
+        const n = ny * N + nx;
+        if (!_seen[n] && S.type[n] !== T.EMPTY) { _seen[n] = 1; _q[qt++] = n; }
+      }
+    }
+    supply += cap;
+    markGen++;
+    qh = 0; qt = 0;
+    for (const p of plants) { _q[qt++] = p; _mark[p] = markGen; pw[p] = 1; }
+    while (qh < qt) {
+      const c = _q[qh++], cx = c % N, cy = (c / N) | 0;
+      for (let d = 0; d < 4; d++) {
+        const nx = cx + DX[d], ny = cy + DY[d];
+        if (!inb(nx, ny)) continue;
+        const n = ny * N + nx;
+        if (S.type[n] === T.EMPTY || _mark[n] === markGen) continue;
+        _mark[n] = markGen;
+        const need = consumption(n);
+        if (cap > 0 && need <= cap) { cap -= need; pw[n] = 1; }
+        _q[qt++] = n;
+      }
+    }
+  }
+  // multi-tile buildings share the origin's power state
+  for (let i = 0; i < NN; i++) { const o = S.owner[i]; if (o >= 0 && o !== i) pw[i] = pw[o]; }
+  let unpowered = 0;
+  for (let i = 0; i < NN; i++) if (isZone(S.type[i]) && !pw[i]) unpowered++;
+  ST.supply = supply; ST.demand = demand; ST.unpowered = unpowered;
+}
+
+const PSA = new Float64Array((N + 1) * (N + 1)), PSB = new Float64Array((N + 1) * (N + 1));
+function buildPS(ps, get) {
+  const W = N + 1;
+  for (let y = 0; y < N; y++) {
+    let row = 0;
+    for (let x = 0; x < N; x++) { row += get(y * N + x); ps[(y + 1) * W + x + 1] = ps[y * W + x + 1] + row; }
+  }
+}
+function boxSum(ps, x0, y0, x1, y1) {
+  if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0; if (x1 > N - 1) x1 = N - 1; if (y1 > N - 1) y1 = N - 1;
+  if (x0 > x1 || y0 > y1) return 0;
+  const W = N + 1;
+  return ps[(y1 + 1) * W + x1 + 1] - ps[y0 * W + x1 + 1] - ps[(y1 + 1) * W + x0] + ps[y0 * W + x0];
+}
+
+function computeAccess() {
+  buildPS(PSA, i => (S.type[i] === T.ROAD ? 1 : 0));
+  let noRoad = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, a = boxSum(PSA, x - 2, y - 2, x + 2, y + 2) > 0 ? 1 : 0;
+    D.access[i] = a;
+    if (!a && isZone(S.type[i])) noRoad++;
+  }
+  ST.noRoad = noRoad;
+}
+
+function stamp(arr, cx, cy, R, strength) {
+  const y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(N - 1, Math.ceil(cy + R));
+  const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(N - 1, Math.ceil(cx + R));
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+    if (d > R) continue;
+    const v = strength * (1 - 0.6 * d / R), i = y * N + x;
+    if (v > arr[i]) arr[i] = v;
+  }
+}
+function computeCoverage() {
+  for (const k in D.cov) D.cov[k].fill(0);
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (t < 6 || S.owner[i] !== i) continue;
+    const b = BLD[t], x = i % N, y = (i / N) | 0, c = b.size / 2;
+    if (b.cov) stamp(D.cov[b.cov], x + c, y + c, b.radius, D.powered[i] ? 255 : 110);
+    if (t === T.PARK) stamp(D.cov.park, x + 0.5, y + 0.5, 4, 255);
+  }
+}
+
+const fa = new Float32Array(NN), fb = new Float32Array(NN);
+function blur(a, passes) {
+  for (let p = 0; p < passes; p++) {
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      let s = 0, c = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        const yy = y + dy;
+        if (yy < 0 || yy >= N) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx;
+          if (xx < 0 || xx >= N) continue;
+          s += a[yy * N + xx]; c++;
+        }
+      }
+      fb[y * N + x] = s / c;
+    }
+    a.set(fb);
+  }
+}
+
+function computeMaps() {
+  computeCoverage();
+  // traffic: trips generated nearby, shared by the roads that carry them
+  buildPS(PSA, i => (isZone(S.type[i]) ? S.level[i] * S.level[i] : 0));
+  buildPS(PSB, i => (S.type[i] === T.ROAD ? 1 : 0));
+  let jam = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    if (S.type[i] !== T.ROAD) { D.traffic[i] = 0; continue; }
+    const trips = boxSum(PSA, x - 3, y - 3, x + 3, y + 3), roads = boxSum(PSB, x - 3, y - 3, x + 3, y + 3);
+    const v = Math.min(255, (trips / Math.max(1, roads)) * 16);
+    D.traffic[i] = v;
+    if (v > 220) jam++;
+  }
+  // pollution
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    let p = 0;
+    if (t === T.IND) p = [0, 35, 70, 110][S.level[i]];
+    else if (t === T.COAL) p = 300;
+    else if (t === T.ROAD) p = D.traffic[i] * 0.3;
+    else if (t === T.COM) p = S.level[i] * 6;
+    if (S.tree[i]) p -= 25;
+    if (t === T.PARK) p -= 40;
+    fa[i] = p;
+  }
+  blur(fa, 3);
+  for (let i = 0; i < NN; i++) D.poll[i] = clamp(fa[i] * 2, 0, 255);
+  // crime
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i], L = S.level[i];
+    fa[i] = (t === T.RES || t === T.COM) && L > 0 ? 18 + L * 22 + (D.lv[i] < 70 ? 25 : 0) : 0;
+  }
+  blur(fa, 2);
+  for (let i = 0; i < NN; i++) D.crime[i] = clamp(fa[i] * 1.6 - D.cov.police[i] * 0.9, 0, 255);
+  // land value
+  buildPS(PSA, i => S.tree[i]);
+  let crimeHigh = 0, pollHigh = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
+    if (S.terrain[i] && S.type[i] === T.EMPTY) { D.lv[i] = 0; continue; }
+    const trees = boxSum(PSA, x - 2, y - 2, x + 2, y + 2);
+    const v = 70 + D.waterBonus[i] + Math.min(30, trees * 3) + D.cov.park[i] * 0.3 + D.cov.school[i] * 0.12 +
+      D.cov.health[i] * 0.12 + D.cov.police[i] * 0.05 - D.poll[i] * 0.75 - D.crime[i] * 0.4;
+    D.lv[i] = clamp(v, 0, 255);
+    const t = S.type[i];
+    if (S.level[i] > 0) {
+      if ((t === T.RES || t === T.COM) && D.crime[i] > 120) crimeHigh++;
+      if (t === T.RES && D.poll[i] > 80) pollHigh++;
+    }
+  }
+  ST.jam = jam; ST.crimeHigh = crimeHigh; ST.pollHigh = pollHigh;
+  roadListDirty = true;
+}
+
+function adjustTotals(t, L, s) {
+  if (t === T.RES) ST.pop += s * POP[L];
+  else if (t === T.COM) ST.jc += s * JOBS_C[L];
+  else if (t === T.IND) ST.ji += s * JOBS_I[L];
+  else return;
+  if (L > 0) ST.developed += s;
+}
+function recountTotals() {
+  ST.pop = ST.jc = ST.ji = ST.developed = 0;
+  for (let i = 0; i < NN; i++) if (isZone(S.type[i])) adjustTotals(S.type[i], S.level[i], 1);
+}
+function setLevel(i, L) {
+  const t = S.type[i], old = S.level[i];
+  if (old === L) return;
+  adjustTotals(t, old, -1);
+  adjustTotals(t, L, 1);
+  S.level[i] = L;
+  if (L > old || L === 0) S.variant[i] = (rand() * 256) | 0;
+  markTile(i);
+  flags.power = true;
+  computeDemand();
+}
+
+function computeDemand() {
+  const P = ST.pop, W = P * 0.6, k = Math.min(1, P / 200000);
+  const iT = W * (0.5 - 0.2 * k) + 150;
+  const cT = W * (0.42 + 0.2 * k) + 30;
+  const rT = ((ST.jc + ST.ji) / 0.6) * 1.15 + 250;
+  const taxMod = (8 - S.tax) * 0.05;
+  ST.dr = clamp((rT - P) / Math.max(200, rT * 0.3) + taxMod, -1, 1);
+  ST.dc = clamp((cT - ST.jc) / Math.max(100, cT * 0.3) + taxMod * 0.6, -1, 1);
+  ST.di = clamp((iT - ST.ji) / Math.max(150, iT * 0.3) + taxMod * 0.6, -1, 1);
+}
+
+function maxLevel(i, t) {
+  const lv = D.lv[i];
+  if (t === T.RES) return lv < 40 ? 1 : lv < 92 ? 2 : (lv < 150 || D.cov.school[i] < 40 || ST.pop < 15000) ? 3 : 4;
+  if (t === T.COM) return lv < 40 ? 1 : lv < 85 ? 2 : (lv < 140 || ST.pop < 30000) ? 3 : 4;
+  return ST.pop < 1500 ? 2 : 3;
+}
+function desirability(i, t) {
+  const lv = D.lv[i];
+  if (t === T.RES) return (lv - 90) / 110 - D.poll[i] / 180 - D.crime[i] / 220 + D.cov.health[i] / 900 + D.cov.school[i] / 900;
+  if (t === T.COM) return (lv - 80) / 130 - D.crime[i] / 250 - D.poll[i] / 400;
+  return 0.2 - D.crime[i] / 400;
+}
+function growTile(i) {
+  const t = S.type[i], L = S.level[i];
+  if (S.fire[i]) return;
+  if (!D.powered[i] || !D.access[i]) { if (L > 0 && rand() < 0.2) setLevel(i, L - 1); return; }
+  const dem = t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di;
+  const des = desirability(i, t), max = maxLevel(i, t);
+  if (L > max) { if (rand() < 0.15) setLevel(i, L - 1); return; }
+  if (dem > 0 && L < max) {
+    const p = 0.05 + dem * clamp(0.55 + des * 0.5, 0.1, 1) * 0.6;
+    if (rand() < p) setLevel(i, L + 1);
+  } else if (L > 0 && (dem < -0.25 || des < -0.8)) {
+    if (rand() < 0.04 + Math.max(0, -dem) * 0.08) setLevel(i, L - 1);
+  }
+}
+
+function computeBudget() {
+  const tx = S.tax / 100;
+  const inc = { res: ST.pop * 0.7 * tx, com: ST.jc * 0.9 * tx, ind: ST.ji * 0.8 * tx };
+  let roads = 0, bridges = 0, wires = 0;
+  const cnt = {}, zones = { 3: 0, 4: 0, 5: 0 };
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (t === T.ROAD) { if (S.terrain[i]) bridges++; else roads++; }
+    else if (t === T.WIRE) wires++;
+    else if (isZone(t)) zones[t]++;
+    else if (t >= 6 && S.owner[i] === i) cnt[t] = (cnt[t] || 0) + 1;
+  }
+  const c = t => cnt[t] || 0;
+  const exp = {
+    road: roads * 0.3 + bridges * 1.5 + wires * 0.05,
+    power: c(T.COAL) * 60 + c(T.SOLAR) * 20,
+    police: c(T.POLICE) * 40, fire: c(T.FIRE) * 40,
+    school: c(T.SCHOOL) * 100, health: c(T.HOSP) * 150, park: c(T.PARK) * 3,
+  };
+  const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
+  ST.inc = inc; ST.exp = exp; ST.cnt = cnt; ST.zones = zones;
+  ST.incTotal = sum(inc); ST.expTotal = sum(exp);
+  ST.net = Math.round(ST.incTotal) - Math.round(ST.expTotal);
+  ST.roads = roads; ST.bridges = bridges; ST.wires = wires;
+}
+
+function fireStep() {
+  let burning = 0;
+  for (let i = 0; i < NN; i++) {
+    if (!S.fire[i]) continue;
+    if (!isZone(S.type[i]) || S.level[i] === 0) { S.fire[i] = 0; continue; }
+    burning++;
+    S.fire[i]++;
+    const cov = D.cov.fire[i];
+    if (cov > 60 && S.fire[i] > 2 + (255 - cov) / 40) {
+      S.fire[i] = 0;
+      if (!S.seen.extinguish) { S.seen.extinguish = 1; toast('消防隊が火事を消し止めました。', { kind: 'good' }); }
+      continue;
+    }
+    if (S.fire[i] > 10) { S.fire[i] = 0; setLevel(i, 0); continue; }
+    if (rand() < 0.07) {
+      const d = (rand() * 4) | 0, x = i % N + DX[d], y = ((i / N) | 0) + DY[d];
+      if (inb(x, y)) {
+        const n = y * N + x;
+        if (isZone(S.type[n]) && S.level[n] > 0 && !S.fire[n] && rand() > D.cov.fire[n] / 255) S.fire[n] = 1;
+      }
+    }
+  }
+  if (S.disasters && ST.developed > 30 && rand() < 0.004 + ST.developed * 0.000004) {
+    for (let k = 0; k < 40; k++) {
+      const i = (rand() * NN) | 0;
+      if (isZone(S.type[i]) && S.level[i] > 0 && !S.fire[i]) {
+        if (rand() > D.cov.fire[i] / 200) {
+          S.fire[i] = 1;
+          toast('火事が発生しました！ 消防署の範囲内ならすぐに消し止められます。', { kind: 'bad', action: { label: '見る', fn: () => flyTo(i) } });
+        }
+        break;
+      }
+    }
+  }
+  ST.burning = burning;
+}
+
+const flags = { power: true, maps: true, access: true };
+function refreshAll() {
+  markAll();
+  computeStatic();
+  recountTotals();
+  computeAccess();
+  computePower();
+  computeMaps();
+  computeMaps();
+  computeDemand();
+  computeBudget();
+  flags.power = flags.maps = flags.access = false;
+}
+
+function simDay() {
+  if (flags.access) { computeAccess(); flags.access = false; }
+  if (flags.power) { computePower(); flags.power = false; }
+  if (flags.maps || S.day % 4 === 0) { computeMaps(); flags.maps = false; }
+  for (let i = 0; i < NN; i++) if (isZone(S.type[i]) && rand() < 0.16) growTile(i);
+  fireStep();
+  S.day++;
+  if (S.day > 30) { S.day = 1; endOfMonth(); }
+  hudDirty = true; dirty = true;
+  if (sheetKind === 'info' && rand() < 0.25) refreshSheet();
+}
+
+function endOfMonth() {
+  computePower();
+  computeBudget();
+  S.money += ST.net;
+  S.fy.inc += Math.round(ST.incTotal); S.fy.exp += Math.round(ST.expTotal);
+  S.month++;
+  if (S.month > 12) { S.month = 1; S.year++; }
+  S.history.push({ y: S.year, m: S.month, pop: ST.pop, money: Math.round(S.money) });
+  if (S.history.length > 240) S.history.shift();
+  if (S.month === 4) {
+    const net = S.fy.inc - S.fy.exp;
+    toast(`${S.year - 1}年度の決算：収入 ${yen(S.fy.inc)}、支出 ${yen(S.fy.exp)}、差し引き ${net >= 0 ? '+' : ''}${yen(net)}`, { kind: net >= 0 ? 'good' : 'warn', ttl: 6500 });
+    S.fy = { inc: 0, exp: 0 };
+  }
+  checkRank();
+  advise();
+  checkTutorial();
+  if (sheetKind === 'budget') refreshSheet();
+  save();
+}
+
+function rankIndex(pop) { let r = 0; for (let k = 0; k < RANKS.length; k++) if (pop >= RANKS[k].min) r = k; return r; }
+function cityName() { return S.name + RANKS[S.rank].suffix; }
+function checkRank() {
+  const r = rankIndex(ST.pop);
+  if (r > S.rank) {
+    const before = cityName();
+    S.rank = r;
+    toast(`おめでとうございます！ ${before}は人口${compact(RANKS[r].min)}人を超え、「${RANKS[r].label}」になりました。`, { kind: 'good', ttl: 7000 });
+  }
+}
+
+function advise() {
+  const c = t => ST.cnt[t] || 0;
+  const plants = c(T.COAL) + c(T.SOLAR);
+  const list = [];
+  if (!plants) list.push(['plant', '発電所がありません。まずは火力発電所か太陽光発電所を建てましょう。', 'warn']);
+  else if (ST.demand > ST.supply) list.push(['short', `電力が足りません（使用 ${num(ST.demand)}／発電 ${num(ST.supply)}）。発電所を増やしましょう。`, 'warn']);
+  if (plants && ST.unpowered > 3) list.push(['unpow', `電気が届いていない区画が${ST.unpowered}マスあります。道路か送電線で発電所とつなぎましょう。`, 'warn']);
+  if (ST.noRoad > 3) list.push(['noroad', `道路から離れた区画が${ST.noRoad}マスあります。区画は道路から2マス以内でないと発展しません。`, 'warn']);
+  if (S.money < 0) list.push(['debt', '資金がマイナスです。税率を上げるか、維持費のかかる施設を見直しましょう。', 'bad']);
+  else if (ST.net < 0 && S.money < 5000) list.push(['deficit', `毎月 ${yen(-ST.net)} の赤字です。「市政」で税率を見直しましょう。`, 'warn']);
+  if (ST.crimeHigh > 8 && !c(T.POLICE)) list.push(['police', '犯罪が増えてきました。警察署を建てましょう。', 'warn']);
+  else if (ST.crimeHigh > 20) list.push(['crime', '治安の悪い地区があります。「表示」→「犯罪」で場所を確かめましょう。', 'warn']);
+  if (ST.pollHigh > 12) list.push(['poll', '住宅地の汚染がひどくなっています。工業地から離すか、公園を増やしましょう。', 'warn']);
+  if (ST.jam > 6) list.push(['jam', '渋滞している道路があります。道路を増やして交通を分散させましょう。', 'warn']);
+  if (ST.pop > 1500 && !c(T.FIRE)) list.push(['firest', '消防署がありません。火事に備えて消防署を建てましょう。', 'info']);
+  if (ST.pop > 3000 && !c(T.SCHOOL)) list.push(['school', '子どもが増えてきました。学校を建てると地価が上がります。', 'info']);
+  if (ST.pop > 8000 && !c(T.HOSP)) list.push(['hosp', '病院を建てると住みやすさと地価が上がります。', 'info']);
+  if (ST.dr > 0.5) list.push(['dr', '住宅の需要が高まっています。住宅地を増やしましょう。', 'info']);
+  if (ST.dc > 0.5 && ST.pop > 300) list.push(['dc', '商業の需要が高まっています。商業地を増やしましょう。', 'info']);
+  if (ST.di > 0.5) list.push(['di', '工業の需要が高まっています。工業地を増やしましょう。', 'info']);
+  const m = S.year * 12 + S.month;
+  for (const [k, msg, kind] of list) {
+    if ((S.seen[k] ?? -99) + 3 <= m) { S.seen[k] = m; toast(msg, { kind }); break; }
+  }
+}
+
+/* =========================================================
+   建設
+   ========================================================= */
+function linePts(ax, ay, bx, by) {
+  const pts = [[ax, ay]];
+  let x = ax, y = ay;
+  const stepX = () => { while (x !== bx) { x += Math.sign(bx - x); pts.push([x, y]); } };
+  const stepY = () => { while (y !== by) { y += Math.sign(by - y); pts.push([x, y]); } };
+  if (Math.abs(bx - ax) >= Math.abs(by - ay)) { stepX(); stepY(); } else { stepY(); stepX(); }
+  return pts;
+}
+function rectPts(ax, ay, bx, by) {
+  const pts = [];
+  for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) pts.push([x, y]);
+  return pts;
+}
+/* cost ≥ 0: will change, -1: nothing to do, -2: blocked */
+function evalTile(tid, i) {
+  const t = S.type[i], water = S.terrain[i] === 1;
+  switch (tid) {
+    case 'road':
+      if (t === T.ROAD) return -1;
+      if (water) return t === T.EMPTY || t === T.WIRE ? 60 : -2;
+      if (t === T.EMPTY || t === T.WIRE || (isZone(t) && S.level[i] === 0)) return 10;
+      return -2;
+    case 'wire':
+      if (t !== T.EMPTY) return -1;
+      return water ? 25 : 5;
+    case 'res': case 'com': case 'ind': {
+      const zt = TOOLS[tid].zone;
+      if (water) return -2;
+      if (t === zt) return -1;
+      if (t === T.EMPTY || t === T.WIRE || (isZone(t) && S.level[i] === 0)) return 5;
+      return -2;
+    }
+    case 'bulldoze':
+      if (t === T.EMPTY) return S.tree[i] ? 2 : -1;
+      return 2;
+  }
+  return -1;
+}
+function makePlan(tid, d) {
+  const tool = TOOLS[tid], items = [];
+  let cost = 0, ok = 0, bad = 0;
+  if (tool.kind === 'place') {
+    const b = BLD[tool.b], s = b.size;
+    let valid = true;
+    for (let y = d.ay; y < d.ay + s; y++) for (let x = d.ax; x < d.ax + s; x++) {
+      if (!inb(x, y)) { valid = false; continue; }
+      const i = y * N + x, good = S.terrain[i] === 0 && S.type[i] === T.EMPTY;
+      if (!good) { valid = false; bad++; }
+      items.push({ i, ok: good });
+    }
+    if (valid) { cost = b.cost; ok = items.length; }
+    return { items, cost, ok, bad, valid };
+  }
+  const pts = tool.kind === 'line' ? linePts(d.ax, d.ay, d.bx, d.by) : rectPts(d.ax, d.ay, d.bx, d.by);
+  const seen = new Set();
+  for (const [x, y] of pts) {
+    const i = y * N + x;
+    if (tid === 'bulldoze' && S.owner[i] >= 0) {
+      const o = S.owner[i];
+      if (seen.has(o)) continue;
+      seen.add(o);
+      const s = BLD[S.type[o]].size, ox = o % N, oy = (o / N) | 0;
+      for (let yy = oy; yy < oy + s; yy++) for (let xx = ox; xx < ox + s; xx++) items.push({ i: yy * N + xx, ok: true });
+      cost += 2 * s * s; ok += s * s;
+      continue;
+    }
+    const c = evalTile(tid, i);
+    if (c >= 0) { items.push({ i, ok: true }); cost += c; ok++; }
+    else if (c === -2) { items.push({ i, ok: false }); bad++; }
+    else items.push({ i, ok: null });
+  }
+  return { items, cost, ok, bad, valid: ok > 0 };
+}
+function clearTile(i) {
+  markTile(i);
+  const t = S.type[i];
+  if (isZone(t) && S.level[i] > 0) adjustTotals(t, S.level[i], -1);
+  S.type[i] = T.EMPTY; S.level[i] = 0; S.tree[i] = 0; S.owner[i] = -1; S.fire[i] = 0;
+}
+function applyPlan(tid, plan, at) {
+  const tool = TOOLS[tid];
+  if (!plan.valid) {
+    if (plan.bad) toast(tool.kind === 'place' ? 'ここには建てられません。木のある土地か、何もない土地が必要です。' : 'ここには置けません。先に撤去してください。', { kind: 'warn' });
+    return false;
+  }
+  if (plan.cost > S.money) { toast(`資金が足りません（必要 ${yen(plan.cost)}、手持ち ${yen(S.money)}）。`, { kind: 'bad' }); return false; }
+  const rec = { money: plan.cost, tiles: [] };
+  for (const it of plan.items) if (it.ok) rec.tiles.push([it.i, S.type[it.i], S.level[it.i], S.tree[it.i], S.owner[it.i], S.variant[it.i], S.fire[it.i]]);
+  if (tool.kind === 'place') {
+    const o = plan.items[0].i;
+    for (const it of plan.items) { clearTile(it.i); S.type[it.i] = tool.b; S.owner[it.i] = o; }
+    S.variant[o] = (rand() * 256) | 0;
+  } else {
+    for (const it of plan.items) {
+      if (!it.ok) continue;
+      const i = it.i;
+      clearTile(i);
+      if (tid === 'road') S.type[i] = T.ROAD;
+      else if (tid === 'wire') S.type[i] = T.WIRE;
+      else if (tool.zone) { S.type[i] = tool.zone; S.variant[i] = (rand() * 256) | 0; }
+    }
+  }
+  S.money -= plan.cost;
+  if (tool.kind === 'place') {
+    const o = plan.items[0].i, sz = BLD[tool.b].size, ox = o % N, oy = (o / N) | 0;
+    let linked = false;
+    for (let k = -1; k <= sz && !linked; k++) for (const [x, y] of [[ox + k, oy - 1], [ox + k, oy + sz], [ox - 1, oy + k], [ox + sz, oy + k]]) {
+      if (inb(x, y) && S.type[y * N + x] !== T.EMPTY && S.owner[y * N + x] !== o && Math.abs(x - ox - (sz - 1) / 2) + Math.abs(y - oy - (sz - 1) / 2) <= sz) { linked = true; break; }
+    }
+    if (!linked && (isPlant(tool.b) || BLD[tool.b].use)) toast(isPlant(tool.b) ? '発電所のとなりに道路か送電線をつなげると、電気が街に流れます。' : 'となりに道路をつなげると、電気が届いて働きはじめます。', { kind: 'info' });
+  }
+  undoStack.push(rec);
+  if (undoStack.length > 40) undoStack.shift();
+  afterChange();
+  if (plan.cost > 0 && at) floaters.push({ text: '−' + yen(plan.cost).slice(1), wx: at[0], wy: at[1], t0: performance.now() });
+  try { navigator.vibrate && navigator.vibrate(8); } catch (e) { /* not available */ }
+  return true;
+}
+function afterChange() {
+  computeAccess();
+  computePower();
+  computeMaps();
+  computeDemand();
+  computeBudget();
+  flags.power = flags.access = flags.maps = false;
+  checkTutorial();
+  roadListDirty = true;
+  dirty = true; hudDirty = true;
+}
+function undo() {
+  const rec = undoStack.pop();
+  if (!rec) { toast('取り消せる操作はありません。'); return; }
+  for (let k = rec.tiles.length - 1; k >= 0; k--) {
+    const [i, t, L, tr, ow, v, f] = rec.tiles[k];
+    clearTile(i);
+    S.type[i] = t; S.level[i] = L; S.tree[i] = tr; S.owner[i] = ow; S.variant[i] = v; S.fire[i] = f;
+    if (isZone(t) && L > 0) adjustTotals(t, L, 1);
+  }
+  S.money += rec.money;
+  afterChange();
+  toast(`ひとつ前の操作を取り消しました（${yen(rec.money)} 返金）。`);
+}
+
+/* =========================================================
+   描画
+   ========================================================= */
+const cv = $('#view');
+const ctx = cv.getContext('2d', { alpha: false });
+let G = ctx;
+let vw = 1, vh = 1, dpr = 1, cvLeft = 0, cvTop = 0;
+const cam = { x: 0, y: N * HH, z: 0.7 };
+let lod = 2, HS = 1, overlay = 'none', bgColor = '#d9e4e8';
+let dirty = true, hudDirty = true, selTile = -1, hover = null, drag = null;
+const floaters = [];
+let smokeSrc = [], fireFx = [], powerFx = [];
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  const r = cv.getBoundingClientRect();
+  vw = Math.max(1, r.width); vh = Math.max(1, r.height); cvLeft = r.left; cvTop = r.top;
+  cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
+  const dock = $('#dock');
+  document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
+  dirty = true;
+}
+function readTheme() {
+  bgColor = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#d9e4e8';
+  dirty = true;
+}
+function clampCam() {
+  cam.z = clamp(cam.z, ZMIN, ZMAX);
+  if (!started) return;
+  cam.x = clamp(cam.x, -N * HW, N * HW);
+  cam.y = clamp(cam.y, 0, 2 * N * HH);
+}
+function toGrid(sx, sy) {
+  const wx = (sx - vw / 2) / cam.z + cam.x, wy = (sy - vh / 2) / cam.z + cam.y;
+  return [(wx / HW + wy / HH) / 2, (wy / HH - wx / HW) / 2];
+}
+function tileCenterW(i) { const x = i % N, y = (i / N) | 0; return [(x - y) * HW, (x + y + 1) * HH]; }
+function w2s(wx, wy) { return [(wx - cam.x) * cam.z + vw / 2, (wy - cam.y) * cam.z + vh / 2]; }
+
+/* --- primitive helpers (grid coordinates, z in world px upward) --- */
+function addRect(p, x0, y0, x1, y1, z) {
+  p.moveTo((x0 - y0) * HW, (x0 + y0) * HH - z);
+  p.lineTo((x1 - y0) * HW, (x1 + y0) * HH - z);
+  p.lineTo((x1 - y1) * HW, (x1 + y1) * HH - z);
+  p.lineTo((x0 - y1) * HW, (x0 + y1) * HH - z);
+  p.closePath();
+}
+function addDiamond(p, x, y, e) {
+  const cx = (x - y) * HW, ty = (x + y) * HH;
+  p.moveTo(cx, ty - e); p.lineTo(cx + HW + 2 * e, ty + HH); p.lineTo(cx, ty + 2 * HH + e); p.lineTo(cx - HW - 2 * e, ty + HH); p.closePath();
+}
+function box(x0, y0, x1, y1, z0, h, c, top) {
+  const zb = z0 * HS, zt = (z0 + h) * HS;
+  const rx0 = (x1 - y0) * HW, ry0 = (x1 + y0) * HH, rx1 = (x1 - y1) * HW, ry1 = (x1 + y1) * HH;
+  const lx0 = (x0 - y1) * HW, ly0 = (x0 + y1) * HH;
+  G.fillStyle = c[2];
+  G.beginPath(); G.moveTo(rx0, ry0 - zb); G.lineTo(rx1, ry1 - zb); G.lineTo(rx1, ry1 - zt); G.lineTo(rx0, ry0 - zt); G.fill();
+  G.fillStyle = c[1];
+  G.beginPath(); G.moveTo(lx0, ly0 - zb); G.lineTo(rx1, ry1 - zb); G.lineTo(rx1, ry1 - zt); G.lineTo(lx0, ly0 - zt); G.fill();
+  G.fillStyle = top || c[0];
+  G.beginPath(); addRect(G, x0, y0, x1, y1, zt); G.fill();
+}
+function faceRect(face, x0, y0, x1, y1, s0, s1, zb, zt, color) {
+  let ax, ay, bx, by;
+  if (face === 'L') { ax = x0; ay = y1; bx = x1; by = y1; } else { ax = x1; ay = y0; bx = x1; by = y1; }
+  const px0 = ax + (bx - ax) * s0, py0 = ay + (by - ay) * s0, px1 = ax + (bx - ax) * s1, py1 = ay + (by - ay) * s1;
+  const X0 = (px0 - py0) * HW, Y0 = (px0 + py0) * HH, X1 = (px1 - py1) * HW, Y1 = (px1 + py1) * HH;
+  zb *= HS; zt *= HS;
+  G.fillStyle = color;
+  G.beginPath(); G.moveTo(X0, Y0 - zb); G.lineTo(X1, Y1 - zb); G.lineTo(X1, Y1 - zt); G.lineTo(X0, Y0 - zt); G.fill();
+}
+function strip(ax, ay, bx, by, zb, zt, per) {
+  const len = Math.abs(bx - ax) + Math.abs(by - ay);
+  const n = per ? Math.max(1, Math.round(len * per)) : 1;
+  for (let k = 0; k < n; k++) {
+    let s0 = k / n, s1 = (k + 1) / n;
+    if (per) { const pad = (s1 - s0) * 0.2; s0 += pad; s1 -= pad; } else { s0 = 0.08; s1 = 0.92; }
+    const px0 = ax + (bx - ax) * s0, py0 = ay + (by - ay) * s0, px1 = ax + (bx - ax) * s1, py1 = ay + (by - ay) * s1;
+    const X0 = (px0 - py0) * HW, Y0 = (px0 + py0) * HH, X1 = (px1 - py1) * HW, Y1 = (px1 + py1) * HH;
+    G.moveTo(X0, Y0 - zb); G.lineTo(X1, Y1 - zb); G.lineTo(X1, Y1 - zt); G.lineTo(X0, Y0 - zt); G.closePath();
+  }
+}
+function windows(x0, y0, x1, y1, z0, h, fh, per, cl, cr) {
+  if (lod === 0) return;
+  const floors = Math.floor(h / fh);
+  if (lod === 1) per = 0;
+  for (let side = 0; side < 2; side++) {
+    G.fillStyle = side ? (cr || WIN_R) : (cl || WIN_L);
+    G.beginPath();
+    for (let f = 0; f < floors; f++) {
+      const zb = (z0 + f * fh + fh * 0.3) * HS, zt = (z0 + f * fh + fh * 0.75) * HS;
+      if (side) strip(x1, y0, x1, y1, zb, zt, per); else strip(x0, y1, x1, y1, zb, zt, per);
+    }
+    G.fill();
+  }
+}
+function hipRoof(x0, y0, x1, y1, z, rh, c) {
+  const zt = z * HS, ah = rh * HS;
+  G.fillStyle = c[0]; G.beginPath(); addRect(G, x0, y0, x1, y1, zt); G.fill();
+  if (lod === 0) return;
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, AX = (mx - my) * HW, AY = (mx + my) * HH - zt - ah;
+  G.fillStyle = c[2]; G.beginPath();
+  G.moveTo((x1 - y0) * HW, (x1 + y0) * HH - zt); G.lineTo((x1 - y1) * HW, (x1 + y1) * HH - zt); G.lineTo(AX, AY); G.fill();
+  G.fillStyle = c[1]; G.beginPath();
+  G.moveTo((x0 - y1) * HW, (x0 + y1) * HH - zt); G.lineTo((x1 - y1) * HW, (x1 + y1) * HH - zt); G.lineTo(AX, AY); G.fill();
+}
+function cyl(cx, cy, r, z0, h, c) {
+  const X = (cx - cy) * HW, Y = (cx + cy) * HH;
+  const rx = r * HW * Math.SQRT2, ry = r * HH * Math.SQRT2, zb = z0 * HS, zt = (z0 + h) * HS;
+  G.fillStyle = c[1]; G.beginPath();
+  G.moveTo(X, Y - zt); G.lineTo(X - rx, Y - zt); G.lineTo(X - rx, Y - zb);
+  G.ellipse(X, Y - zb, rx, ry, 0, Math.PI, Math.PI / 2, true); G.closePath(); G.fill();
+  G.fillStyle = c[2]; G.beginPath();
+  G.moveTo(X, Y - zt); G.lineTo(X, Y - zb + ry);
+  G.ellipse(X, Y - zb, rx, ry, 0, Math.PI / 2, 0, true); G.lineTo(X + rx, Y - zt); G.closePath(); G.fill();
+  G.fillStyle = c[0]; G.beginPath(); G.ellipse(X, Y - zt, rx, ry, 0, 0, Math.PI * 2); G.fill();
+}
+function tree(gx, gy, s, k) {
+  const X = (gx - gy) * HW, Y = (gx + gy) * HH, r = 6.5 * s;
+  if (lod === 2) { G.fillStyle = C.trunk; G.fillRect(X - 1, Y - 5 * s * HS, 2, 5 * s * HS); }
+  G.fillStyle = C.crown[k % 3]; G.beginPath(); G.arc(X, Y - (4 * s + r) * HS, r, 0, Math.PI * 2); G.fill();
+  if (lod > 0) { G.fillStyle = C.crownHi; G.beginPath(); G.arc(X - r * 0.3, Y - (4 * s + r * 1.3) * HS, r * 0.5, 0, Math.PI * 2); G.fill(); }
+}
+const TREE_SLOTS = [[0.3, 0.3], [0.74, 0.38], [0.4, 0.74]];
+/* forests are drawn from small cached bitmaps: far cheaper than vector circles on phones */
+const treeSprites = new Map();
+let spriteScale = 0;
+function treeSprite(k, si) {
+  const key = k * 8 + si;
+  let sp = treeSprites.get(key);
+  if (sp) return sp;
+  const s = 0.8 + si * 0.12, r = 6.5 * s, sc = spriteScale;
+  const w = Math.ceil(2 * r + 4), h = Math.ceil(4 * s + 2 * r + 4);
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.ceil(w * sc)); c.height = Math.max(1, Math.ceil(h * sc));
+  const g = c.getContext('2d');
+  g.scale(sc, sc);
+  const X = w / 2, Y = h - 1;
+  g.fillStyle = C.trunk; g.fillRect(X - 1, Y - 5 * s, 2, 5 * s);
+  g.fillStyle = C.crown[k]; g.beginPath(); g.arc(X, Y - (4 * s + r), r, 0, Math.PI * 2); g.fill();
+  g.fillStyle = C.crownHi; g.beginPath(); g.arc(X - r * 0.3, Y - (4 * s + r * 1.3), r * 0.5, 0, Math.PI * 2); g.fill();
+  sp = { c, w, h, ox: X, oy: Y };
+  treeSprites.set(key, sp);
+  return sp;
+}
+function spriteAt(gx, gy, k, si) {
+  const sp = treeSprite(k, si);
+  G.drawImage(sp.c, (gx - gy) * HW - sp.ox, (gx + gy) * HH - sp.oy, sp.w, sp.h);
+}
+function drawTrees(x, y) {
+  if (overlay !== 'none') return;
+  const h = hash2(x, y);
+  if (lod === 0) { spriteAt(x + 0.5, y + 0.55, h % 3, 6); return; }
+  const n = 1 + (h % 3);
+  for (let k = 0; k < n; k++) {
+    const jx = (((h >> (4 + k * 4)) & 7) - 3.5) * 0.02, jy = (((h >> (6 + k * 4)) & 7) - 3.5) * 0.02;
+    spriteAt(x + TREE_SLOTS[k][0] + jx, y + TREE_SLOTS[k][1] + jy, (h + k) % 3, (h >> (12 + k)) & 3);
+  }
+}
+
+/* --- road geometry --- */
+function roadMask(x, y) {
+  let m = 0;
+  for (let d = 0; d < 4; d++) {
+    const nx = x + DX[d], ny = y + DY[d];
+    if (inb(nx, ny) && S.type[ny * N + nx] === T.ROAD) m |= 1 << d;
+  }
+  return m;
+}
+function addRoadShape(p, x, y, m, w) {
+  const c = 0.5, e = 0.03;
+  addRect(p, x + c - w, y + c - w, x + c + w, y + c + w, 0);
+  if (m & 1) addRect(p, x + c, y + c - w, x + 1 + e, y + c + w, 0);
+  if (m & 4) addRect(p, x - e, y + c - w, x + c, y + c + w, 0);
+  if (m & 2) addRect(p, x + c - w, y + c, x + c + w, y + 1 + e, 0);
+  if (m & 8) addRect(p, x + c - w, y - e, x + c + w, y + c, 0);
+}
+function addRoadMarks(p, x, y, m) {
+  const cx = (x - y) * HW, cy = (x + y + 1) * HH;
+  const ends = [[x + 1, y + 0.5], [x + 0.5, y + 1], [x, y + 0.5], [x + 0.5, y]];
+  for (let d = 0; d < 4; d++) {
+    if (!(m & (1 << d))) continue;
+    const [ex, ey] = ends[d];
+    p.moveTo(cx, cy); p.lineTo((ex - ey) * HW, (ex + ey) * HH);
+  }
+}
+function addRails(p, x, y, m) {
+  const w = 0.44, line = (ax, ay, bx, by) => { p.moveTo((ax - ay) * HW, (ax + ay) * HH); p.lineTo((bx - by) * HW, (bx + by) * HH); };
+  const horiz = (m & 5) || !(m & 10);
+  if (horiz) { line(x, y + 0.5 - w, x + 1, y + 0.5 - w); line(x, y + 0.5 + w, x + 1, y + 0.5 + w); }
+  if (m & 10) { line(x + 0.5 - w, y, x + 0.5 - w, y + 1); line(x + 0.5 + w, y, x + 0.5 + w, y + 1); }
+}
+
+/* --- buildings --- */
+function house(x0, y0, x1, y1, v) {
+  const wall = pal(HOUSE_WALL[v % 6]), roof = pal(HOUSE_ROOF[(v >> 3) % 6]);
+  const h = 8 + ((v >> 1) % 3) * 2;
+  box(x0, y0, x1, y1, 0, h, wall);
+  if (lod === 2) {
+    faceRect('L', x0, y0, x1, y1, 0.14, 0.32, 0, 6, '#7a5638');
+    faceRect('L', x0, y0, x1, y1, 0.55, 0.85, 3, 6.5, WIN_L);
+    faceRect('R', x0, y0, x1, y1, 0.25, 0.7, 3, 6.5, WIN_R);
+  }
+  hipRoof(x0 - 0.05, y0 - 0.05, x1 + 0.05, y1 + 0.05, h, 7, roof);
+}
+function drawRes(L, v, x, y) {
+  if (L === 1) {
+    if ((v & 3) === 0) { house(x + 0.08, y + 0.1, x + 0.46, y + 0.48, v); house(x + 0.54, y + 0.52, x + 0.92, y + 0.9, v >> 2); }
+    else { const s = 0.18 + ((v >> 2) % 3) * 0.03; house(x + s, y + s, x + 1 - s, y + 1 - s, v); }
+  } else if (L === 2) {
+    const c = pal(APT[v % APT.length]);
+    box(x + 0.12, y + 0.16, x + 0.88, y + 0.84, 0, 24, c, '#a9b0b6');
+    windows(x + 0.12, y + 0.16, x + 0.88, y + 0.84, 0, 24, 8, 3);
+    box(x + 0.2, y + 0.24, x + 0.38, y + 0.42, 24, 5, pal('#c3c8cd'));
+  } else if (L === 3) {
+    const h = 44 + (v % 3) * 8, c = pal(MANSION[v % MANSION.length]);
+    box(x + 0.1, y + 0.1, x + 0.9, y + 0.9, 0, h, c, '#9fa7ae');
+    windows(x + 0.1, y + 0.1, x + 0.9, y + 0.9, 0, h, 8, 4);
+    box(x + 0.22, y + 0.22, x + 0.46, y + 0.46, h, 6, pal('#c3c8cd'));
+  } else {
+    const h = 92 + (v % 4) * 10, c = pal(TOWER[v % TOWER.length]);
+    box(x + 0.17, y + 0.17, x + 0.83, y + 0.83, 0, h, c, '#8f99a3');
+    windows(x + 0.17, y + 0.17, x + 0.83, y + 0.83, 0, h, 7, 4);
+    box(x + 0.3, y + 0.3, x + 0.7, y + 0.7, h, 8, pal('#9aa5b0'));
+  }
+}
+function drawCom(L, v, x, y) {
+  if (L === 1) {
+    const c = pal(SHOP[v % 4]), aw = pal(AWNING[(v >> 2) % 4]);
+    const x0 = x + 0.14, y0 = y + 0.14, x1 = x + 0.86, y1 = y + 0.86, h = 12;
+    box(x0, y0, x1, y1, 0, h, c, '#c9c6bf');
+    if (lod > 0) {
+      faceRect('L', x0, y0, x1, y1, 0.1, 0.9, 1.5, 7, GLASS_L);
+      faceRect('R', x0, y0, x1, y1, 0.1, 0.9, 1.5, 7, GLASS_R);
+      const a = (gx, gy, z) => [(gx - gy) * HW, (gx + gy) * HH - z * HS];
+      let p = [a(x0, y1, 9), a(x1, y1, 9), a(x1, y1 + 0.1, 6.5), a(x0, y1 + 0.1, 6.5)];
+      G.fillStyle = aw[1]; G.beginPath(); G.moveTo(...p[0]); G.lineTo(...p[1]); G.lineTo(...p[2]); G.lineTo(...p[3]); G.fill();
+      p = [a(x1, y0, 9), a(x1, y1, 9), a(x1 + 0.1, y1, 6.5), a(x1 + 0.1, y0, 6.5)];
+      G.fillStyle = aw[2]; G.beginPath(); G.moveTo(...p[0]); G.lineTo(...p[1]); G.lineTo(...p[2]); G.lineTo(...p[3]); G.fill();
+      box(x + 0.3, y + 0.42, x + 0.7, y + 0.48, h, 7, aw);
+    }
+  } else if (L === 2) {
+    const c = pal(OFFICE[v % 4]);
+    box(x + 0.12, y + 0.12, x + 0.88, y + 0.88, 0, 30, c, '#b3b9bf');
+    windows(x + 0.12, y + 0.12, x + 0.88, y + 0.88, 0, 30, 7.5, 4, GLASS_L, GLASS_R);
+  } else if (L === 3) {
+    const h = 58 + (v % 3) * 8, c = pal(OFFICE[(v >> 2) % 4]);
+    box(x + 0.1, y + 0.1, x + 0.9, y + 0.9, 0, h, c, '#a7aeb5');
+    windows(x + 0.1, y + 0.1, x + 0.9, y + 0.9, 0, h, 7, 4, GLASS_L, GLASS_R);
+    box(x + 0.5, y + 0.2, x + 0.75, y + 0.45, h, 6, pal('#c3c8cd'));
+  } else {
+    const c = pal(SKY[v % 4]), h = 100 + (v % 4) * 12;
+    box(x + 0.06, y + 0.06, x + 0.94, y + 0.94, 0, 22, pal('#c9ccd0'), '#aeb3b8');
+    windows(x + 0.06, y + 0.06, x + 0.94, y + 0.94, 0, 22, 11, 3, GLASS_L, GLASS_R);
+    box(x + 0.2, y + 0.2, x + 0.8, y + 0.8, 22, h, c, '#8d98a3');
+    windows(x + 0.2, y + 0.2, x + 0.8, y + 0.8, 22, h, 6.5, 4, GLASS_L, GLASS_R);
+    box(x + 0.32, y + 0.32, x + 0.68, y + 0.68, 22 + h, 10, pal('#9aa5b0'));
+    if (lod > 0) {
+      const X = (x - y) * HW, Y = (x + y + 1) * HH - (32 + h) * HS;
+      G.strokeStyle = '#59626b'; G.lineWidth = 1.2; G.beginPath(); G.moveTo(X, Y); G.lineTo(X, Y - 16 * HS); G.stroke();
+      G.fillStyle = '#e03131'; G.beginPath(); G.arc(X, Y - 16 * HS, 1.6, 0, Math.PI * 2); G.fill();
+    }
+  }
+}
+function chimney(cx, cy, r, h, stripes) {
+  cyl(cx, cy, r, 0, h, pal('#d9d5cd'));
+  if (stripes && lod > 0) { cyl(cx, cy, r * 1.02, h - 16, 6, pal('#d9473a')); cyl(cx, cy, r * 1.02, h - 5, 5, pal('#d9473a')); }
+  smokeSrc.push([(cx - cy) * HW, (cx + cy) * HH - h * HS - 2, (cx * 7 + cy * 3) % 1]);
+}
+function drawInd(L, v, x, y) {
+  const c = pal(FACTORY[v % 4]);
+  if (L === 1) {
+    box(x + 0.1, y + 0.12, x + 0.9, y + 0.88, 0, 10, c, '#9aa0a5');
+    if (lod > 0) {
+      G.fillStyle = '#80868c'; G.beginPath();
+      for (let k = 0; k < 3; k++) addRect(G, x + 0.1, y + 0.2 + k * 0.25, x + 0.9, y + 0.28 + k * 0.25, 10 * HS);
+      G.fill();
+      faceRect('L', x + 0.1, y + 0.12, x + 0.9, y + 0.88, 0.3, 0.62, 0, 7, '#6d7277');
+    }
+  } else if (L === 2) {
+    box(x + 0.08, y + 0.1, x + 0.66, y + 0.9, 0, 16, c, '#9ba1a6');
+    windows(x + 0.08, y + 0.1, x + 0.66, y + 0.9, 0, 16, 8, 3, '#7b8894', '#66737f');
+    chimney(x + 0.82, y + 0.3, 0.08, 40, false);
+  } else {
+    box(x + 0.06, y + 0.06, x + 0.62, y + 0.94, 0, 22, c, '#979da2');
+    windows(x + 0.06, y + 0.06, x + 0.62, y + 0.94, 0, 22, 11, 3, '#7b8894', '#66737f');
+    chimney(x + 0.8, y + 0.2, 0.08, 54, true);
+    chimney(x + 0.8, y + 0.48, 0.08, 54, true);
+    cyl(x + 0.8, y + 0.8, 0.12, 0, 14, pal('#e3dfd6'));
+  }
+}
+function drawPark(x, y) {
+  G.fillStyle = '#e6d8a8'; G.beginPath();
+  addRect(G, x + 0.44, y, x + 0.56, y + 1, 0); addRect(G, x, y + 0.44, x + 1, y + 0.56, 0); G.fill();
+  const pond = (gx, gy, r) => { G.beginPath(); G.ellipse((gx - gy) * HW, (gx + gy) * HH, r * HW * Math.SQRT2, r * HH * Math.SQRT2, 0, 0, Math.PI * 2); G.fill(); };
+  G.fillStyle = '#4f9fd4'; pond(x + 0.22, y + 0.76, 0.14);
+  tree(x + 0.22, y + 0.22, 0.95, 1);
+  tree(x + 0.8, y + 0.2, 0.85, 2);
+  cyl(x + 0.5, y + 0.5, 0.08, 0, 3, pal('#eef1f3'));
+  G.fillStyle = '#7cc0ec'; pond(x + 0.5, y + 0.5, 0.05);
+  tree(x + 0.8, y + 0.78, 1, 0);
+}
+function drawService(t, x, y) {
+  switch (t) {
+    case T.PARK: drawPark(x, y); break;
+    case T.POLICE: {
+      const x0 = x + 0.14, y0 = y + 0.14, x1 = x + 0.86, y1 = y + 0.86;
+      box(x0, y0, x1, y1, 0, 18, pal('#eef1f4'), '#d4d9de');
+      windows(x0, y0, x1, y1, 0, 18, 9, 3);
+      box(x0, y0, x1, y1, 18, 3, pal('#26487f'));
+      faceRect('L', x0, y0, x1, y1, 0.4, 0.6, 0, 7, '#4c5964');
+      if (lod > 0) {
+        const s = 0.5, gx = x0 + (x1 - x0) * s, gy = y1;
+        G.fillStyle = '#e0b531'; G.beginPath(); G.arc((gx - gy) * HW, (gx + gy) * HH - 13 * HS, 2.4, 0, Math.PI * 2); G.fill();
+        box(x + 0.4, y + 0.44, x + 0.48, y + 0.52, 21, 2.5, pal('#e03131'));
+        box(x + 0.52, y + 0.44, x + 0.6, y + 0.52, 21, 2.5, pal('#1c7ed6'));
+      }
+      break;
+    }
+    case T.FIRE: {
+      box(x + 0.1, y + 0.1, x + 0.3, y + 0.3, 0, 36, pal('#c8412f'), '#9f3326');
+      const x0 = x + 0.1, y0 = y + 0.34, x1 = x + 0.9, y1 = y + 0.9;
+      box(x0, y0, x1, y1, 0, 16, pal('#e05a45'), '#b9bec4');
+      faceRect('L', x0, y0, x1, y1, 0.08, 0.44, 0, 10, '#eceff1');
+      faceRect('L', x0, y0, x1, y1, 0.54, 0.9, 0, 10, '#eceff1');
+      windows(x0, y0, x1, y1, 0, 16, 8, 3);
+      break;
+    }
+    case T.SCHOOL: {
+      if (lod > 0) {
+        G.strokeStyle = 'rgba(255,255,255,.85)'; G.lineWidth = 1.2; G.beginPath();
+        addRect(G, x + 0.35, y + 1.05, x + 1.65, y + 1.75, 0); G.stroke();
+      }
+      const c = pal('#efe4ca');
+      box(x + 0.1, y + 0.12, x + 1.9, y + 0.8, 0, 24, c, '#a9aeb3');
+      windows(x + 0.1, y + 0.12, x + 1.9, y + 0.8, 0, 24, 8, 3);
+      box(x + 0.82, y + 0.3, x + 1.18, y + 0.62, 24, 12, c, '#7d8a96');
+      if (lod > 0) {
+        const gx = x + 1.0, gy = y + 0.62;
+        G.fillStyle = '#ffffff'; G.strokeStyle = '#59626b'; G.lineWidth = 0.8;
+        G.beginPath(); G.arc((gx - gy) * HW, (gx + gy) * HH - 31 * HS, 3, 0, Math.PI * 2); G.fill(); G.stroke();
+      }
+      break;
+    }
+    case T.HOSP: {
+      const c = pal('#f3f5f7');
+      box(x + 0.15, y + 0.15, x + 1.2, y + 1.1, 0, 46, c, '#c9d0d6');
+      windows(x + 0.15, y + 0.15, x + 1.2, y + 1.1, 0, 46, 7.5, 4, '#7fa7c9', '#6890b4');
+      if (lod > 0) {
+        G.fillStyle = '#e03131'; G.beginPath();
+        addRect(G, x + 0.6, y + 0.45, x + 0.75, y + 0.8, 46 * HS); addRect(G, x + 0.5, y + 0.55, x + 0.85, y + 0.7, 46 * HS); G.fill();
+      }
+      box(x + 1.3, y + 0.15, x + 1.85, y + 1.1, 0, 22, pal('#e9edf0'), '#c9d0d6');
+      windows(x + 1.3, y + 0.15, x + 1.85, y + 1.1, 0, 22, 7.5, 4, '#7fa7c9', '#6890b4');
+      box(x + 0.15, y + 1.2, x + 1.85, y + 1.85, 0, 16, pal('#e9edf0'), '#c9d0d6');
+      windows(x + 0.15, y + 1.2, x + 1.85, y + 1.85, 0, 16, 8, 4, '#7fa7c9', '#6890b4');
+      break;
+    }
+    case T.COAL: {
+      box(x + 0.1, y + 0.1, x + 1.15, y + 1.2, 0, 28, pal('#a3aab1'), '#8a9198');
+      windows(x + 0.1, y + 0.1, x + 1.15, y + 1.2, 0, 28, 14, 0, '#6f7b86', '#5d6873');
+      chimney(x + 1.5, y + 0.45, 0.13, 86, true);
+      box(x + 0.1, y + 1.32, x + 1.1, y + 1.9, 0, 14, pal('#b5aea3'), '#8f8a82');
+      chimney(x + 1.5, y + 1.15, 0.13, 86, true);
+      const X = (x + 1.55 - (y + 1.68)) * HW, Y = (x + 1.55 + y + 1.68) * HH;
+      G.fillStyle = '#2b2b2e'; G.beginPath(); G.ellipse(X, Y - 2 * HS, 11, 6, 0, Math.PI, 0); G.lineTo(X + 11, Y); G.ellipse(X, Y, 11, 5, 0, 0, Math.PI); G.fill();
+      break;
+    }
+    case T.SOLAR: {
+      for (let b = 0; b < 3; b++) for (let a = 0; a < 3; a++) {
+        const u0 = x + 0.12 + a * 0.6, v0 = y + 0.12 + b * 0.6, u1 = u0 + 0.5, v1 = v0 + 0.42;
+        const pt = (gx, gy, z) => [(gx - gy) * HW, (gx + gy) * HH - z * HS];
+        const p = [pt(u0, v0, 7), pt(u1, v0, 7), pt(u1, v1, 2), pt(u0, v1, 2)];
+        G.fillStyle = '#2b4c80'; G.beginPath(); G.moveTo(...p[0]); G.lineTo(...p[1]); G.lineTo(...p[2]); G.lineTo(...p[3]); G.closePath(); G.fill();
+        if (lod > 0) { G.strokeStyle = '#a7bfdf'; G.lineWidth = 0.7; G.stroke(); }
+      }
+      break;
+    }
+  }
+}
+function drawPole(x, y) {
+  const cx = (x - y) * HW, cy = (x + y + 1) * HH, ph = 22 * HS;
+  G.strokeStyle = C.pole; G.lineWidth = 1.6; G.beginPath();
+  G.moveTo(cx, cy); G.lineTo(cx, cy - ph); G.moveTo(cx - 5, cy - ph + 3); G.lineTo(cx + 5, cy - ph + 3); G.stroke();
+  if (lod === 0) return;
+  G.strokeStyle = C.wire; G.lineWidth = 0.8; G.beginPath();
+  for (const d of [2, 3]) {
+    const nx = x + DX[d], ny = y + DY[d];
+    if (!inb(nx, ny) || S.type[ny * N + nx] !== T.WIRE) continue;
+    const ncx = (nx - ny) * HW, ncy = (nx + ny + 1) * HH;
+    G.moveTo(cx - 4, cy - ph + 3); G.quadraticCurveTo((cx + ncx) / 2 - 4, (cy + ncy) / 2 - ph + 8, ncx - 4, ncy - ph + 3);
+    G.moveTo(cx + 4, cy - ph + 3); G.quadraticCurveTo((cx + ncx) / 2 + 4, (cy + ncy) / 2 - ph + 8, ncx + 4, ncy - ph + 3);
+  }
+  G.stroke();
+}
+function buildingHeight(i) {
+  const t = S.type[i], L = S.level[i];
+  if (t === T.RES) return [0, 14, 26, 52, 110][L];
+  if (t === T.COM) return [0, 14, 30, 66, 140][L];
+  if (t === T.IND) return [0, 10, 16, 22, 22][L];
+  return 20;
+}
+function drawObject(i, x, y) {
+  const t = S.type[i];
+  if (t === T.EMPTY) { if (S.tree[i]) drawTrees(x, y); return; }
+  if (t === T.WIRE) { drawPole(x, y); return; }
+  if (t === T.ROAD) return;
+  if (isZone(t)) {
+    const L = S.level[i], v = S.variant[i];
+    if (L > 0) {
+      if (t === T.RES) drawRes(L, v, x, y); else if (t === T.COM) drawCom(L, v, x, y); else drawInd(L, v, x, y);
+    }
+    return;
+  }
+  if (S.owner[i] === i && BLD[t].size === 1) drawService(t, x, y);
+}
+
+/* --- cars (cosmetic, left-hand traffic) --- */
+const cars = [];
+let roadList = [], roadListDirty = true;
+const carBucket = new Map();
+function rebuildRoadList() {
+  roadList = [];
+  for (let i = 0; i < NN; i++) if (S.type[i] === T.ROAD && D.traffic[i] > 8) roadList.push(i);
+  roadListDirty = false;
+}
+function carDirs(x, y, from) {
+  const opts = [];
+  for (let d = 0; d < 4; d++) {
+    if (from >= 0 && d === (from + 2) % 4) continue;
+    const nx = x + DX[d], ny = y + DY[d];
+    if (inb(nx, ny) && S.type[ny * N + nx] === T.ROAD) opts.push(d);
+  }
+  return opts;
+}
+function updateCars(dt) {
+  if (roadListDirty) rebuildRoadList();
+  const target = Math.min(170, Math.floor(roadList.length * 0.45));
+  for (let k = 0; k < 2 && cars.length < target; k++) {
+    const i = roadList[(rand() * roadList.length) | 0];
+    if (rand() * 255 > D.traffic[i] + 40) continue;
+    const x = i % N, y = (i / N) | 0, opts = carDirs(x, y, -1);
+    if (!opts.length) continue;
+    const big = rand() < 0.06;
+    cars.push({ x, y, d: opts[(rand() * opts.length) | 0], t: rand(), life: 15 + rand() * 40, col: big ? '#2f9e44' : CAR_COL[(rand() * CAR_COL.length) | 0], len: big ? 0.36 : 0.22, sp: 0.9 + rand() * 0.5 });
+  }
+  if (speed === 0) return;
+  const step = dt / 1000 * [0, 1, 1.6, 2.4][speed];
+  for (let k = cars.length - 1; k >= 0; k--) {
+    const c = cars[k];
+    c.life -= step;
+    c.t += step * c.sp;
+    let alive = c.life > 0 && S.type[c.y * N + c.x] === T.ROAD;
+    while (alive && c.t >= 1) {
+      c.t -= 1;
+      c.x += DX[c.d]; c.y += DY[c.d];
+      if (!inb(c.x, c.y) || S.type[c.y * N + c.x] !== T.ROAD) { alive = false; break; }
+      const opts = carDirs(c.x, c.y, c.d);
+      if (opts.length) c.d = opts[(rand() * opts.length) | 0];
+      else c.d = (c.d + 2) % 4;
+    }
+    if (alive) {
+      const nx = c.x + DX[c.d], ny = c.y + DY[c.d];
+      if (!inb(nx, ny) || S.type[ny * N + nx] !== T.ROAD) { const o = carDirs(c.x, c.y, -1); if (o.length) c.d = o[(rand() * o.length) | 0]; else alive = false; }
+    }
+    if (!alive) cars.splice(k, 1);
+  }
+}
+function drawCar(c) {
+  const px = c.x + 0.5 + DX[c.d] * c.t + DY[c.d] * 0.16, py = c.y + 0.5 + DY[c.d] * c.t - DX[c.d] * 0.16;
+  const along = DX[c.d] !== 0, hl = c.len / 2, hw = 0.065;
+  const x0 = along ? px - hl : px - hw, x1 = along ? px + hl : px + hw, y0 = along ? py - hw : py - hl, y1 = along ? py + hw : py + hl;
+  const p = pal(c.col);
+  box(x0, y0, x1, y1, 0, 3.5, p);
+  if (lod === 2) {
+    const ix = along ? hl * 0.45 : 0, iy = along ? 0 : hl * 0.45;
+    box(x0 + ix * 0.6, y0 + iy * 0.6, x1 - ix * 1.2, y1 - iy * 1.2, 3.5, 2.5, p, '#cfe3f2');
+  }
+}
+
+/* --- frame --- */
+let curZ = 1;
+const CH = 8, NCH = N / CH, HEADROOM = 190, MAX_CHUNKS = 24;
+const chunks = new Array(NCH * NCH).fill(null);
+let chunkGen = 0;
+function chunkBounds(cx, cy) {
+  const x0 = cx * CH, y0 = cy * CH;
+  return { minX: (x0 - y0 - CH) * HW - 2 * HW, maxX: (x0 + CH - y0) * HW + 2 * HW, minY: (x0 + y0) * HH - HEADROOM, maxY: (x0 + y0 + 2 * CH) * HH + 12 };
+}
+const CHUNK_B = [];
+for (let k = 0; k < NCH * NCH; k++) CHUNK_B.push(chunkBounds(k % NCH, (k / NCH) | 0));
+function markTile(i) {
+  const x = i % N, y = (i / N) | 0;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const nx = x + dx, ny = y + dy;
+    if (!inb(nx, ny)) continue;
+    const c = chunks[((ny / CH) | 0) * NCH + ((nx / CH) | 0)];
+    if (c) c.dirty = true;
+  }
+}
+function markAll() { for (const c of chunks) if (c) c.dirty = true; }
+
+/* ground, roads and objects for a tile range; shared by the direct path and the chunk cache */
+function drawLayer(x0, x1, y0, y1, vis, opts) {
+  const z = curZ;
+  const buckets = new Map();
+  const expand = lod === 0 ? 0.35 / z : 0.6 / z;
+  const add = (col, x, y) => { let p = buckets.get(col); if (!p) { p = new Path2D(); buckets.set(col, p); } addDiamond(p, x, y, expand); };
+  const zoneLines = { 3: new Path2D(), 4: new Path2D(), 5: new Path2D() };
+  const curb = new Path2D(), asph = new Path2D(), marks = new Path2D(), deck = new Path2D(), rails = new Path2D(), waves = new Path2D();
+  let hasMarks = false, hasBridge = false;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    if (!vis(x, y)) continue;
+    const i = y * N + x, t = S.type[i], h = hash2(x, y);
+    let col;
+    if (S.terrain[i]) {
+      col = D.shallow[i] ? C.shallow : C.water;
+      if (lod === 2 && t === T.EMPTY && h % 3 === 0) {
+        const cx = (x - y) * HW + ((h >> 3) % 12) - 6, cy = (x + y + 1) * HH + ((h >> 7) % 8) - 4;
+        waves.moveTo(cx - 5, cy); waves.quadraticCurveTo(cx - 2.5, cy - 2, cx, cy); waves.quadraticCurveTo(cx + 2.5, cy + 2, cx + 5, cy);
+      }
+    } else if (t === T.EMPTY || t === T.ROAD || t === T.WIRE) col = S.tree[i] ? C.forest : D.beach[i] && t === T.EMPTY ? C.sand : C.grass[h % 3];
+    else if (isZone(t)) col = S.level[i] ? C.lot[t] : C.zone[t];
+    else if (t === T.PARK) col = C.park;
+    else if (t === T.SCHOOL) col = C.yard;
+    else if (t === T.SOLAR) col = C.gravel;
+    else if (t === T.COAL) col = C.plant;
+    else col = C.concrete;
+    if (lod === 0 && (col === C.grass[1] || col === C.grass[2])) col = C.grass[0];
+    if (col !== C.grass[0]) add(col, x, y);
+    if (t === T.ROAD) {
+      const m = roadMask(x, y);
+      if (S.terrain[i]) { addRoadShape(deck, x, y, m || 5, 0.46); addRails(rails, x, y, m); hasBridge = true; }
+      else addRoadShape(curb, x, y, m, 0.42);
+      addRoadShape(asph, x, y, m, 0.3);
+      if (lod === 2 && m) { addRoadMarks(marks, x, y, m); hasMarks = true; }
+    } else if (lod > 0 && isZone(t) && S.level[i] === 0) {
+      addRect(zoneLines[t], x + 0.14, y + 0.14, x + 0.86, y + 0.86, 0);
+    }
+  }
+  for (const [col, p] of buckets) { G.fillStyle = col; G.fill(p); }
+  if (lod === 2) { G.strokeStyle = C.wave; G.lineWidth = 1; G.stroke(waves); }
+  if (hasBridge) { G.fillStyle = C.bridge; G.fill(deck); }
+  G.fillStyle = C.curb; G.fill(curb);
+  G.fillStyle = C.asphalt; G.fill(asph);
+  if (hasBridge) { G.strokeStyle = C.rail; G.lineWidth = 1.2; G.stroke(rails); }
+  if (hasMarks) { G.strokeStyle = C.mark; G.lineWidth = 0.9; G.setLineDash([3, 3]); G.stroke(marks); G.setLineDash([]); }
+  if (lod > 0) {
+    G.lineWidth = 1.2;
+    for (const t of [3, 4, 5]) { G.strokeStyle = C.zoneLine[t]; G.stroke(zoneLines[t]); }
+  }
+
+  if (opts.overlay) drawOverlay(x0, x1, y0, y1, vis);
+
+  // objects in painter's order
+  carBucket.clear();
+  if (opts.cars) {
+    for (const c of cars) {
+      const half = c.t >= 0.5, tx = half ? c.x + DX[c.d] : c.x, ty = half ? c.y + DY[c.d] : c.y;
+      if (!inb(tx, ty)) continue;
+      const k = ty * N + tx;
+      let a = carBucket.get(k);
+      if (!a) carBucket.set(k, (a = []));
+      a.push(c);
+    }
+  }
+  const ex1 = opts.extend ? Math.min(N - 1, x1 + 1) : x1, ey1 = opts.extend ? Math.min(N - 1, y1 + 1) : y1;
+  for (let d = x0 + y0; d <= ex1 + ey1; d++) {
+    const xs = Math.max(x0, d - ey1), xe = Math.min(ex1, d - y0);
+    // 2×2 buildings go just before the diagonal of their front tile
+    for (let x = xs; x <= xe; x++) {
+      const y = d - x, i = y * N + x, o = S.owner[i];
+      if (o < 0 || o === i) continue;
+      const ox = o % N, oy = (o / N) | 0;
+      if (ox + 1 !== x || oy + 1 !== y) continue;
+      drawService(S.type[o], ox, oy);
+      if (opts.chunk) {
+        // tiles in front of this building that live in an earlier chunk are drawn again on top
+        if (x0 === ox + 1 && oy + 2 < N) drawObject((oy + 2) * N + ox, ox, oy + 2);
+        if (y0 === oy + 1 && ox + 2 < N) drawObject(oy * N + ox + 2, ox + 2, oy);
+      }
+    }
+    for (let x = xs; x <= xe; x++) {
+      const y = d - x;
+      if (!vis(x, y)) continue;
+      const i = y * N + x;
+      drawObject(i, x, y);
+      const cs = carBucket.get(i);
+      if (cs) for (const c of cs) drawCar(c);
+    }
+  }
+}
+
+function renderChunk(k, sc) {
+  const b = CHUNK_B[k];
+  let c = chunks[k];
+  if (!c) c = chunks[k] = { canvas: document.createElement('canvas'), sc: 0, lod: -1, dirty: true, smoke: [], used: 0, ready: false };
+  const W = Math.max(1, Math.ceil((b.maxX - b.minX) * sc)), H = Math.max(1, Math.ceil((b.maxY - b.minY) * sc));
+  if (c.canvas.width !== W || c.canvas.height !== H) { c.canvas.width = W; c.canvas.height = H; }
+  const g = c.canvas.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
+  g.setTransform(sc, 0, 0, sc, -b.minX * sc, -b.minY * sc);
+  const prevG = G, prevSmoke = smokeSrc, prevZ = curZ;
+  G = g; smokeSrc = []; curZ = sc / dpr;
+  const x0 = (k % NCH) * CH, y0 = ((k / NCH) | 0) * CH;
+  drawLayer(x0, x0 + CH - 1, y0, y0 + CH - 1, () => true, { chunk: true });
+  c.smoke = smokeSrc; c.sc = sc; c.lod = lod; c.dirty = false; c.ready = true;
+  G = prevG; smokeSrc = prevSmoke; curZ = prevZ;
+}
+function drawChunks(wl, wr, wt, wb) {
+  const sc = spriteScale, t0 = performance.now();
+  chunkGen++;
+  const visible = [];
+  for (let s = 0; s <= 2 * (NCH - 1); s++) {
+    for (let cx = Math.max(0, s - NCH + 1); cx <= Math.min(NCH - 1, s); cx++) {
+      const k = (s - cx) * NCH + cx, b = CHUNK_B[k];
+      if (b.maxX < wl || b.minX > wr || b.maxY < wt || b.minY > wb) continue;
+      visible.push(k);
+    }
+  }
+  let stale = false;
+  for (const k of visible) {
+    const c = chunks[k];
+    if (!c || !c.ready) renderChunk(k, sc);
+    else if (c.dirty || c.sc !== sc || c.lod !== lod) {
+      if (performance.now() - t0 < 9) renderChunk(k, sc); else stale = true;
+    }
+  }
+  for (const k of visible) {
+    const c = chunks[k], b = CHUNK_B[k];
+    c.used = chunkGen;
+    G.drawImage(c.canvas, b.minX, b.minY, c.canvas.width / c.sc, c.canvas.height / c.sc);
+    for (const s of c.smoke) smokeSrc.push(s);
+  }
+  // keep memory bounded: release bitmaps that have been off screen the longest
+  const live = chunks.filter(c => c && c.ready);
+  if (live.length > MAX_CHUNKS) {
+    live.sort((a, b) => a.used - b.used);
+    for (const c of live.slice(0, live.length - MAX_CHUNKS)) if (c.used !== chunkGen) { c.canvas.width = c.canvas.height = 0; c.ready = false; }
+  }
+  if (stale) dirty = true;
+}
+function collectFx(x0, x1, y0, y1, vis) {
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    if (!vis(x, y)) continue;
+    const i = y * N + x, t = S.type[i];
+    if (isZone(t)) {
+      if (S.fire[i]) fireFx.push(i);
+      if (!D.powered[i]) powerFx.push(i);
+    } else if (t >= 6 && S.owner[i] === i && BLD[t].use && !D.powered[i]) powerFx.push(i);
+  }
+}
+
+function render(now) {
+  const z = cam.z;
+  curZ = z;
+  G = ctx;
+  G.setTransform(1, 0, 0, 1, 0, 0);
+  G.fillStyle = bgColor; G.fillRect(0, 0, cv.width, cv.height);
+  G.setTransform(z * dpr, 0, 0, z * dpr, (vw / 2 - cam.x * z) * dpr, (vh / 2 - cam.y * z) * dpr);
+  lod = z < 0.38 ? 0 : z < 0.75 ? 1 : 2;
+  HS = overlay !== 'none' ? 0.3 : 1;
+  const wantScale = Math.pow(2, Math.ceil(Math.log2(z * dpr) * 4) / 4);
+  if (wantScale !== spriteScale) { spriteScale = wantScale; treeSprites.clear(); }
+  smokeSrc = []; fireFx = []; powerFx = [];
+
+  const wl = cam.x - vw / 2 / z - HW * 2, wr = cam.x + vw / 2 / z + HW * 2;
+  const wt = cam.y - vh / 2 / z - HH * 2, wb = cam.y + vh / 2 / z + 170;
+  let gx0 = Infinity, gx1 = -Infinity, gy0 = Infinity, gy1 = -Infinity;
+  for (const [wx, wy] of [[wl, wt], [wr, wt], [wl, wb], [wr, wb]]) {
+    const gx = (wx / HW + wy / HH) / 2, gy = (wy / HH - wx / HW) / 2;
+    gx0 = Math.min(gx0, gx); gx1 = Math.max(gx1, gx); gy0 = Math.min(gy0, gy); gy1 = Math.max(gy1, gy);
+  }
+  const x0 = Math.max(0, Math.floor(gx0)), x1 = Math.min(N - 1, Math.ceil(gx1));
+  const y0 = Math.max(0, Math.floor(gy0)), y1 = Math.min(N - 1, Math.ceil(gy1));
+  const vis = (x, y) => { const cx = (x - y) * HW, cy = (x + y + 1) * HH; return cx > wl && cx < wr && cy > wt && cy < wb; };
+
+  // board sides (diorama edge) and base
+  {
+    const depth = 26, sides = { [C.soilL]: new Path2D(), [C.soilR]: new Path2D(), [C.sideWaterL]: new Path2D(), [C.sideWaterR]: new Path2D() };
+    for (let k = 0; k < N; k++) {
+      let ax = (k - N) * HW, ay = (k + N) * HH, bx = (k + 1 - N) * HW, by = (k + 1 + N) * HH;
+      let p = sides[S.terrain[(N - 1) * N + k] ? C.sideWaterL : C.soilL];
+      p.moveTo(ax, ay); p.lineTo(bx, by); p.lineTo(bx, by + depth); p.lineTo(ax, ay + depth); p.closePath();
+      ax = (N - k) * HW; ay = (N + k) * HH; bx = (N - k - 1) * HW; by = (N + k + 1) * HH;
+      p = sides[S.terrain[k * N + N - 1] ? C.sideWaterR : C.soilR];
+      p.moveTo(ax, ay); p.lineTo(bx, by); p.lineTo(bx, by + depth); p.lineTo(ax, ay + depth); p.closePath();
+    }
+    for (const col in sides) { G.fillStyle = col; G.fill(sides[col]); }
+    G.fillStyle = C.grass[0]; G.beginPath();
+    G.moveTo(0, 0); G.lineTo(N * HW, N * HH); G.lineTo(0, 2 * N * HH); G.lineTo(-N * HW, N * HH); G.closePath(); G.fill();
+  }
+
+  if (z < 0.75 && overlay === 'none') drawChunks(wl, wr, wt, wb);
+  else drawLayer(x0, x1, y0, y1, vis, { cars: lod === 2 && overlay === 'none', overlay: overlay !== 'none', extend: true });
+  collectFx(x0, x1, y0, y1, vis);
+
+  // effects
+  const tt = now / 1000;
+  if (smokeSrc.length) {
+    G.fillStyle = '#e3e4e6';
+    for (const [X, Y, sd] of smokeSrc) {
+      if (X < wl || X > wr || Y < wt - 60 || Y > wb) continue;
+      for (let k = 0; k < 4; k++) {
+        const ph = (tt * 0.35 + k / 4 + sd) % 1;
+        G.globalAlpha = 0.5 * (1 - ph);
+        G.beginPath(); G.arc(X + ph * 16, Y - ph * 34, 2.5 + ph * 8, 0, Math.PI * 2); G.fill();
+      }
+    }
+    G.globalAlpha = 1;
+  }
+  for (const i of fireFx) {
+    const x = i % N, y = (i / N) | 0, X = (x - y) * HW, Y = (x + y + 1) * HH, h = buildingHeight(i) * HS;
+    for (let k = 0; k < 3; k++) {
+      const fx = X + (k - 1) * 9, fl = (12 + 6 * Math.sin(tt * 9 + k * 2.1)) * (1 + h / 60), base = Y + 4 - (k === 1 ? h * 0.5 : 0);
+      G.fillStyle = '#ff7b00'; G.beginPath(); G.moveTo(fx - 6, base); G.quadraticCurveTo(fx - 7, base - fl * 0.6, fx, base - fl); G.quadraticCurveTo(fx + 7, base - fl * 0.6, fx + 6, base); G.fill();
+      G.fillStyle = '#ffd43b'; G.beginPath(); G.moveTo(fx - 3, base); G.quadraticCurveTo(fx - 3.5, base - fl * 0.4, fx, base - fl * 0.6); G.quadraticCurveTo(fx + 3.5, base - fl * 0.4, fx + 3, base); G.fill();
+    }
+    G.fillStyle = '#4a4a4a';
+    for (let k = 0; k < 3; k++) {
+      const ph = (tt * 0.5 + k / 3) % 1;
+      G.globalAlpha = 0.55 * (1 - ph);
+      G.beginPath(); G.arc(X + ph * 12, Y - h - 14 - ph * 40, 4 + ph * 10, 0, Math.PI * 2); G.fill();
+    }
+    G.globalAlpha = 1;
+  }
+
+  // build preview
+  if (drag && drag.plan) drawPlan(drag.plan, drag.tool);
+  else if (hover && hover.plan) drawPlan(hover.plan, hover.tool);
+  if (selTile >= 0) {
+    const o = S.owner[selTile] >= 0 ? S.owner[selTile] : selTile, s = S.owner[selTile] >= 0 ? BLD[S.type[o]].size : 1;
+    const x = o % N, y = (o / N) | 0;
+    G.strokeStyle = '#ffd43b'; G.lineWidth = 2.5 / z; G.beginPath(); addRect(G, x, y, x + s, y + s, 0); G.stroke();
+  }
+
+  // screen-space marks
+  G.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (lod > 0 && powerFx.length && Math.floor(now / 650) % 2 === 0) {
+    for (const i of powerFx) {
+      const [wx, wy] = tileCenterW(i), s = S.owner[i] === i && BLD[S.type[i]] ? BLD[S.type[i]].size : 1;
+      const [sx, sy] = w2s(wx, wy + (s - 1) * HH - (isZone(S.type[i]) ? buildingHeight(i) : 30) * HS - 8);
+      if (sx < -20 || sy < -20 || sx > vw + 20 || sy > vh + 20) continue;
+      boltIcon(sx, sy);
+    }
+  }
+  if (drag && drag.plan) costLabel(drag);
+  for (let k = floaters.length - 1; k >= 0; k--) {
+    const f = floaters[k], age = (now - f.t0) / 1200;
+    if (age >= 1) { floaters.splice(k, 1); continue; }
+    const [sx, sy] = w2s(f.wx, f.wy);
+    G.globalAlpha = 1 - age;
+    G.font = '700 14px "BIZ UDPGothic", system-ui, sans-serif'; G.textAlign = 'center'; G.textBaseline = 'middle';
+    G.lineWidth = 3; G.strokeStyle = 'rgba(255,255,255,.9)'; G.strokeText(f.text, sx, sy - 30 - age * 26);
+    G.fillStyle = '#c92a2a'; G.fillText(f.text, sx, sy - 30 - age * 26);
+    G.globalAlpha = 1;
+  }
+}
+function boltIcon(sx, sy) {
+  G.fillStyle = '#e03131'; G.beginPath(); G.arc(sx, sy, 8, 0, Math.PI * 2); G.fill();
+  G.strokeStyle = '#fff'; G.lineWidth = 1.5; G.stroke();
+  G.fillStyle = '#ffd43b'; G.beginPath();
+  G.moveTo(sx + 1.5, sy - 5.5); G.lineTo(sx - 3.5, sy + 1); G.lineTo(sx - 0.3, sy + 1); G.lineTo(sx - 1.5, sy + 5.5); G.lineTo(sx + 3.5, sy - 1); G.lineTo(sx + 0.3, sy - 1); G.closePath(); G.fill();
+}
+function drawPlan(plan, tid) {
+  const tool = TOOLS[tid], ok = new Path2D(), bad = new Path2D(), skip = new Path2D();
+  for (const it of plan.items) {
+    const x = it.i % N, y = (it.i / N) | 0;
+    addDiamond(it.ok ? ok : it.ok === false ? bad : skip, x, y, 0);
+  }
+  if (tool.kind === 'place' && plan.valid) {
+    const o = plan.items[0].i;
+    G.globalAlpha = 0.85;
+    drawService(tool.b, o % N, (o / N) | 0);
+    G.globalAlpha = 1;
+  }
+  const okCol = tool.zone ? C.zoneLine[tool.zone] : tid === 'bulldoze' ? '#e8590c' : '#ffffff';
+  G.globalAlpha = 0.42; G.fillStyle = okCol; G.fill(ok); G.fillStyle = '#e03131'; G.fill(bad); G.fillStyle = '#ffffff'; G.globalAlpha = 0.18; G.fill(skip);
+  G.globalAlpha = 1; G.lineWidth = 1.5 / cam.z; G.strokeStyle = tid === 'bulldoze' ? '#e8590c' : tool.zone ? C.zoneLine[tool.zone] : '#ffffff'; G.stroke(ok);
+  G.strokeStyle = '#e03131'; G.stroke(bad);
+}
+function costLabel(d) {
+  const p = d.plan, tool = TOOLS[d.tool];
+  const ex = tool.kind === 'place' ? d.ax + BLD[tool.b].size / 2 : d.bx + 0.5, ey = tool.kind === 'place' ? d.ay + BLD[tool.b].size / 2 : d.by + 0.5;
+  const [sx, sy] = w2s((ex - ey) * HW, (ex + ey) * HH);
+  let text = p.valid ? (p.cost ? yen(p.cost) : '¥0') : 'ここには置けません';
+  if (p.valid && tool.kind === 'rect') text += `  ${Math.abs(d.bx - d.ax) + 1}×${Math.abs(d.by - d.ay) + 1}`;
+  if (p.valid && tool.kind === 'line') text += `  ${p.ok}マス`;
+  const poor = p.valid && p.cost > S.money;
+  if (poor) text = '資金不足 ' + yen(p.cost);
+  G.font = '700 13px "BIZ UDPGothic", system-ui, sans-serif'; G.textAlign = 'center'; G.textBaseline = 'middle';
+  const w = G.measureText(text).width + 18, h = 26;
+  let lx = clamp(sx, w / 2 + 6, vw - w / 2 - 6), ly = sy - 70;
+  if (ly < 70) ly = sy + 60;
+  G.fillStyle = !p.valid || poor ? '#c92a2a' : 'rgba(23,33,43,.88)';
+  G.beginPath(); G.roundRect ? G.roundRect(lx - w / 2, ly - h / 2, w, h, 13) : G.rect(lx - w / 2, ly - h / 2, w, h); G.fill();
+  G.fillStyle = '#ffffff'; G.fillText(text, lx, ly + 0.5);
+}
+function overlayValue(i) {
+  const t = S.type[i];
+  switch (overlay) {
+    case 'power':
+      if (t === T.EMPTY || t === T.ROAD || t === T.WIRE) return -1;
+      if (!isZone(t) && !(BLD[t] && (BLD[t].use || BLD[t].supply))) return -1;
+      return D.powered[i] ? 0 : 1;
+    case 'lv': return S.terrain[i] && t === T.EMPTY ? -1 : D.lv[i] / 200;
+    case 'poll': return D.poll[i] < 6 ? -1 : D.poll[i] / 200;
+    case 'crime': return D.crime[i] < 6 || S.terrain[i] ? -1 : D.crime[i] / 180;
+    case 'traffic': return t === T.ROAD ? D.traffic[i] / 230 : -1;
+    default: { const v = D.cov[overlay][i]; return v < 4 ? -1 : v / 255; }
+  }
+}
+function drawOverlay(x0, x1, y0, y1, vis) {
+  const L = LAYERS[overlay];
+  const cols = L.keys ? L.keys.map(k => k[0]) : L.ramp;
+  const paths = cols.map(() => new Path2D());
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    if (!vis(x, y)) continue;
+    const i = y * N + x, v = overlayValue(i);
+    if (v < 0) continue;
+    const k = L.keys ? v : Math.min(cols.length - 1, Math.floor(clamp(v, 0, 0.999) * cols.length));
+    addDiamond(paths[k], x, y, 0.4 / cam.z);
+  }
+  G.fillStyle = 'rgba(238,240,238,.72)'; G.beginPath();
+  G.moveTo(0, 0); G.lineTo(N * HW, N * HH); G.lineTo(0, 2 * N * HH); G.lineTo(-N * HW, N * HH); G.closePath(); G.fill();
+  G.globalAlpha = 0.9;
+  paths.forEach((p, k) => { G.fillStyle = cols[k]; G.fill(p); });
+  G.globalAlpha = 1;
+}
+
+/* =========================================================
+   入力
+   ========================================================= */
+const ptrs = new Map();
+let gest = null;
+function local(e) { return [e.clientX - cvLeft, e.clientY - cvTop]; }
+function onMap(gx, gy) { return gx >= -0.5 && gy >= -0.5 && gx < N + 0.5 && gy < N + 0.5; }
+function dragOrigin(tid, gx, gy) {
+  const tool = TOOLS[tid];
+  if (tool.kind === 'place') {
+    const s = BLD[tool.b].size;
+    const ox = s === 2 ? Math.round(gx) - 1 : Math.floor(gx), oy = s === 2 ? Math.round(gy) - 1 : Math.floor(gy);
+    return [clamp(ox, 0, N - s), clamp(oy, 0, N - s)];
+  }
+  return [clamp(Math.floor(gx), 0, N - 1), clamp(Math.floor(gy), 0, N - 1)];
+}
+function startPinch() {
+  const [a, b] = [...ptrs.values()];
+  const mx = (a.x + b.x) / 2 - cvLeft, my = (a.y + b.y) / 2 - cvTop;
+  gest = { mode: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: cam.z, wx: (mx - vw / 2) / cam.z + cam.x, wy: (my - vh / 2) / cam.z + cam.y };
+  drag = null; updateHint();
+}
+cv.addEventListener('pointerdown', e => {
+  if (!started && !document.body.classList.contains('intro')) return;
+  try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  hover = null; tween = null;
+  if (ptrs.size === 2) { startPinch(); return; }
+  if (ptrs.size > 2) return;
+  const [sx, sy] = local(e);
+  const tool = TOOLS[curTool];
+  if (!started || (e.pointerType === 'mouse' && e.button !== 0) || tool.kind === 'select') {
+    gest = { mode: 'pan', lx: e.clientX, ly: e.clientY, sx: e.clientX, sy: e.clientY, t0: performance.now(), tap: started && tool.kind === 'select' && e.button === 0 };
+    return;
+  }
+  const [gx, gy] = toGrid(sx, sy);
+  if (!onMap(gx, gy)) { gest = { mode: 'pan', lx: e.clientX, ly: e.clientY, tap: false }; return; }
+  const [ax, ay] = dragOrigin(curTool, gx, gy);
+  drag = { tool: curTool, ax, ay, bx: ax, by: ay };
+  drag.plan = makePlan(curTool, drag);
+  gest = { mode: 'build' };
+  dirty = true; updateHint();
+});
+cv.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId);
+  if (!p) {
+    if (e.pointerType === 'mouse' && started && TOOLS[curTool].kind !== 'select') {
+      const [gx, gy] = toGrid(...local(e));
+      if (onMap(gx, gy)) {
+        const [ax, ay] = dragOrigin(curTool, gx, gy);
+        if (!hover || hover.ax !== ax || hover.ay !== ay || hover.tool !== curTool) {
+          hover = { tool: curTool, ax, ay, bx: ax, by: ay };
+          hover.plan = makePlan(curTool, hover);
+          dirty = true;
+        }
+      } else if (hover) { hover = null; dirty = true; }
+    }
+    return;
+  }
+  p.x = e.clientX; p.y = e.clientY;
+  if (!gest) return;
+  if (gest.mode === 'pinch' && ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    cam.z = clamp(gest.z0 * d / gest.d0, ZMIN, ZMAX);
+    const mx = (a.x + b.x) / 2 - cvLeft, my = (a.y + b.y) / 2 - cvTop;
+    cam.x = gest.wx - (mx - vw / 2) / cam.z; cam.y = gest.wy - (my - vh / 2) / cam.z;
+    clampCam(); dirty = true;
+  } else if (gest.mode === 'pan') {
+    cam.x -= (e.clientX - gest.lx) / cam.z; cam.y -= (e.clientY - gest.ly) / cam.z;
+    gest.lx = e.clientX; gest.ly = e.clientY;
+    if (gest.tap && Math.hypot(e.clientX - gest.sx, e.clientY - gest.sy) > 8) gest.tap = false;
+    clampCam(); dirty = true;
+  } else if (gest.mode === 'build' && drag) {
+    const [gx, gy] = toGrid(...local(e));
+    const tool = TOOLS[drag.tool];
+    if (tool.kind === 'place') {
+      const [ax, ay] = dragOrigin(drag.tool, gx, gy);
+      if (ax !== drag.ax || ay !== drag.ay) { drag.ax = ax; drag.ay = ay; drag.plan = makePlan(drag.tool, drag); dirty = true; updateHint(); }
+    } else {
+      const bx = clamp(Math.floor(gx), 0, N - 1), by = clamp(Math.floor(gy), 0, N - 1);
+      if (bx !== drag.bx || by !== drag.by) { drag.bx = bx; drag.by = by; drag.plan = makePlan(drag.tool, drag); dirty = true; updateHint(); }
+    }
+  }
+});
+function endPointer(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (!gest) return;
+  if (gest.mode === 'pinch') {
+    if (ptrs.size === 1) { const [p] = ptrs.values(); gest = { mode: 'pan', lx: p.x, ly: p.y, tap: false }; }
+    else if (ptrs.size === 0) gest = null;
+    return;
+  }
+  if (gest.mode === 'build' && drag) {
+    if (e.type === 'pointerup') {
+      const tool = TOOLS[drag.tool];
+      const ex = tool.kind === 'place' ? drag.ax + BLD[tool.b].size / 2 : drag.bx + 0.5, ey = tool.kind === 'place' ? drag.ay + BLD[tool.b].size / 2 : drag.by + 0.5;
+      applyPlan(drag.tool, makePlan(drag.tool, drag), [(ex - ey) * HW, (ex + ey) * HH]);
+    }
+    drag = null; dirty = true; updateHint();
+  } else if (gest.mode === 'pan' && gest.tap && e.type === 'pointerup' && performance.now() - gest.t0 < 600) {
+    const [gx, gy] = toGrid(...local(e));
+    if (gx >= 0 && gy >= 0 && gx < N && gy < N) inspect(Math.floor(gy) * N + Math.floor(gx));
+    else closeSheet();
+  }
+  gest = null;
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && hover) { hover = null; dirty = true; } });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  tween = null;
+  const [sx, sy] = local(e);
+  const wx = (sx - vw / 2) / cam.z + cam.x, wy = (sy - vh / 2) / cam.z + cam.y;
+  cam.z = clamp(cam.z * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), ZMIN, ZMAX);
+  cam.x = wx - (sx - vw / 2) / cam.z; cam.y = wy - (sy - vh / 2) / cam.z;
+  clampCam(); dirty = true;
+}, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+document.addEventListener('dblclick', e => e.preventDefault());
+
+const keys = new Set();
+window.addEventListener('keydown', e => {
+  if (e.target instanceof HTMLInputElement) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (started) undo(); return; }
+  if (!started) return;
+  if (e.key === 'Escape') { if (!$('#sheet').hidden) closeSheet(); else selectTool('select'); return; }
+  if (e.key === ' ') { e.preventDefault(); setSpeed(speed === 0 ? (lastSpeed || 1) : 0); return; }
+  if (e.key === '+' || e.key === '=') { zoomBy(1.25); return; }
+  if (e.key === '-' || e.key === '_') { zoomBy(0.8); return; }
+  const n = '1234567890'.indexOf(e.key);
+  if (n >= 0 && TOOL_KEYS[n]) { selectTool(TOOL_KEYS[n]); return; }
+  keys.add(e.key.toLowerCase());
+});
+window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+window.addEventListener('blur', () => keys.clear());
+function zoomBy(f) { cam.z = clamp(cam.z * f, ZMIN, ZMAX); clampCam(); dirty = true; }
+function keyPan(dt) {
+  if (!keys.size) return;
+  const s = dt * 0.6 / cam.z;
+  if (keys.has('arrowleft') || keys.has('a')) cam.x -= s;
+  if (keys.has('arrowright') || keys.has('d')) cam.x += s;
+  if (keys.has('arrowup') || keys.has('w')) cam.y -= s;
+  if (keys.has('arrowdown') || keys.has('s')) cam.y += s;
+  clampCam(); dirty = true;
+}
+
+let tween = null;
+function flyTo(i, z) {
+  const [wx, wy] = tileCenterW(i);
+  tween = { x0: cam.x, y0: cam.y, z0: cam.z, x1: wx, y1: wy - 20, z1: z || Math.max(cam.z, 1), t0: performance.now(), d: 650 };
+}
+function stepTween(now) {
+  if (!tween) return;
+  const k = clamp((now - tween.t0) / tween.d, 0, 1), e = 1 - Math.pow(1 - k, 3);
+  cam.x = tween.x0 + (tween.x1 - tween.x0) * e; cam.y = tween.y0 + (tween.y1 - tween.y0) * e; cam.z = tween.z0 + (tween.z1 - tween.z0) * e;
+  clampCam(); dirty = true;
+  if (k >= 1) tween = null;
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+let curTool = 'select', lastSpeed = 1, sheetKind = null, sheetArg = null;
+const SPEEDS = [
+  { label: '停止', icon: '<rect x="6" y="3" width="4" height="12" rx="1"/><rect x="14" y="3" width="4" height="12" rx="1"/>' },
+  { label: '普通', icon: '<path d="M8 3v12l9-6z"/>' },
+  { label: '速い', icon: '<path d="M3 3v12l8-6zM12 3v12l8-6z"/>' },
+  { label: '最速', icon: '<path d="M1 3v12l7-6zM8.5 3v12l7-6zM16 3v12l7-6z"/>' },
+];
+function setSpeed(s) {
+  if (s > 0) lastSpeed = s;
+  speed = s;
+  const b = $('#btn-speed');
+  b.dataset.speed = s;
+  $('#speed-icon').innerHTML = SPEEDS[s].icon;
+  $('#speed-label').textContent = SPEEDS[s].label;
+  b.setAttribute('aria-label', 'ゲーム速度：' + SPEEDS[s].label);
+}
+
+const ICON_SVG = {
+  select: '<svg viewBox="0 0 32 24"><circle cx="13" cy="10" r="6.5"/><path d="m18 15 6 6"/></svg>',
+  bulldoze: '<svg viewBox="0 0 32 24"><path d="M3 17h17v-6h-6l-3-5H5v11"/><path d="M20 13h4l4 6H20"/><circle cx="7" cy="19" r="2.2"/><circle cx="15" cy="19" r="2.2"/></svg>',
+};
+function toolCost(id) {
+  const t = TOOLS[id];
+  if (t.kind === 'place') return BLD[t.b].cost;
+  return t.unit || 0;
+}
+function priceText(id) {
+  const t = TOOLS[id];
+  if (t.kind === 'select') return '無料';
+  if (t.kind === 'place') return yen(BLD[t.b].cost);
+  return yen(t.unit) + '/マス';
+}
+function renderIcon(id, canvas) {
+  const tool = TOOLS[id], g = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const size = tool.kind === 'place' ? BLD[tool.b].size : 1;
+  const s = size === 2 ? 0.66 : 1.1;
+  g.setTransform(s * (W / 96), 0, 0, s * (W / 96), W / 2, (66 - 32 * size * s) * (W / 96));
+  const prevG = G, prevLod = lod, prevHS = HS;
+  G = g; lod = 2; HS = 1;
+  const diamond = col => { g.fillStyle = col; g.beginPath(); addRect(g, 0, 0, size, size, 0); g.fill(); };
+  if (tool.kind === 'place') {
+    const b = tool.b;
+    diamond(b === T.PARK ? C.park : b === T.SCHOOL ? C.yard : b === T.SOLAR ? C.gravel : b === T.COAL ? C.plant : C.concrete);
+    drawService(b, 0, 0);
+  } else if (tool.zone) {
+    diamond(C.zone[tool.zone]);
+    g.strokeStyle = C.zoneLine[tool.zone]; g.lineWidth = 1.5; g.beginPath(); addRect(g, 0.1, 0.1, 0.9, 0.9, 0); g.stroke();
+    if (tool.zone === T.RES) drawRes(1, 1, 0, 0); else if (tool.zone === T.COM) drawCom(2, 1, 0, 0); else drawInd(2, 1, 0, 0);
+  } else if (id === 'road') {
+    diamond(C.grass[0]);
+    g.fillStyle = C.curb; g.beginPath(); addRoadShape(g, 0, 0, 5, 0.42); g.fill();
+    g.fillStyle = C.asphalt; g.beginPath(); addRoadShape(g, 0, 0, 5, 0.3); g.fill();
+    g.strokeStyle = C.mark; g.lineWidth = 1.2; g.setLineDash([3, 3]); g.beginPath(); addRoadMarks(g, 0, 0, 5); g.stroke(); g.setLineDash([]);
+  } else if (id === 'wire') {
+    diamond(C.grass[0]);
+    g.strokeStyle = C.wire; g.lineWidth = 1; g.beginPath(); g.moveTo(-28, -2); g.quadraticCurveTo(0, 6, 28, -2); g.stroke();
+    drawPole(0, 0);
+  }
+  G = prevG; lod = prevLod; HS = prevHS;
+  smokeSrc = [];
+}
+function buildToolbar() {
+  const bar = $('#tools');
+  bar.replaceChildren();
+  TOOL_GROUPS.forEach((grp, gi) => {
+    if (gi) bar.append(el('span', 'sep'));
+    for (const id of grp) {
+      const t = TOOLS[id];
+      const b = el('button', 'tool');
+      b.type = 'button'; b.dataset.tool = id; b.setAttribute('aria-pressed', String(id === curTool));
+      b.setAttribute('aria-label', `${t.name}（${priceText(id)}）`);
+      if (t.zone) { b.dataset.zone = t.zone; b.style.setProperty('--zc', `var(--${['', '', '', 'res', 'com', 'ind'][t.zone]})`); }
+      if (ICON_SVG[id]) b.insertAdjacentHTML('beforeend', ICON_SVG[id]);
+      else { const c = document.createElement('canvas'); c.width = 96; c.height = 72; renderIcon(id, c); b.append(c); }
+      b.append(el('span', 'nm', t.name), el('span', 'pr', priceText(id)));
+      b.addEventListener('click', () => selectTool(curTool === id && id !== 'select' ? 'select' : id));
+      bar.append(b);
+    }
+  });
+}
+function selectTool(id) {
+  curTool = id; drag = null; hover = null;
+  for (const b of document.querySelectorAll('.tool')) b.setAttribute('aria-pressed', String(b.dataset.tool === id));
+  const btn = document.querySelector(`.tool[data-tool="${id}"]`);
+  if (btn) btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  if (id !== 'select' && sheetKind === 'info') closeSheet();
+  updateHint(); dirty = true;
+}
+function updateHint() {
+  const h = $('#hint'), t = TOOLS[curTool];
+  h.replaceChildren();
+  h.append(el('b', null, t.name));
+  if (drag && drag.plan) {
+    const p = drag.plan, poor = p.valid && p.cost > S.money;
+    h.append(el('span', null, p.valid ? (TOOLS[drag.tool].kind === 'place' ? '指をはなすと建設' : '指をはなすと確定') : 'ここには置けません'));
+    const c = el('span', 'cost' + (!p.valid || poor ? ' bad' : ''), p.valid ? yen(p.cost) : '—');
+    h.append(c);
+  } else {
+    h.append(el('span', null, t.hint));
+    if (t.kind !== 'select') h.append(el('span', 'cost muted', '2本指で移動'));
+  }
+}
+
+function updateHUD() {
+  const m = $('#hud-money');
+  m.textContent = Math.abs(S.money) >= 1e6 ? (S.money < 0 ? '−¥' : '¥') + (Math.abs(S.money) / 1e4).toFixed(Math.abs(S.money) >= 1e7 ? 0 : 1) + '万' : yen(S.money);
+  m.classList.toggle('neg', S.money < 0);
+  const n = $('#hud-net');
+  n.textContent = `${ST.net >= 0 ? '+' : '−'}¥${Math.abs(ST.net).toLocaleString('ja-JP')}／月`;
+  n.className = 'd ' + (ST.net > 0 ? 'up' : ST.net < 0 ? 'down' : '');
+  $('#hud-pop').textContent = ST.pop >= 1e5 ? (ST.pop / 1e4).toFixed(1) + '万' : num(ST.pop);
+  $('#hud-city').textContent = cityName();
+  $('#hud-year').textContent = S.year + '年';
+  $('#hud-month').textContent = S.month + '月';
+  $('#hud-day').textContent = S.day + '日';
+  const bars = document.querySelectorAll('.rci-bar i');
+  [ST.dr, ST.dc, ST.di].forEach((v, k) => {
+    const s = bars[k].style, hgt = Math.abs(v) * 50;
+    s.height = hgt + '%';
+    if (v >= 0) { s.bottom = '50%'; s.top = 'auto'; } else { s.top = '50%'; s.bottom = 'auto'; }
+  });
+  $('#hud-rci').title = `需要　住宅 ${Math.round(ST.dr * 100)}／商業 ${Math.round(ST.dc * 100)}／工業 ${Math.round(ST.di * 100)}`;
+  $('#btn-undo').disabled = undoStack.length === 0;
+  for (const b of document.querySelectorAll('.tool')) b.classList.toggle('poor', toolCost(b.dataset.tool) > S.money);
+}
+
+/* toasts */
+function toast(msg, opt = {}) {
+  const box = $('#toasts');
+  const t = el('div', 'toast ' + (opt.kind || 'info'));
+  t.setAttribute('role', 'status');
+  t.append(el('span', 'dot'), el('p', null, msg));
+  if (opt.action) {
+    const b = el('button', null, opt.action.label);
+    b.type = 'button';
+    b.addEventListener('click', () => { opt.action.fn(); dismiss(); });
+    t.append(b);
+  }
+  const dismiss = () => { if (!t.isConnected) return; t.classList.add('out'); setTimeout(() => t.remove(), 260); };
+  t.addEventListener('click', e => { if (e.target === t || e.target.tagName === 'P') dismiss(); });
+  box.prepend(t);
+  while (box.children.length > 2) box.lastChild.remove();
+  setTimeout(dismiss, opt.ttl || 5200);
+}
+
+/* sheets */
+function openSheet(kind, arg) {
+  sheetKind = kind; sheetArg = arg;
+  $('#sheet').hidden = false;
+  $('#btn-layer').setAttribute('aria-pressed', String(kind === 'layers' || overlay !== 'none'));
+  refreshSheet();
+}
+function closeSheet() {
+  $('#sheet').hidden = true;
+  sheetKind = null; selTile = -1; dirty = true;
+  $('#btn-layer').setAttribute('aria-pressed', String(overlay !== 'none'));
+}
+function refreshSheet() {
+  if (!sheetKind) return;
+  const body = $('#sheet-body');
+  const keepScroll = body.scrollTop;
+  body.replaceChildren();
+  const title = $('#sheet-title');
+  if (sheetKind === 'info') buildInfo(body, title, sheetArg);
+  else if (sheetKind === 'budget') buildBudget(body, title);
+  else if (sheetKind === 'layers') buildLayers(body, title);
+  else if (sheetKind === 'menu') buildMenu(body, title);
+  body.scrollTop = keepScroll;
+}
+function kv(rows) {
+  const dl = el('dl', 'kv');
+  for (const r of rows) {
+    if (!r) continue;
+    const [k, v, cls] = r;
+    const dt = el('dt', cls && cls.includes('sum') ? 'sum' : null, k), dd = el('dd', cls || null, v);
+    dl.append(dt, dd);
+  }
+  return dl;
+}
+function level3(v, lo, mid, hi) { return v < 60 ? lo : v < 140 ? mid : hi; }
+function inspect(i) {
+  selTile = i; dirty = true;
+  openSheet('info', i);
+}
+function buildInfo(body, title, i) {
+  const t = S.type[i], x = i % N, y = (i / N) | 0, o = S.owner[i] >= 0 ? S.owner[i] : i;
+  const sec = el('section');
+  const rows = [];
+  const tags = el('div', 'tags');
+  const tag = (txt, cls) => tags.append(el('span', 'tag' + (cls ? ' ' + cls : ''), txt));
+  const yenPerM2 = v => (v * 900 + 8000) >= 10000 ? ((v * 900 + 8000) / 10000).toFixed(1) + '万円/㎡' : num(v * 900 + 8000) + '円/㎡';
+  let name;
+  if (t === T.EMPTY) name = S.terrain[i] ? (D.shallow[i] ? '水辺' : '川・湖') : S.tree[i] ? '森' : D.beach[i] ? '砂浜' : '空き地';
+  else if (t === T.ROAD) name = S.terrain[i] ? '橋' : '道路';
+  else if (t === T.WIRE) name = '送電線';
+  else if (isZone(t)) name = `${ZONE_NAME[t]}・${LEVEL_NAME[t][S.level[i]]}`;
+  else name = BLD[t].name;
+  title.textContent = name;
+
+  if (isZone(t)) {
+    const L = S.level[i];
+    if (t === T.RES) rows.push(['住民', num(POP[L]) + '人']);
+    else rows.push(['働く人', num(t === T.COM ? JOBS_C[L] : JOBS_I[L]) + '人']);
+    rows.push(['地価', yenPerM2(D.lv[i])]);
+    rows.push(['汚染', level3(D.poll[i], '少ない', 'ふつう', 'ひどい')]);
+    rows.push(['治安', level3(D.crime[i], '良い', 'ふつう', '悪い')]);
+    sec.append(kv(rows));
+    tag(D.powered[i] ? '電気あり' : '電気なし', D.powered[i] ? 'on' : 'warn');
+    tag(D.access[i] ? '道路あり' : '道路なし', D.access[i] ? 'on' : 'warn');
+    if (D.cov.police[i] > 40) tag('警察', 'on');
+    if (D.cov.fire[i] > 40) tag('消防', 'on');
+    if (D.cov.school[i] > 40) tag('学校', 'on');
+    if (D.cov.health[i] > 40) tag('病院', 'on');
+    if (S.fire[i]) tag('火災発生中', 'warn');
+    sec.append(tags);
+    const why = [];
+    const dem = t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di;
+    if (!D.powered[i]) why.push(ST.supply > 0 && ST.demand > ST.supply ? '電力が不足しています。発電所を増やしましょう。' : '電気が届いていません。発電所と道路か送電線でつなぎましょう。');
+    if (!D.access[i]) why.push('道路から2マス以内にありません。');
+    if (D.powered[i] && D.access[i]) {
+      if (dem <= 0) why.push(`いまは${ZONE_NAME[t].replace('地', '')}の需要がありません。${t === T.RES ? '働く場所（商業・工業）を増やしましょう。' : '住宅を増やしましょう。'}`);
+      const max = maxLevel(i, t);
+      if (L >= max && L < (t === T.IND ? 3 : 4)) {
+        if (t === T.RES && max === 3 && D.lv[i] >= 150) why.push(ST.pop < 15000 ? 'タワーマンションは人口1万5千人から建ちます。' : 'タワーマンションには学校の近さが必要です。');
+        else if (t === T.COM && max === 3 && D.lv[i] >= 140) why.push('超高層ビルは人口3万人から建ちます。');
+        else if (t === T.IND) why.push('大規模工場は人口1,500人から建ちます。');
+        else if (D.poll[i] > 40 && t !== T.IND) why.push('近くの工場や発電所の汚染で地価が下がり、これ以上は高く建ちません。住宅・商業は工業から離しましょう。');
+        else why.push('地価が低いため、これ以上は高く建ちません。公園・学校・病院や水辺で地価が上がります。');
+      }
+      if (t === T.RES && D.poll[i] > 110) why.push('汚染がひどく、人が住みたがりません。');
+      if (D.crime[i] > 120) why.push('治安が悪いです。警察署を近くに建てましょう。');
+    }
+    if (why.length) {
+      const s2 = el('section'); s2.append(el('h3', null, '発展のための条件'));
+      const ul = el('ul', 'reasons'); for (const w of why) ul.append(el('li', null, w));
+      s2.append(ul); body.append(sec, s2);
+    } else body.append(sec);
+  } else if (t === T.ROAD) {
+    rows.push(['交通量', D.traffic[i] > 220 ? '渋滞' : D.traffic[i] > 140 ? '多い' : D.traffic[i] > 50 ? 'ふつう' : '少ない']);
+    rows.push(['維持費', S.terrain[i] ? '¥1.5／月' : '¥0.3／月']);
+    sec.append(kv(rows)); body.append(sec);
+  } else if (t === T.WIRE) {
+    rows.push(['電気', D.powered[i] ? '通電中' : '通電していません']);
+    sec.append(kv(rows)); body.append(sec);
+  } else if (t >= 6) {
+    const b = BLD[t];
+    if (b.supply) {
+      rows.push(['発電量', num(b.supply)]);
+      rows.push(['街全体の使用量', `${num(ST.demand)}／${num(ST.supply)}`]);
+    } else {
+      if (b.use) rows.push(['電気', D.powered[o] ? '通電中' : '通電していません']);
+      if (b.radius) rows.push(['効果範囲', `半径${b.radius}マス`]);
+      if (t === T.PARK) rows.push(['効果', 'まわり4マスの地価が上がる']);
+    }
+    rows.push(['維持費', `${yen(b.upkeep)}／月`]);
+    sec.append(kv(rows)); body.append(sec);
+  } else {
+    rows.push(['地価', S.terrain[i] ? '—' : yenPerM2(D.lv[i])]);
+    rows.push(['汚染', level3(D.poll[i], '少ない', 'ふつう', 'ひどい')]);
+    sec.append(kv(rows));
+    if (!S.terrain[i]) sec.append(el('p', 'note', S.tree[i] ? '木があるとまわりの地価が上がり、汚染もやわらぎます。建物を建てると木は切られます。' : 'ツールを選んで、道路や区画をつくりましょう。'));
+    body.append(sec);
+  }
+  if (t !== T.EMPTY || S.tree[i]) {
+    const plan = makePlan('bulldoze', { ax: x, ay: y, bx: x, by: y });
+    const row = el('div', 'btn-row');
+    const b = el('button', 'btn danger', `撤去する（${yen(plan.cost)}）`);
+    b.type = 'button';
+    b.addEventListener('click', () => { const [wx, wy] = tileCenterW(i); if (applyPlan('bulldoze', plan, [wx, wy])) closeSheet(); });
+    row.append(b);
+    body.append(row);
+  }
+  body.append(el('p', 'note', `座標 ${x}, ${y}`));
+}
+
+function buildBudget(body, title) {
+  computeBudget();
+  title.textContent = `${cityName()}の市政`;
+  const rank = RANKS[rankIndex(ST.pop)];
+  // tax
+  const s1 = el('section');
+  s1.append(el('h3', null, '税率'));
+  const row = el('div', 'slider-row');
+  const inp = document.createElement('input');
+  inp.type = 'range'; inp.min = 0; inp.max = 20; inp.step = 1; inp.value = S.tax; inp.id = 'tax-rate';
+  inp.setAttribute('aria-label', '税率');
+  const out = el('output', null, S.tax + '%');
+  inp.addEventListener('input', () => {
+    S.tax = +inp.value; out.textContent = S.tax + '%';
+    computeDemand(); computeBudget(); hudDirty = true; updateBudgetNumbers();
+  });
+  row.append(inp, out);
+  s1.append(row, el('p', 'note', '税率を上げると収入が増えますが、人や会社が集まりにくくなります（標準は7%）。'));
+  // money flow
+  const s2 = el('section');
+  s2.append(el('h3', null, '毎月の収支（見込み）'));
+  const flow = el('div'); flow.id = 'budget-flow';
+  s2.append(flow);
+  // power
+  const s3 = el('section');
+  s3.append(el('h3', null, '電力'));
+  const pct = ST.supply ? ST.demand / ST.supply : ST.demand ? 2 : 0;
+  const meter = el('div', 'meter' + (pct > 1 ? ' over' : ''));
+  const fill = el('i'); fill.style.width = Math.min(100, pct * 100) + '%'; meter.append(fill);
+  const cap = el('div', 'meter-cap');
+  cap.append(el('span', null, `使用 ${num(ST.demand)}`), el('span', null, `発電 ${num(ST.supply)}`));
+  s3.append(meter, cap);
+  // people
+  const s4 = el('section');
+  s4.append(el('h3', null, '人口と雇用'));
+  const W = Math.round(ST.pop * 0.6), J = ST.jc + ST.ji;
+  s4.append(kv([
+    ['区分', rank.label],
+    ['人口', num(ST.pop) + '人'],
+    ['働き手', num(W) + '人'],
+    ['商業の雇用', num(ST.jc) + '人'],
+    ['工業の雇用', num(ST.ji) + '人'],
+    ['失業率', W > 0 ? Math.max(0, Math.round((1 - J / W) * 100)) + '%' : '—'],
+  ]));
+  // charts
+  const s5 = el('section');
+  s5.append(el('h3', null, '人口の推移'));
+  const c1 = el('div', 'chart'); s5.append(c1);
+  const s6 = el('section');
+  s6.append(el('h3', null, '資金の推移'));
+  const c2 = el('div', 'chart'); s6.append(c2);
+  body.append(s1, s2, s3, s4, s5, s6);
+  updateBudgetNumbers();
+  const hist = S.history;
+  requestAnimationFrame(() => {
+    lineChart(c1, hist.map(h => ({ v: h.pop, label: `${h.y}年${h.m}月` })), v => num(v) + '人');
+    lineChart(c2, hist.map(h => ({ v: h.money, label: `${h.y}年${h.m}月` })), v => yen(v));
+  });
+}
+function updateBudgetNumbers() {
+  const flow = $('#budget-flow');
+  if (!flow) return;
+  const r = v => yen(Math.round(v));
+  const e = ST.exp;
+  flow.replaceChildren(kv([
+    ['住民税', '+' + r(ST.inc.res), 'pos'],
+    ['法人税（商業）', '+' + r(ST.inc.com), 'pos'],
+    ['法人税（工業）', '+' + r(ST.inc.ind), 'pos'],
+    ['道路・送電線', '−' + r(e.road)],
+    ['発電所', '−' + r(e.power)],
+    e.police ? ['警察', '−' + r(e.police)] : null,
+    e.fire ? ['消防', '−' + r(e.fire)] : null,
+    e.school ? ['学校', '−' + r(e.school)] : null,
+    e.health ? ['病院', '−' + r(e.health)] : null,
+    e.park ? ['公園', '−' + r(e.park)] : null,
+    ['差し引き', (ST.net >= 0 ? '+' : '') + yen(ST.net), 'sum ' + (ST.net >= 0 ? 'pos' : 'neg')],
+  ]));
+}
+function niceCeil(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
+  return 10 * p;
+}
+function lineChart(host, data, fmt) {
+  host.replaceChildren();
+  if (data.length < 2) { host.append(el('p', 'empty', '1か月たつとグラフが表示されます')); return; }
+  const NS = 'http://www.w3.org/2000/svg';
+  const W = Math.max(260, host.clientWidth || 320), H = 128, L = 44, R = 12, TP = 12, B = 20;
+  const vals = data.map(d => d.v);
+  let lo = Math.min(0, ...vals), hi = Math.max(...vals);
+  hi = niceCeil(hi); lo = lo < 0 ? -niceCeil(-lo) : 0;
+  if (hi === lo) hi = lo + 1;
+  const xs = k => L + (W - L - R) * k / (data.length - 1);
+  const ys = v => TP + (H - TP - B) * (1 - (v - lo) / (hi - lo));
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('role', 'img');
+  const mk = (tag, attrs, cls) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (cls) n.setAttribute('class', cls); svg.append(n); return n; };
+  const ticks = lo < 0 ? [lo, 0, hi] : [0, hi / 2, hi];
+  for (const v of ticks) {
+    mk('line', { x1: L, x2: W - R, y1: ys(v), y2: ys(v) }, v === 0 && lo < 0 ? 'ch-zero' : 'ch-grid');
+    const tx = mk('text', { x: L - 6, y: ys(v) + 3, 'text-anchor': 'end' }, 'ch-txt'); tx.textContent = compact(v);
+  }
+  const base = ys(Math.max(lo, 0));
+  let line = '';
+  data.forEach((d, k) => { line += (k ? 'L' : 'M') + xs(k).toFixed(1) + ' ' + ys(d.v).toFixed(1); });
+  mk('path', { d: `${line}L${xs(data.length - 1)} ${base}L${xs(0)} ${base}Z` }, 'ch-area');
+  mk('path', { d: line }, 'ch-line');
+  const t0 = mk('text', { x: L, y: H - 4 }, 'ch-txt'); t0.textContent = data[0].label;
+  const t1 = mk('text', { x: W - R, y: H - 4, 'text-anchor': 'end' }, 'ch-txt'); t1.textContent = data[data.length - 1].label;
+  const last = data[data.length - 1];
+  mk('circle', { cx: xs(data.length - 1), cy: ys(last.v), r: 4 }, 'ch-dot');
+  const et = mk('text', { x: xs(data.length - 1) - 8, y: ys(last.v) - 9, 'text-anchor': 'end' }, 'ch-end'); et.textContent = fmt(last.v);
+  const cross = mk('line', { x1: 0, x2: 0, y1: TP, y2: H - B, visibility: 'hidden' }, 'ch-cross');
+  const hot = mk('circle', { cx: 0, cy: 0, r: 4, visibility: 'hidden' }, 'ch-dot');
+  const tip = el('div', 'tip'); tip.hidden = true;
+  host.append(svg, tip);
+  const move = e => {
+    const r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) * W / r.width;
+    const k = clamp(Math.round((sx - L) / (W - L - R) * (data.length - 1)), 0, data.length - 1);
+    const px = xs(k), py = ys(data[k].v);
+    cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+    hot.setAttribute('cx', px); hot.setAttribute('cy', py); hot.setAttribute('visibility', 'visible');
+    tip.hidden = false; tip.textContent = `${data[k].label}　${fmt(data[k].v)}`;
+    tip.style.left = clamp(px * r.width / W, 70, r.width - 70) + 'px';
+    tip.style.top = '-6px';
+  };
+  const leave = () => { cross.setAttribute('visibility', 'hidden'); hot.setAttribute('visibility', 'hidden'); tip.hidden = true; };
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerdown', move);
+  svg.addEventListener('pointerleave', leave);
+  svg.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') setTimeout(leave, 1500); });
+}
+
+function buildLayers(body, title) {
+  title.textContent = 'マップ表示';
+  const grid = el('div', 'layer-grid');
+  for (const id in LAYERS) {
+    const b = el('button', null, LAYERS[id].name);
+    b.type = 'button'; b.setAttribute('aria-pressed', String(overlay === id));
+    b.addEventListener('click', () => { setOverlay(id); refreshSheet(); });
+    grid.append(b);
+  }
+  body.append(grid, el('p', 'note', 'データを色で表示します。表示中は建物が低く描かれます。'));
+}
+function setOverlay(id) {
+  overlay = id; dirty = true;
+  $('#btn-layer').setAttribute('aria-pressed', String(id !== 'none' || sheetKind === 'layers'));
+  const lg = $('#legend');
+  const L = LAYERS[id];
+  if (id === 'none') { lg.hidden = true; return; }
+  lg.hidden = false; lg.replaceChildren(el('h3', null, L.name));
+  if (L.keys) {
+    const k = el('div', 'keys');
+    for (const [c, t] of L.keys) { const s = el('span'); const i = el('i'); i.style.background = c; s.append(i, document.createTextNode(t)); k.append(s); }
+    lg.append(k);
+  } else {
+    const r = el('div', 'ramp');
+    for (const c of L.ramp) { const i = el('i'); i.style.background = c; r.append(i); }
+    lg.append(el('span', 'lo', L.lo), r, el('span', 'hi', L.hi));
+  }
+  const x = el('button', 'x', '×');
+  x.type = 'button'; x.setAttribute('aria-label', 'マップ表示を終える');
+  x.addEventListener('click', () => { setOverlay('none'); if (sheetKind === 'layers') refreshSheet(); });
+  lg.append(x);
+}
+
+let confirmNew = false;
+function buildMenu(body, title) {
+  title.textContent = '設定';
+  const s1 = el('section');
+  s1.append(el('h3', null, 'まちの名前'));
+  const row = el('div', 'name-row');
+  const inp = document.createElement('input');
+  inp.id = 'rename-city'; inp.maxLength = 8; inp.value = S.name; inp.autocomplete = 'off';
+  inp.addEventListener('change', () => { const v = inp.value.trim(); if (v) { S.name = v; hudDirty = true; save(); } });
+  row.append(inp, el('span', 'suffix', RANKS[S.rank].suffix));
+  s1.append(row);
+  const s2 = el('section');
+  s2.append(el('h3', null, 'ゲーム'));
+  const sw = el('label', 'switch-row');
+  sw.htmlFor = 'opt-disaster';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.id = 'opt-disaster'; cb.checked = S.disasters;
+  cb.addEventListener('change', () => { S.disasters = cb.checked; save(); });
+  sw.append(el('span', null, '火災を発生させる'), cb);
+  s2.append(sw);
+  const s3 = el('section');
+  s3.append(el('h3', null, 'あそびかた'));
+  const ol = el('ol', 'help');
+  [
+    '発電所を建てます。電気は道路・区画・建物を伝って広がり、離れた場所へは送電線で送ります。',
+    '道路を引き、道路から2マス以内に住宅地・商業地・工業地を指定します。',
+    '上の需要メーター（住・商・工）が伸びている区画を増やすと、街が育ちます。',
+    '公園・学校・病院や水辺は地価を上げ、高い建物が建つようになります。',
+    '警察署は犯罪を、消防署は火事を防ぎます。「表示」で範囲を確かめられます。',
+    '1本指でツール、2本指で移動・ズーム。「調べる」では1本指で地図を動かせます。',
+  ].forEach(s => ol.append(el('li', null, s)));
+  s3.append(ol);
+  const s4 = el('section');
+  s4.append(el('h3', null, 'データ'));
+  s4.append(el('p', 'note', '進行状況はこのブラウザに毎月自動で保存されます。ほかの端末やブラウザとは共有されません。'));
+  if (!confirmNew) {
+    const b = el('button', 'btn danger', '新しい街をつくる');
+    b.type = 'button';
+    b.addEventListener('click', () => { confirmNew = true; refreshSheet(); });
+    s4.append(b);
+  } else {
+    const c = el('div', 'confirm');
+    c.append(el('p', null, `いまの「${cityName()}」は消えてしまいます。新しい土地で始めますか？`));
+    const r = el('div', 'btn-row');
+    const no = el('button', 'btn', 'やめる'); no.type = 'button';
+    no.addEventListener('click', () => { confirmNew = false; refreshSheet(); });
+    const yes = el('button', 'btn primary', '新しく始める'); yes.type = 'button';
+    yes.addEventListener('click', () => { confirmNew = false; closeSheet(); storageDel(); startNew(); });
+    r.append(no, yes); c.append(r); s4.append(c);
+  }
+  body.append(s1, s2, s3, s4);
+}
+
+/* tutorial */
+const TUT = [
+  ['plant', '発電所を建てる', () => (ST.cnt[T.COAL] || 0) + (ST.cnt[T.SOLAR] || 0) > 0, '「火力発電」を選んで、空き地をタップ'],
+  ['road', '道路を10マス引く', () => ST.roads + ST.bridges >= 10, '「道路」を選んで、発電所の近くからなぞる'],
+  ['res', '住宅地を指定する', () => ST.zones[3] >= 6, '「住宅地」で道路ぞいをなぞる'],
+  ['ind', '工業地を指定する', () => ST.zones[5] >= 4, '住宅から少し離れた道路ぞいに「工業地」'],
+  ['com', '商業地を指定する', () => ST.zones[4] >= 4, '「商業地」も道路ぞいに少し'],
+  ['pop', '人口500人を達成する', () => ST.pop >= 500, '右上の ▶ で速度を上げて待ってみよう'],
+];
+function checkTutorial() {
+  if (!S || S.tutDone) return;
+  let changed = false;
+  for (const [k, , f] of TUT) if (!S.tut[k] && f()) { S.tut[k] = 1; changed = true; }
+  if (TUT.every(([k]) => S.tut[k])) {
+    S.tutDone = true;
+    toast('基本はばっちりです。需要メーターを見ながら、街を大きくしていきましょう。', { kind: 'good', ttl: 6500 });
+  }
+  if (changed || S.tutDone) renderTutorial();
+}
+function renderTutorial() {
+  const box = $('#tut');
+  if (!S || S.tutDone || S.tutClosed || !started) { box.hidden = true; return; }
+  box.hidden = false;
+  box.classList.toggle('min', !!S.tutMin);
+  box.replaceChildren();
+  const head = el('div', 'tut-head');
+  const done = TUT.filter(([k]) => S.tut[k]).length;
+  const tb = el('button', 'title', 'はじめての街づくり');
+  tb.type = 'button'; tb.setAttribute('aria-expanded', String(!S.tutMin));
+  tb.addEventListener('click', () => { S.tutMin = !S.tutMin; renderTutorial(); });
+  const x = el('button', 'x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'チュートリアルを閉じる');
+  x.addEventListener('click', () => { S.tutClosed = true; renderTutorial(); save(); });
+  head.append(tb, el('span', 'count', `${done}/${TUT.length}`), x);
+  const ol = el('ol');
+  for (const [k, label] of TUT) {
+    const li = el('li', S.tut[k] ? 'done' : null);
+    li.append(el('i', null, S.tut[k] ? '✓' : ''), el('span', null, label));
+    ol.append(li);
+  }
+  const next = TUT.find(([k]) => !S.tut[k]);
+  const nx = el('div', 'tut-next');
+  if (next) nx.append(el('b', null, next[1]), el('span', null, next[3]));
+  box.append(head, nx, ol);
+}
+
+/* =========================================================
+   保存
+   ========================================================= */
+function serialize() {
+  return JSON.stringify({
+    v: 1, seed: S.seed, name: S.name, money: S.money, year: S.year, month: S.month, day: S.day, tax: S.tax, disasters: S.disasters,
+    rank: S.rank, seen: S.seen, fy: S.fy, tut: S.tut, tutDone: S.tutDone, tutClosed: S.tutClosed, tutMin: S.tutMin, history: S.history,
+    terrain: b64(S.terrain), tree: b64(S.tree), type: b64(S.type), level: b64(S.level), variant: b64(S.variant), fire: b64(S.fire),
+    owner: b64(new Uint8Array(S.owner.buffer)), cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed,
+  });
+}
+function deserialize(str) {
+  const o = JSON.parse(str);
+  if (!o || o.v !== 1) throw new Error('unsupported save');
+  const s = blankState(o.seed, o.name);
+  for (const k of ['money', 'year', 'month', 'day', 'tax', 'disasters', 'rank', 'seen', 'fy', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history']) if (o[k] !== undefined) s[k] = o[k];
+  for (const k of ['terrain', 'tree', 'type', 'level', 'variant', 'fire']) { const u = unb64(o[k]); if (u.length !== NN) throw new Error('bad map'); s[k].set(u); }
+  const ow = unb64(o.owner);
+  if (ow.length !== NN * 4) throw new Error('bad map');
+  s.owner = new Int32Array(ow.buffer);
+  return { state: s, cam: o.cam, speed: o.speed };
+}
+function storageGet() { try { return localStorage.getItem(SAVE_KEY); } catch (e) { return null; } }
+function storageDel() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* storage unavailable */ } }
+function save() {
+  if (!started || !S) return;
+  try { localStorage.setItem(SAVE_KEY, serialize()); } catch (e) { /* storage unavailable: play continues without saving */ }
+}
+
+/* =========================================================
+   起動
+   ========================================================= */
+function newMap(seed, name) {
+  S = blankState(seed, name);
+  genTerrain(seed);
+  undoStack.length = 0; cars.length = 0;
+  refreshAll();
+  roadListDirty = true; dirty = true; hudDirty = true;
+}
+function fitCamera() {
+  const w = $('#welcome'), cover = w.hidden ? 0 : w.offsetHeight + 16;
+  const availH = Math.max(160, vh - cover - 24);
+  cam.z = clamp(Math.min((vw - 16) / (N * HW * 2), availH / (N * HH * 2 + 40)), ZMIN, 0.5);
+  cam.x = 0;
+  cam.y = N * HH + 13 + (vh / 2 - (vh - cover) / 2) / cam.z;
+  dirty = true;
+}
+function showWelcome() {
+  document.body.classList.add('intro');
+  started = false; setSpeed(0);
+  const w = $('#welcome');
+  w.hidden = false;
+  const inp = $('#city-name');
+  inp.value = S.name;
+  fitCamera();
+}
+function startNew() {
+  const seed = (Math.random() * 2 ** 31) | 0;
+  newMap(seed, NAMES[(Math.random() * NAMES.length) | 0]);
+  showWelcome();
+}
+function beginGame() {
+  const name = $('#city-name').value.trim() || S.name;
+  S.name = name.slice(0, 8);
+  $('#welcome').hidden = true;
+  document.body.classList.remove('intro');
+  started = true;
+  resize();
+  selectTool('select');
+  setSpeed(1);
+  // land near the middle, on dry ground
+  let best = (N / 2) * N + N / 2, bestScore = -1;
+  for (let y = 20; y < 44; y += 2) for (let x = 20; x < 44; x += 2) {
+    let s = 0;
+    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) if (!S.terrain[(y + dy) * N + x + dx]) s++;
+    s -= Math.hypot(x - N / 2, y - N / 2) * 0.8;
+    if (s > bestScore) { bestScore = s; best = y * N + x; }
+  }
+  flyTo(best, clamp(vw / 520, 0.7, 1.1));
+  S.history = [{ y: S.year, m: S.month, pop: 0, money: S.money }];
+  renderTutorial();
+  hudDirty = true;
+  save();
+}
+
+let lastFrame = performance.now(), acc = 0, lastRender = 0, lastHud = 0;
+function frame(now) {
+  const dt = Math.min(100, now - lastFrame);
+  lastFrame = now;
+  stepTween(now);
+  keyPan(dt);
+  if (started && speed > 0) {
+    acc += dt;
+    const dayMs = [0, 400, 150, 50][speed];
+    let n = 0;
+    while (acc >= dayMs && n < 6) { acc -= dayMs; simDay(); n++; }
+    if (n >= 6) acc = 0;
+  }
+  if (started) updateCars(dt);
+  const animating = (started && speed > 0 && lod > 0) || ST.burning > 0 || floaters.length > 0 || (lod > 0 && ST.unpowered > 0);
+  if (dirty || (animating && now - lastRender > 33)) {
+    render(now);
+    dirty = false; lastRender = now;
+  }
+  if (hudDirty && now - lastHud > 100 && S) { updateHUD(); hudDirty = false; lastHud = now; }
+  requestAnimationFrame(frame);
+}
+
+function bindUI() {
+  $('#btn-speed').addEventListener('click', () => setSpeed((speed + 1) % 4));
+  $('#btn-layer').addEventListener('click', () => (sheetKind === 'layers' ? closeSheet() : openSheet('layers')));
+  $('#btn-budget').addEventListener('click', () => (sheetKind === 'budget' ? closeSheet() : openSheet('budget')));
+  $('#btn-undo').addEventListener('click', undo);
+  $('#btn-menu').addEventListener('click', () => { confirmNew = false; sheetKind === 'menu' ? closeSheet() : openSheet('menu'); });
+  $('#sheet-close').addEventListener('click', closeSheet);
+  $('#btn-reroll').addEventListener('click', () => {
+    const name = $('#city-name').value.trim() || S.name;
+    newMap((Math.random() * 2 ** 31) | 0, name);
+    fitCamera();
+  });
+  $('#btn-start').addEventListener('click', beginGame);
+  $('#city-name').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+  window.addEventListener('resize', resize);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+  new ResizeObserver(resize).observe($('#dock'));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  window.addEventListener('pagehide', save);
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq.addEventListener) mq.addEventListener('change', readTheme);
+  new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
+
+function boot(data) {
+  bindUI();
+  readTheme();
+  resize();
+  let loaded = null;
+  const raw = (data && data.save) || storageGet();
+  if (raw) { try { loaded = deserialize(raw); } catch (e) { loaded = null; } }
+  if (loaded) {
+    S = loaded.state;
+    refreshAll();
+    buildToolbar();
+    document.body.classList.remove('intro');
+    started = true;
+    resize();
+    if (loaded.cam) { cam.x = loaded.cam.x; cam.y = loaded.cam.y; cam.z = loaded.cam.z; clampCam(); }
+    selectTool('select');
+    setSpeed(clamp(loaded.speed || 1, 1, 3));
+    renderTutorial();
+    toast(`おかえりなさい。${cityName()}の${S.year}年${S.month}月から再開します。`);
+  } else {
+    newMap((Math.random() * 2 ** 31) | 0, NAMES[(Math.random() * NAMES.length) | 0]);
+    buildToolbar();
+    showWelcome();
+  }
+  updateHint();
+  hudDirty = true;
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { dirty = true; resize(); });
+  requestAnimationFrame(t => { lastFrame = t; frame(t); });
+}
+
+try { window.claude?.hot?.snapshot?.(() => (started ? { save: serialize() } : {})); } catch (e) { /* not in a viewer */ }
+const hot = window.claude?.hot;
+if (hot?.ready) hot.ready(boot); else boot(hot?.data ?? {});
+
+/* debugging / automated checks */
+window.__city = {
+  get S() { return S; }, ST, D, T, TOOLS, cam, simDay, makePlan, applyPlan, render, refreshAll, setSpeed, selectTool, beginGame, setOverlay,
+  run(days) { for (let k = 0; k < days; k++) simDay(); },
+  place(tid, ax, ay, bx = ax, by = ay) { return applyPlan(tid, makePlan(tid, { ax, ay, bx, by })); },
+};
+})();
+</script>
+</body>
+</html>
