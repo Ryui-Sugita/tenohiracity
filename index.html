@@ -38,7 +38,8 @@
   --shadow: 0 1px 2px rgba(15, 25, 35, .10), 0 6px 18px rgba(15, 25, 35, .10);
   --f-display: "Dela Gothic One", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
   --f-body: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
-  --dock-h: 106px;
+  --dock-h: 146px;
+  --hud-b: 96px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -91,21 +92,35 @@ button { touch-action: manipulation; cursor: pointer; }
 /* ---------- HUD ---------- */
 .hud {
   position: absolute; top: 8px; left: 8px; right: 8px; max-width: 620px; margin: 0 auto;
-  display: flex; align-items: stretch;
+  display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
   overflow: hidden; z-index: 5;
 }
 .seg {
   display: flex; flex-direction: column; justify-content: center; gap: 1px;
-  padding: 5px 10px; min-width: 0; overflow: hidden; border: 0; border-right: 1px solid var(--line); background: none; text-align: left;
+  padding: 5px 8px; min-width: 0; overflow: hidden; border: 0; border-right: 1px solid var(--line); background: none; text-align: left;
 }
 .seg:last-child { border-right: 0; }
+.hud-main { display: flex; align-items: stretch; min-width: 0; }
+.hud-status {
+  display: flex; gap: 4px; padding: 4px 5px; border: 0; border-top: 1px solid var(--line); background: none; width: 100%;
+  text-align: left; overflow: hidden;
+}
+.chip {
+  flex: 1 1 0; min-width: 0; display: flex; align-items: baseline; justify-content: center; gap: 4px; padding: 2px 4px;
+  border-radius: 6px; background: var(--panel-2); font-size: 11px; line-height: 1.5; white-space: nowrap; color: var(--muted);
+}
+.chip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.chip.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.chip.warn b { color: var(--warn); }
+.chip.bad { background: color-mix(in srgb, var(--bad) 18%, transparent); }
+.chip.bad b { color: var(--bad); }
 .seg .k { font-size: 10px; line-height: 1.2; color: var(--muted); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seg .v { font: 400 16px/1.15 var(--f-display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seg .d { font-size: 10px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
 .seg .d.up { color: var(--good); }
 .seg .d.down { color: var(--bad); }
-.seg-money { flex: 1.25 1 0; }
+.seg-money { flex: 1.45 1 0; }
 .seg-pop { flex: 1 1 0; }
 .seg-date { flex: 0 0 auto; }
 .v.neg { color: var(--bad); }
@@ -123,7 +138,7 @@ button { touch-action: manipulation; cursor: pointer; }
 
 /* ---------- side buttons ---------- */
 .side {
-  position: absolute; right: 8px; top: 74px; display: flex; flex-direction: column; gap: 8px; z-index: 4;
+  position: absolute; right: 8px; top: calc(var(--hud-b) + 8px); display: flex; flex-direction: column; gap: 8px; z-index: 4;
 }
 .side button {
   width: 50px; height: 50px; display: grid; place-items: center; align-content: center; gap: 1px;
@@ -136,7 +151,7 @@ button { touch-action: manipulation; cursor: pointer; }
 
 /* ---------- legend ---------- */
 .legend {
-  position: absolute; left: 8px; right: 66px; top: 74px; z-index: 4; max-width: 440px; margin: 0 auto;
+  position: absolute; left: 8px; right: 66px; top: calc(var(--hud-b) + 8px); z-index: 4; max-width: 440px; margin: 0 auto;
   display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 12px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); font-size: 11px;
 }
@@ -148,11 +163,11 @@ button { touch-action: manipulation; cursor: pointer; }
 .legend .keys span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .legend .keys i { width: 12px; height: 12px; border-radius: 3px; }
 .legend .x { flex: 0 0 auto; width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--panel-2); font-size: 15px; line-height: 1; padding: 0; }
-.legend:not([hidden]) ~ .toasts { top: 120px; }
+.legend:not([hidden]) ~ .toasts { top: calc(var(--hud-b) + 54px); }
 
 /* ---------- toasts ---------- */
 .toasts {
-  position: absolute; top: 74px; left: 8px; right: 66px; max-width: 440px; margin: 0 auto;
+  position: absolute; top: calc(var(--hud-b) + 8px); left: 8px; right: 66px; max-width: 440px; margin: 0 auto;
   display: flex; flex-direction: column; gap: 6px; z-index: 6; pointer-events: none;
 }
 .toast {
@@ -207,6 +222,19 @@ button { touch-action: manipulation; cursor: pointer; }
 .hint .cost { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
 .hint .cost.bad { color: var(--bad); }
 .hint .cost.muted { font-weight: 400; color: var(--muted); flex: 0 0 auto; }
+.cats {
+  display: flex; gap: 6px; padding: 0 10px 6px; overflow-x: auto; scrollbar-width: none; touch-action: pan-x;
+}
+.cats::-webkit-scrollbar { display: none; }
+.cat {
+  flex: 0 0 auto; height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--panel-2); font-weight: 700; font-size: 12.5px; white-space: nowrap;
+}
+.cat[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+.cat.ico { width: 42px; padding: 0; display: grid; place-items: center; }
+.cat.ico svg { width: 22px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cat.ico[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.cats .sep { flex: 0 0 1px; margin: 4px 1px; background: var(--line); }
 .tools {
   display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
   padding: 0 10px; scroll-padding: 0 10px; touch-action: pan-x; overscroll-behavior-x: contain;
@@ -224,12 +252,16 @@ button { touch-action: manipulation; cursor: pointer; }
 .tool .pr { font-size: 10px; line-height: 1.2; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tool[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
 .tool.poor .pr { color: var(--bad); }
+.tool.locked canvas { opacity: .35; filter: grayscale(1); }
+.tool.locked .nm { color: var(--muted); }
+.tool.locked .pr { color: var(--muted); }
+.tool .lock { position: absolute; top: 4px; right: 5px; width: 14px; height: 14px; fill: none; stroke: var(--muted); stroke-width: 2; padding: 0; }
 .tool[data-zone]::after { content: ""; position: absolute; left: 14px; right: 14px; top: 3px; height: 3px; border-radius: 2px; background: var(--zc); }
 
 /* ---------- sheets ---------- */
 .sheet {
   position: absolute; left: 8px; right: 8px; bottom: calc(var(--dock-h) + 8px); z-index: 7;
-  max-width: 520px; margin: 0 auto; max-height: calc(100% - var(--dock-h) - 82px);
+  max-width: 520px; margin: 0 auto; max-height: calc(100% - var(--dock-h) - var(--hud-b) - 16px);
   display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
   animation: sheet-in .2s ease-out;
@@ -238,6 +270,7 @@ button { touch-action: manipulation; cursor: pointer; }
 .sheet > header { display: flex; align-items: center; gap: 8px; padding: 10px 8px 6px 16px; border-bottom: 1px solid var(--line); }
 .sheet h2 { flex: 1; margin: 0; font: 400 17px/1.3 var(--f-display); text-wrap: balance; }
 .sheet .close { width: 36px; height: 36px; border: 0; border-radius: 10px; background: var(--panel-2); font-size: 20px; line-height: 1; }
+.sheet .seg-tabs { margin-top: 10px; }
 .sheet-body { overflow-y: auto; padding: 12px 16px 16px; touch-action: pan-y; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; }
 .sheet section h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 0; font-size: 13px; }
@@ -253,10 +286,39 @@ button { touch-action: manipulation; cursor: pointer; }
 .meter { position: relative; height: 10px; border-radius: 5px; background: var(--panel-2); overflow: hidden; }
 .meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--accent); }
 .meter.over i { background: var(--bad); }
+.meter.warn i { background: var(--warn); }
+.infra { display: flex; flex-direction: column; gap: 10px; }
+.infra .row { display: grid; grid-template-columns: 4.5em 1fr; gap: 10px; align-items: center; font-size: 12.5px; }
+.infra .meter-cap { grid-column: 2; margin-top: -6px; }
 .meter-cap { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
-.slider-row { display: flex; align-items: center; gap: 12px; }
-.slider-row input { flex: 1; accent-color: var(--accent); height: 28px; }
-.slider-row output { font: 400 20px/1 var(--f-display); min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.slider-row { display: grid; grid-template-columns: 5.5em 1fr 3.6em; align-items: center; gap: 10px; font-size: 13px; }
+.slider-row input { width: 100%; accent-color: var(--accent); height: 28px; margin: 0; }
+.slider-row output { font: 400 16px/1 var(--f-display); text-align: right; font-variant-numeric: tabular-nums; }
+.sliders { display: flex; flex-direction: column; gap: 2px; }
+.seg-tabs { display: flex; gap: 4px; padding: 4px; margin: 0 16px; background: var(--panel-2); border-radius: 10px; }
+.seg-tabs button { flex: 1; border: 0; background: none; padding: 7px 0; border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--muted); }
+.seg-tabs button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.goals { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.goal { display: grid; grid-template-columns: 22px 1fr auto; gap: 2px 10px; align-items: start; font-size: 13px; }
+.goal > i { width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-style: normal; font-size: 11px; }
+.goal.done > i { background: var(--good); border-color: var(--good); color: #fff; }
+.goal b { font-weight: 700; }
+.goal.done b { color: var(--muted); }
+.goal .rw { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.goal small { grid-column: 2 / 4; color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.goal .prog { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: var(--panel-2); overflow: hidden; }
+.goal .prog i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+.factors { display: flex; flex-direction: column; gap: 7px; }
+.factor { display: grid; grid-template-columns: 6.2em 1fr 2.8em; gap: 10px; align-items: center; font-size: 12.5px; }
+.factor .meter i { background: var(--good); }
+.factor.mid .meter i { background: var(--warn); }
+.factor.low .meter i { background: var(--bad); }
+.factor span:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.big-num { display: flex; align-items: baseline; gap: 10px; }
+.big-num b { font: 400 30px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.big-num span { font-size: 12px; color: var(--muted); }
+.loan-list { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.loan-list div { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2); font-variant-numeric: tabular-nums; }
 .note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 .btn {
   border: 1px solid var(--line); background: var(--panel-2); border-radius: 12px; padding: 10px 14px; font-weight: 700; font-size: 14px;
@@ -319,12 +381,10 @@ body.intro .dock, body.intro .side, body.intro .hud, body.intro .tut { visibilit
   .tools { justify-content: safe center; }
 }
 @media (max-height: 520px) {
-  .side { top: 66px; gap: 6px; }
+  .side { gap: 6px; }
   .side button { width: 44px; height: 44px; border-radius: 12px; }
   .side button span { display: none; }
-  .legend { top: 66px; }
-  .toasts { top: 66px; }
-  .legend:not([hidden]) ~ .toasts { top: 110px; }
+  .hint { display: none; }
   .tut.min .tut-next span { display: none; }
 }
 .welcome { max-height: calc(100% - 16px); overflow-y: auto; }
@@ -335,15 +395,23 @@ body.intro .dock, body.intro .side, body.intro .hud, body.intro .tut { visibilit
   <canvas id="view" aria-label="都市の地図"></canvas>
 
   <header class="hud" id="hud">
-    <div class="seg seg-money"><span class="k">資金</span><span class="v" id="hud-money">¥0</span><span class="d" id="hud-net">±¥0／月</span></div>
-    <div class="seg seg-pop"><span class="k" id="hud-city">—</span><span class="v" id="hud-pop">0</span><span class="d">人口</span></div>
-    <div class="seg seg-date"><span class="k" id="hud-year">—</span><span class="v" id="hud-month">—</span><span class="d" id="hud-day">1日</span></div>
-    <div class="seg seg-rci" id="hud-rci" title="需要（住宅・商業・工業）">
-      <div class="rci-col rci-r"><div class="rci-bar"><i></i></div><b>住</b></div>
-      <div class="rci-col rci-c"><div class="rci-bar"><i></i></div><b>商</b></div>
-      <div class="rci-col rci-i"><div class="rci-bar"><i></i></div><b>工</b></div>
+    <div class="hud-main">
+      <div class="seg seg-money"><span class="k">資金</span><span class="v" id="hud-money">¥0</span><span class="d" id="hud-net">±¥0／月</span></div>
+      <div class="seg seg-pop"><span class="k" id="hud-city">—</span><span class="v" id="hud-pop">0</span><span class="d">人口</span></div>
+      <div class="seg seg-date"><span class="k" id="hud-year">—</span><span class="v" id="hud-month">—</span><span class="d" id="hud-day">1日</span></div>
+      <div class="seg seg-rci" id="hud-rci" title="需要（住宅・商業・工業）">
+        <div class="rci-col rci-r"><div class="rci-bar"><i></i></div><b>住</b></div>
+        <div class="rci-col rci-c"><div class="rci-bar"><i></i></div><b>商</b></div>
+        <div class="rci-col rci-i"><div class="rci-bar"><i></i></div><b>工</b></div>
+      </div>
+      <button class="seg seg-speed" id="btn-speed" type="button" aria-label="ゲーム速度を切り替え"><svg viewBox="0 0 24 18" id="speed-icon"></svg><span class="k" id="speed-label">普通</span></button>
     </div>
-    <button class="seg seg-speed" id="btn-speed" type="button" aria-label="ゲーム速度を切り替え"><svg viewBox="0 0 24 18" id="speed-icon"></svg><span class="k" id="speed-label">普通</span></button>
+    <button class="hud-status" id="hud-status" type="button" aria-label="街の状態を見る">
+      <span class="chip" id="chip-power">電力 <b>—</b></span>
+      <span class="chip" id="chip-water">水道 <b>—</b></span>
+      <span class="chip" id="chip-trash">ゴミ <b>—</b></span>
+      <span class="chip" id="chip-approval">支持率 <b>—</b></span>
+    </button>
   </header>
 
   <nav class="side" id="side">
@@ -363,18 +431,20 @@ body.intro .dock, body.intro .side, body.intro .hud, body.intro .tut { visibilit
 
   <section class="sheet" id="sheet" hidden aria-labelledby="sheet-title">
     <header><h2 id="sheet-title"></h2><button type="button" class="close" id="sheet-close" aria-label="閉じる">×</button></header>
+    <div class="seg-tabs" id="sheet-tabs" role="tablist" hidden></div>
     <div class="sheet-body" id="sheet-body"></div>
   </section>
 
   <footer class="dock" id="dock">
     <div class="hint" id="hint"></div>
+    <div class="cats" id="cats" role="tablist" aria-label="ツールの種類"></div>
     <div class="tools" id="tools" role="toolbar" aria-label="ツール"></div>
   </footer>
 
   <div class="welcome" id="welcome" hidden>
     <p class="eyebrow">都市づくりシミュレーション</p>
     <h1>てのひら都市</h1>
-    <p class="lead">発電所を建て、道路を引き、区画を指定する。人が集まり、村は町に、町は市に育っていきます。目標は政令指定都市（人口50万人）。</p>
+    <p class="lead">国道から道路をのばし、電気・水道・ゴミ処理を整え、区画を指定する。人は仕事を求めて道路で通勤し、渋滞や汚染に悩みながら村は町に、町は市に育っていきます。目標は政令指定都市（人口50万人）。</p>
     <div class="zones"><span><i style="background:var(--res)"></i>住宅地</span><span><i style="background:var(--com)"></i>商業地</span><span><i style="background:var(--ind)"></i>工業地</span></div>
     <label for="city-name">まちの名前</label>
     <div class="name-row"><input id="city-name" maxlength="8" autocomplete="off" enterkeyhint="done"><span class="suffix">村</span></div>
@@ -397,27 +467,57 @@ const N = 64, NN = N * N, HW = 32, HH = 16;
 const ZMIN = 0.09, ZMAX = 2.6;
 const START_YEAR = new Date().getFullYear();
 const SAVE_KEY = 'tenohira-city/v1';
+const SAVE_VERSION = 2;
 const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
-const T = { EMPTY: 0, ROAD: 1, WIRE: 2, RES: 3, COM: 4, IND: 5, PARK: 6, POLICE: 7, FIRE: 8, SCHOOL: 9, HOSP: 10, COAL: 11, SOLAR: 12 };
+const T = { EMPTY: 0, ROAD: 1, WIRE: 2, RES: 3, COM: 4, IND: 5 };
 const isZone = t => t >= 3 && t <= 5;
-const isPlant = t => t === 11 || t === 12;
-const BLD = {
-  6:  { name: '公園', size: 1, cost: 100, upkeep: 3, use: 0 },
-  7:  { name: '警察署', size: 1, cost: 500, upkeep: 40, use: 2, radius: 10, cov: 'police' },
-  8:  { name: '消防署', size: 1, cost: 500, upkeep: 40, use: 2, radius: 10, cov: 'fire' },
-  9:  { name: '学校', size: 2, cost: 1500, upkeep: 100, use: 4, radius: 12, cov: 'school' },
-  10: { name: '病院', size: 2, cost: 2500, upkeep: 150, use: 6, radius: 12, cov: 'health' },
-  11: { name: '火力発電所', size: 2, cost: 3000, upkeep: 60, supply: 1000 },
-  12: { name: '太陽光発電所', size: 2, cost: 5000, upkeep: 20, supply: 450 },
+
+/* buildings (id ≥ 10). rank = city rank needed to build (0 村, 1 町, 2 市, 3 中核市) */
+const B = {
+  10: { key: 'park', name: '公園', size: 1, cost: 150, upkeep: 4, amen: [4, 255], cat: 'park' },
+  11: { key: 'bigpark', name: '大公園', size: 2, cost: 1500, upkeep: 20, amen: [7, 255], rank: 1, cat: 'park' },
+  12: { key: 'shrine', name: '神社', size: 1, cost: 800, upkeep: 4, amen: [5, 200], approval: 1, cat: 'park' },
+  13: { key: 'cityhall', name: '市役所', size: 2, cost: 8000, upkeep: 100, amen: [8, 150], approval: 6, rank: 1, unique: true, use: 20, cat: 'park' },
+  14: { key: 'stadium', name: 'スタジアム', size: 2, cost: 25000, upkeep: 250, amen: [6, 110], approval: 6, tourism: 3000, rank: 2, unique: true, use: 60, cat: 'park' },
+  15: { key: 'tvtower', name: '電波塔', size: 1, cost: 40000, upkeep: 200, amen: [10, 200], approval: 5, tourism: 6000, rank: 3, unique: true, use: 40, cat: 'park' },
+  20: { key: 'koban', name: '交番', size: 1, cost: 400, upkeep: 15, svc: 'police', cap: 4000, range: 14, use: 4, fund: 'police' },
+  21: { key: 'police', name: '警察署', size: 2, cost: 3500, upkeep: 120, svc: 'police', cap: 25000, range: 26, use: 20, rank: 1, fund: 'police' },
+  22: { key: 'fire', name: '消防署', size: 1, cost: 900, upkeep: 35, svc: 'fire', range: 16, use: 8, fund: 'fire' },
+  23: { key: 'clinic', name: '診療所', size: 1, cost: 600, upkeep: 25, svc: 'health', cap: 1200, range: 16, use: 5, fund: 'health' },
+  24: { key: 'hosp', name: '病院', size: 2, cost: 6000, upkeep: 200, svc: 'health', cap: 9000, range: 30, use: 30, rank: 1, fund: 'health' },
+  25: { key: 'school', name: '小学校', size: 2, cost: 2000, upkeep: 60, svc: 'edu1', cap: 1500, range: 20, use: 10, fund: 'edu' },
+  26: { key: 'high', name: '高校', size: 2, cost: 5000, upkeep: 150, svc: 'edu2', cap: 1800, range: 30, use: 15, rank: 1, fund: 'edu' },
+  27: { key: 'univ', name: '大学', size: 2, cost: 16000, upkeep: 400, svc: 'edu3', cap: 3500, range: 200, use: 40, rank: 2, unique: true, fund: 'edu' },
+  30: { key: 'coal', name: '石炭火力発電所', short: '石炭火力', size: 2, cost: 4000, upkeep: 60, supply: 1000, life: 40, poll: 350 },
+  31: { key: 'gas', name: 'ガス火力発電所', short: 'ガス火力', size: 2, cost: 6500, upkeep: 100, supply: 900, life: 40, poll: 110, rank: 1 },
+  32: { key: 'wind', name: '風力発電所', short: '風力', size: 1, cost: 700, upkeep: 4, supply: 45, life: 25 },
+  33: { key: 'solar', name: '太陽光発電所', short: '太陽光', size: 2, cost: 5000, upkeep: 10, supply: 260, life: 30 },
+  34: { key: 'nuclear', name: '原子力発電所', short: '原子力', size: 2, cost: 45000, upkeep: 500, supply: 6000, life: 50, rank: 3 },
+  35: { key: 'wtower', name: '給水塔', size: 1, cost: 900, upkeep: 12, water: 700, use: 5 },
+  36: { key: 'wplant', name: '浄水場', size: 2, cost: 7500, upkeep: 120, water: 6000, use: 40, rank: 1 },
+  37: { key: 'landfill', name: 'ゴミ処分場', size: 2, cost: 1500, upkeep: 25, svc: 'garbage', rate: 1500, store: 40000, poll: 90, range: 32, fund: 'garbage' },
+  38: { key: 'incin', name: 'ゴミ焼却場', short: '焼却場', size: 2, cost: 9000, upkeep: 180, svc: 'garbage', rate: 4000, poll: 200, use: 30, range: 38, rank: 1, fund: 'garbage' },
+  39: { key: 'recycle', name: 'リサイクルセンター', short: 'リサイクル', size: 2, cost: 12000, upkeep: 200, svc: 'garbage', rate: 1500, reduce: 0.2, use: 25, range: 34, rank: 2, fund: 'garbage' },
+  40: { key: 'bus', name: 'バス停', size: 1, cost: 300, upkeep: 10, transit: 'bus', tr: 4, fund: 'transport' },
+  41: { key: 'subway', name: '地下鉄駅', size: 1, cost: 6000, upkeep: 120, transit: 'subway', tr: 6, use: 20, rank: 2, fund: 'transport' },
 };
+const BKEY = {};
+for (const id in B) BKEY[B[id].key] = +id;
+const isPlant = t => !!(B[t] && B[t].supply);
+
+/* zones: residents / jobs / power / water by level */
 const POP = [0, 20, 90, 300, 800];
 const JOBS_C = [0, 25, 100, 350, 900];
-const JOBS_I = [0, 40, 120, 300, 300];
+const JOBS_I = [0, 40, 120, 300];
+const PWR = { 3: [0, 2, 6, 15, 35], 4: [0, 4, 10, 25, 55], 5: [0, 8, 18, 35] };
+const WTR = { 3: [0, 1, 4, 12, 30], 4: [0, 2, 6, 15, 35], 5: [0, 3, 10, 20] };
+const ROAD_CAP = [1500, 4200];
 const LEVEL_NAME = {
   3: ['空き地', '一戸建て', 'アパート', 'マンション', 'タワーマンション'],
   4: ['空き地', '商店', 'オフィス', 'オフィスビル', '超高層ビル'],
-  5: ['空き地', '倉庫', '工場', '大規模工場', '大規模工場'],
+  5: ['空き地', '倉庫', '工場', '大規模工場'],
 };
+const HT_NAME = ['空き地', 'ラボ', '研究所', 'ハイテク工場'];
 const ZONE_NAME = { 3: '住宅地', 4: '商業地', 5: '工業地' };
 const RANKS = [
   { min: 0, suffix: '村', label: '村' },
@@ -426,6 +526,9 @@ const RANKS = [
   { min: 200000, suffix: '市', label: '中核市' },
   { min: 500000, suffix: '市', label: '政令指定都市' },
 ];
+const FUNDS = [
+  ['transport', '交通（道路・バス・地下鉄）'], ['police', '警察'], ['fire', '消防'], ['health', '医療'], ['edu', '教育'], ['garbage', 'ゴミ処理'],
+];
 const NAMES = ['あおば', 'みなと', 'さくら', 'ひかり', 'かえで', 'つばさ', 'みどり', 'あさひ', 'なぎさ', 'すずかけ'];
 
 /* map colours (the board keeps its own palette in both themes) */
@@ -433,11 +536,11 @@ const C = {
   grass: ['#8cbf67', '#88bb63', '#90c36b'],
   forest: '#77ad55', sand: '#e4d7a3',
   water: '#3a8cc4', shallow: '#5ea9d8', wave: 'rgba(255,255,255,.42)',
-  curb: '#d2cfc6', asphalt: '#5e646b', mark: '#f4ead0', bridge: '#c4beb0', rail: '#6f6a61',
+  curb: '#d2cfc6', asphalt: '#5e646b', asphaltAv: '#535960', mark: '#f4ead0', median: '#a9b3a0', bridge: '#c4beb0', rail: '#6f6a61',
   zone: { 3: '#d0eab6', 4: '#f7d0d9', 5: '#d0daf5' },
   zoneLine: { 3: '#3c9a5c', 4: '#d64a6e', 5: '#4a68cb' },
   lot: { 3: '#a9d389', 4: '#d9d6cf', 5: '#bdb9b0' },
-  concrete: '#d6d3ca', park: '#7cc35a', yard: '#dcc897', gravel: '#bab5aa', plant: '#aca79d',
+  concrete: '#d6d3ca', park: '#7cc35a', yard: '#dcc897', gravel: '#bab5aa', plant: '#aca79d', dirt: '#b39a74',
   trunk: '#7a5634', crown: ['#3f8a3a', '#4a9742', '#367f3a'], crownHi: 'rgba(178,226,128,.55)',
   pole: '#6b5a48', wire: 'rgba(35,35,35,.55)',
   soilL: '#9c7952', soilR: '#7c5c3e', sideWaterL: '#3a7fae', sideWaterR: '#2c6890',
@@ -452,42 +555,80 @@ const AWNING = ['#d6466b', '#2e8c69', '#df8a1d', '#3a6ed0'];
 const OFFICE = ['#9ab8d1', '#a6c2c9', '#aeb9cb', '#8eaec6'];
 const SKY = ['#78a3c9', '#8cb1cb', '#6489b2', '#a1bccf'];
 const FACTORY = ['#cdc5b4', '#b9c2c8', '#cfc2a7', '#c3bfb6'];
+const HIGHTECH = ['#d5e4ee', '#e3e8ec', '#cfe0e6'];
 const CAR_COL = ['#f1f3f5', '#ced4da', '#e03131', '#1c7ed6', '#343a40', '#f59f00', '#f1f3f5', '#2b8a3e'];
 const WIN_L = '#41566b', WIN_R = '#33465a', GLASS_L = '#e6f2fb', GLASS_R = '#bcd3e6';
 
 /* overlays: sequential single-hue ramps, light → dark */
+const RAMP_GREEN = ['#eef7e4', '#cbe8ad', '#9dd27a', '#68b552', '#368f3a', '#17632b'];
+const RAMP_BLUE = ['#e3eefc', '#b8d4f7', '#86b4ef', '#5591e0', '#2c6ec7', '#174c97'];
 const LAYERS = {
   none:    { name: 'なし' },
   power:   { name: '電力', keys: [['#f5c518', '電気あり'], ['#e03131', '電気なし']] },
-  lv:      { name: '地価', ramp: ['#eef7e4', '#cbe8ad', '#9dd27a', '#68b552', '#368f3a', '#17632b'], lo: '安い', hi: '高い' },
+  water:   { name: '水道', keys: [['#3b9ae1', '水道あり'], ['#e03131', '断水']] },
+  traffic: { name: '渋滞', ramp: ['#fff0d6', '#ffd38a', '#ffab45', '#f07b1a', '#c9520c', '#8f3307'], lo: '空いている', hi: '渋滞' },
+  commute: { name: '通勤', ramp: ['#7b1717', '#b12623', '#da483b', '#ef7d6e', '#f8b6ac', '#fde4e0'], lo: '仕事がない', hi: '全員通勤', revLabel: true },
+  lv:      { name: '地価', ramp: RAMP_GREEN, lo: '安い', hi: '高い' },
   poll:    { name: '汚染', ramp: ['#f4ecdb', '#e5d0a2', '#d0ab66', '#b3823a', '#8a5a1f', '#5e3812'], lo: '少ない', hi: 'ひどい' },
   crime:   { name: '犯罪', ramp: ['#fde4e0', '#f8b6ac', '#ef7d6e', '#da483b', '#b12623', '#7b1717'], lo: '安全', hi: '危険' },
-  traffic: { name: '交通量', ramp: ['#fff0d6', '#ffd38a', '#ffab45', '#f07b1a', '#c9520c', '#8f3307'], lo: '空いている', hi: '渋滞' },
-  police:  { name: '警察', ramp: ['#e3eefc', '#b8d4f7', '#86b4ef', '#5591e0', '#2c6ec7', '#174c97'], lo: '範囲外', hi: '手厚い' },
-  fire:    { name: '消防', ramp: ['#fde8dc', '#f9c3a5', '#f39668', '#e4683a', '#c24519', '#8c2c0c'], lo: '範囲外', hi: '手厚い' },
-  school:  { name: '学校', ramp: ['#efe6fa', '#d6c2f2', '#b897e6', '#956bd4', '#7046b8', '#4d2c8a'], lo: '範囲外', hi: '手厚い' },
-  health:  { name: '病院', ramp: ['#ddf4f1', '#ade5dd', '#72cfc3', '#3fb1a4', '#1f8c80', '#0f625a'], lo: '範囲外', hi: '手厚い' },
+  trash:   { name: 'ゴミ', ramp: ['#f1efe6', '#ddd6bd', '#c3b48a', '#a28d5a', '#7d6838', '#56461f'], lo: 'きれい', hi: '散乱' },
+  police:  { name: '警察', ramp: RAMP_BLUE, lo: '届かない', hi: '十分' },
+  fire:    { name: '消防', ramp: ['#fde8dc', '#f9c3a5', '#f39668', '#e4683a', '#c24519', '#8c2c0c'], lo: '届かない', hi: 'すぐ来る' },
+  health:  { name: '医療', ramp: ['#ddf4f1', '#ade5dd', '#72cfc3', '#3fb1a4', '#1f8c80', '#0f625a'], lo: '届かない', hi: '十分' },
+  edu:     { name: '教育', ramp: ['#efe6fa', '#d6c2f2', '#b897e6', '#956bd4', '#7046b8', '#4d2c8a'], lo: '低い', hi: '高い' },
 };
 
 const TOOLS = {
   select:   { name: '調べる', kind: 'select', hint: 'タップで調べる・ドラッグで移動・2本指でズーム' },
   bulldoze: { name: '撤去', kind: 'rect', unit: 2, hint: 'なぞった範囲を更地にする（¥2/マス）' },
-  road:     { name: '道路', kind: 'line', unit: 10, hint: 'なぞって敷く。川の上は橋（¥60/マス）' },
-  wire:     { name: '送電線', kind: 'line', unit: 5, hint: '道路のない場所へ電気を届ける' },
-  res:      { name: '住宅地', kind: 'rect', zone: T.RES, unit: 5, hint: '道路から2マス以内に。電気が届くと家が建つ' },
-  com:      { name: '商業地', kind: 'rect', zone: T.COM, unit: 5, hint: '店やオフィス。人口が増えると発展する' },
-  ind:      { name: '工業地', kind: 'rect', zone: T.IND, unit: 5, hint: '工場。働く場所になるが汚染が出る' },
-  coal:     { name: '火力発電', kind: 'place', b: T.COAL, hint: '電力1,000。安いが汚染が出る（¥60/月）' },
-  solar:    { name: '太陽光', kind: 'place', b: T.SOLAR, hint: '電力450。汚染なし（¥20/月）' },
-  park:     { name: '公園', kind: 'place', b: T.PARK, hint: 'まわりの地価を上げ、汚染をやわらげる' },
-  police:   { name: '警察署', kind: 'place', b: T.POLICE, hint: '半径10マスの犯罪を減らす（¥40/月）' },
-  fire:     { name: '消防署', kind: 'place', b: T.FIRE, hint: '半径10マスの火事を防ぐ（¥40/月）' },
-  school:   { name: '学校', kind: 'place', b: T.SCHOOL, hint: '地価を上げ、高層住宅の条件になる（¥100/月）' },
-  hosp:     { name: '病院', kind: 'place', b: T.HOSP, hint: '地価と住みやすさを上げる（¥150/月）' },
+  road:     { name: '道路', kind: 'line', unit: 10, road: 0, hint: 'まっすぐなぞって敷く。2車線（容量1,500人）' },
+  avenue:   { name: '大通り', kind: 'line', unit: 40, road: 1, rank: 1, hint: '4車線で渋滞に強い（容量4,200人）。道路の上をなぞると拡幅' },
+  bridge:   { name: '橋', kind: 'line', unit: 150, bridge: true, hint: '川をまっすぐ渡る。両岸が陸地で、長さ12マスまで（¥150/マス）' },
+  wire:     { name: '送電線', kind: 'line', unit: 5, hint: '道路のない場所へ電気を届ける（川の上は鉄塔 ¥25）' },
+  res:      { name: '住宅地', kind: 'rect', zone: T.RES, unit: 5, hint: '道路に面した区画に家が建つ。電気が必要、2段目からは水道も' },
+  com:      { name: '商業地', kind: 'rect', zone: T.COM, unit: 5, hint: '店とオフィス。働き手とお客さんが道路で通ってくる' },
+  ind:      { name: '工業地', kind: 'rect', zone: T.IND, unit: 5, hint: '工場。大きくなるには街の外へつながる道路（物流）が必要' },
 };
-const TOOL_GROUPS = [['select', 'bulldoze'], ['road', 'wire'], ['res', 'com', 'ind'], ['coal', 'solar'], ['park', 'police', 'fire', 'school', 'hosp']];
-const TOOL_KEYS = TOOL_GROUPS.flat();
-
+const BLD_HINT = {
+  park: 'まわり4マスの地価を上げ、汚染をやわらげる',
+  bigpark: '2×2。まわり7マスの地価を大きく上げる',
+  shrine: 'まわりの地価と支持率を少し上げる',
+  cityhall: '2×2。支持率+6。街にひとつ',
+  stadium: '2×2。観光客が来て商業が伸びる。支持率+6',
+  tvtower: '街のシンボル。観光客が大勢来る。支持率+5',
+  koban: '道路で14マス以内・4,000人を見守る',
+  police: '2×2。道路で26マス以内・2万5千人を見守る',
+  fire: '道路で16マス以内に駆けつける。渋滞だと遅れる',
+  clinic: '道路で16マス以内・1,200人の患者',
+  hosp: '2×2。道路で30マス以内・9,000人の患者',
+  school: '2×2。子ども1,500人。地価と教育水準が上がる',
+  high: '2×2。生徒1,800人。教育水準が上がる',
+  univ: '2×2。学生3,500人（街全体）。ハイテク産業が育つ',
+  coal: '2×2。電力1,000。安いが汚染がひどい。寿命40年',
+  gas: '2×2。電力900。汚染は石炭の3分の1。寿命40年',
+  wind: '電力45（風しだい）。汚染なし',
+  solar: '2×2。電力260（季節で変わる）。汚染なし',
+  nuclear: '2×2。電力6,000。汚染なし。とても高価',
+  wtower: '水700。電気が必要',
+  wplant: '2×2。水6,000。汚染された場所では能力が半分',
+  landfill: '2×2。月1,500トン。4万トンでいっぱいになる。におう',
+  incin: '2×2。月4,000トンを燃やす。汚染が出る。電気が必要',
+  recycle: '2×2。街のゴミを20%減らし、月1,500トン処理',
+  bus: 'まわり4マスの住民の15%がバス通勤になる',
+  subway: '駅のまわり6マスどうしの通勤の45%が地下鉄になる',
+};
+for (const id in B) {
+  const b = B[id];
+  TOOLS[b.key] = { name: b.short || b.name, kind: 'place', b: +id, rank: b.rank || 0, hint: BLD_HINT[b.key] || '' };
+}
+const CATS = [
+  { id: 'move', name: '交通', tools: ['road', 'avenue', 'bridge', 'bus', 'subway'] },
+  { id: 'zone', name: '区画', tools: ['res', 'com', 'ind'] },
+  { id: 'infra', name: 'インフラ', tools: ['wire', 'coal', 'gas', 'wind', 'solar', 'nuclear', 'wtower', 'wplant', 'landfill', 'incin', 'recycle'] },
+  { id: 'pub', name: '公共施設', tools: ['koban', 'police', 'fire', 'clinic', 'hosp', 'school', 'high', 'univ'] },
+  { id: 'park', name: '公園・名所', tools: ['park', 'bigpark', 'shrine', 'cityhall', 'stadium', 'tvtower'] },
+];
+const TOOL_KEYS = ['select', 'bulldoze', ...CATS.flatMap(c => c.tools)];
 /* =========================================================
    ユーティリティ
    ========================================================= */
@@ -552,28 +693,40 @@ const inb = (x, y) => x >= 0 && y >= 0 && x < N && y < N;
    ゲーム状態
    ========================================================= */
 let S = null;
+const monthIndex = () => S.year * 12 + S.month - 1;
 function blankState(seed, name) {
   return {
-    v: 1, seed, name, money: 20000, year: START_YEAR, month: 4, day: 1, tax: 7, disasters: true,
-    rank: 0, seen: {}, fy: { inc: 0, exp: 0 }, tut: {}, tutDone: false, tutClosed: false, tutMin: true, history: [],
+    v: SAVE_VERSION, seed, name, money: 20000, year: START_YEAR, month: 4, day: 1,
+    tax: { r: 7, c: 7, i: 7 },
+    fund: { transport: 100, police: 100, fire: 100, health: 100, edu: 100, garbage: 100 },
+    loans: [], disasters: true, rank: 0, seen: {}, fy: { inc: 0, exp: 0 }, goals: {}, streak: 0, wind: 1,
+    tut: {}, tutDone: false, tutClosed: false, tutMin: true, history: [],
     terrain: new Uint8Array(NN), tree: new Uint8Array(NN), type: new Uint8Array(NN), level: new Uint8Array(NN),
-    variant: new Uint8Array(NN), fire: new Uint8Array(NN), owner: new Int32Array(NN).fill(-1),
+    variant: new Uint8Array(NN), fire: new Uint8Array(NN), kind: new Uint8Array(NN), trash: new Uint8Array(NN),
+    owner: new Int32Array(NN).fill(-1), built: new Int32Array(NN), fill: new Int32Array(NN),
   };
 }
 const D = {
-  powered: new Uint8Array(NN), access: new Uint8Array(NN), lv: new Uint8Array(NN), poll: new Uint8Array(NN),
-  crime: new Uint8Array(NN), traffic: new Uint8Array(NN), shallow: new Uint8Array(NN), beach: new Uint8Array(NN),
-  waterBonus: new Uint8Array(NN),
-  cov: { police: new Uint8Array(NN), fire: new Uint8Array(NN), school: new Uint8Array(NN), health: new Uint8Array(NN), park: new Uint8Array(NN) },
+  powered: new Uint8Array(NN), watered: new Uint8Array(NN), acc: new Int32Array(NN).fill(-1), comp: new Int32Array(NN).fill(-1),
+  lv: new Uint8Array(NN), poll: new Uint8Array(NN), crime: new Uint8Array(NN),
+  load: new Float32Array(NN), q: new Float32Array(NN), emp: new Float32Array(NN).fill(1), commute: new Float32Array(NN), jfill: new Float32Array(NN).fill(1),
+  svc: { police: new Float32Array(NN), health: new Float32Array(NN), edu1: new Float32Array(NN), edu2: new Float32Array(NN), edu3: new Float32Array(NN), garbage: new Float32Array(NN).fill(1) },
+  fireProt: new Float32Array(NN),
+  amen: new Uint8Array(NN), trBus: new Uint8Array(NN), trSub: new Uint8Array(NN),
+  shallow: new Uint8Array(NN), beach: new Uint8Array(NN), waterBonus: new Uint8Array(NN),
 };
+let compEdge = [], compJobs = [], compWorkers = [];
 const ST = {
-  pop: 0, jc: 0, ji: 0, developed: 0, dr: 0, dc: 0, di: 0, supply: 0, demand: 0, unpowered: 0, noRoad: 0,
-  inc: { res: 0, com: 0, ind: 0 }, exp: {}, net: 0, cnt: {}, zones: { 3: 0, 4: 0, 5: 0 }, roads: 0, bridges: 0, wires: 0,
-  crimeHigh: 0, pollHigh: 0, jam: 0, burning: 0,
+  pop: 0, jc: 0, ji: 0, ht: 0, developed: 0, dr: 0, dc: 0, di: 0,
+  power: { supply: 0, use: 0 }, water: { supply: 0, use: 0 }, unpowered: 0, unwatered: 0, noRoad: 0,
+  garbage: { gen: 0, cap: 0, done: 0 }, landfillLeft: Infinity,
+  workers: 0, employed: 0, outsideWorkers: 0, avgCommute: 0, reach: 1, jams: 0, riders: 0, jobFill: 1,
+  approval: 50, factors: null, eq: 0, tourism: 0, hasEdge: false,
+  inc: {}, exp: {}, net: 0, incTotal: 0, expTotal: 0, cnt: {}, zones: { 3: 0, 4: 0, 5: 0 },
+  roads: 0, avenues: 0, bridges: 0, wires: 0, crimeHigh: 0, pollHigh: 0, burning: 0, fac: {},
 };
 const undoStack = [];
 let speed = 0, started = false;
-
 /* =========================================================
    地形生成
    ========================================================= */
@@ -655,65 +808,212 @@ function computeStatic() {
     D.beach[i] = !S.terrain[i] && water > 0 ? 1 : 0;
   }
 }
+/* a four-lane national road enters from one edge: the city's first link to the outside */
+function placeHighway(seed) {
+  const r = mulberry32(seed ^ 0x5bd1e995);
+  const sides = [0, 1, 2, 3].sort(() => r() - 0.5);
+  for (const side of sides) {
+    for (let off = 0; off < 30; off++) {
+      const p = 32 + (off % 2 ? -1 : 1) * Math.ceil(off / 2);
+      const pts = [];
+      for (let k = 0; k < 12; k++) {
+        const a = side < 2 ? k : N - 1 - k;
+        pts.push(side % 2 === 0 ? [a, p] : [p, a]);
+      }
+      if (pts.every(([x, y]) => !S.terrain[y * N + x])) {
+        for (const [x, y] of pts) { const i = y * N + x; S.type[i] = T.ROAD; S.level[i] = 1; S.tree[i] = 0; }
+        return;
+      }
+    }
+  }
+}
 
 /* =========================================================
    シミュレーション
    ========================================================= */
-function consumption(i) {
+const isRoad = i => S.type[i] === T.ROAD;
+const roadCap = i => ROAD_CAP[S.level[i]] * (0.6 + 0.4 * S.fund.transport / 100);
+const taxMult = t => clamp(1.35 - 0.05 * t, 0.25, 1.35);
+const zoneJobs = (t, L) => (t === T.COM ? JOBS_C[L] : t === T.IND ? JOBS_I[L] : 0);
+const svcAt = (s, i) => { const a = D.acc[i]; return a >= 0 ? D.svc[s][a] : 0; };
+const eqAt = i => 0.45 * svcAt('edu1', i) + 0.35 * svcAt('edu2', i) + 0.2 * svcAt('edu3', i);
+const fundOf = t => (B[t].fund ? S.fund[B[t].fund] / 100 : 1);
+const unemploymentRate = () => (ST.workers > 0 ? Math.max(0, 1 - ST.employed / ST.workers) : 0);
+function powerUse(i) {
   const t = S.type[i];
-  if (isZone(t)) return S.level[i];
-  if (t >= 6 && S.owner[i] === i) return BLD[t].use || 0;
+  if (isZone(t)) { const v = PWR[t][S.level[i]] || 0; return t === T.IND && S.kind[i] ? v * 0.7 : v; }
+  if (t >= 10 && S.owner[i] === i) return B[t].use || 0;
   return 0;
 }
+const waterUse = i => (isZone(S.type[i]) ? WTR[S.type[i]][S.level[i]] || 0 : 0);
 
-const _q = new Int32Array(NN), _mark = new Int32Array(NN), _seen = new Uint8Array(NN);
-let markGen = 0;
-function computePower() {
-  const pw = D.powered;
-  pw.fill(0); _seen.fill(0);
-  let supply = 0, demand = 0;
-  for (let i = 0; i < NN; i++) demand += consumption(i);
+/* --- road network: components and which road each lot faces --- */
+const _q = new Int32Array(NN);
+function adjRoad(x, y) {
+  for (let d = 0; d < 4; d++) {
+    const nx = x + DX[d], ny = y + DY[d];
+    if (inb(nx, ny) && isRoad(ny * N + nx)) return ny * N + nx;
+  }
+  return -1;
+}
+function computeAccess() {
+  D.comp.fill(-1);
+  compEdge = []; compJobs = []; compWorkers = [];
+  let nc = 0;
   for (let i = 0; i < NN; i++) {
-    if (!isPlant(S.type[i]) || _seen[i]) continue;
+    if (!isRoad(i) || D.comp[i] >= 0) continue;
+    let qh = 0, qt = 0, edge = false;
+    _q[qt++] = i; D.comp[i] = nc;
+    while (qh < qt) {
+      const c = _q[qh++], x = c % N, y = (c / N) | 0;
+      if (x === 0 || y === 0 || x === N - 1 || y === N - 1) edge = true;
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DX[d], ny = y + DY[d];
+        if (!inb(nx, ny)) continue;
+        const n = ny * N + nx;
+        if (isRoad(n) && D.comp[n] < 0) { D.comp[n] = nc; _q[qt++] = n; }
+      }
+    }
+    compEdge.push(edge); compJobs.push(0); compWorkers.push(0); nc++;
+  }
+  D.acc.fill(-1);
+  let noRoad = 0;
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (t === T.EMPTY || t === T.ROAD || t === T.WIRE) continue;
+    if (t >= 10) {
+      if (S.owner[i] !== i) continue;
+      const s = B[t].size, ox = i % N, oy = (i / N) | 0;
+      let a = -1;
+      for (let yy = oy; yy < oy + s && a < 0; yy++) for (let xx = ox; xx < ox + s && a < 0; xx++) a = adjRoad(xx, yy);
+      for (let yy = oy; yy < oy + s; yy++) for (let xx = ox; xx < ox + s; xx++) D.acc[yy * N + xx] = a;
+      continue;
+    }
+    const a = adjRoad(i % N, (i / N) | 0);
+    D.acc[i] = a;
+    if (a < 0) { noRoad++; continue; }
+    const L = S.level[i];
+    if (!L) continue;
+    if (t === T.RES) compWorkers[D.comp[a]] += POP[L] * 0.5; else compJobs[D.comp[a]] += zoneJobs(t, L);
+  }
+  ST.noRoad = noRoad;
+  ST.hasEdge = compEdge.some(Boolean);
+}
+
+/* --- shortest paths over roads (binary heap Dijkstra) --- */
+const HN = new Int32Array(NN * 4), HK = new Float64Array(NN * 4);
+let hLen = 0;
+function hpush(n, k) {
+  let i = hLen++;
+  while (i > 0) { const p = (i - 1) >> 1; if (HK[p] <= k) break; HN[i] = HN[p]; HK[i] = HK[p]; i = p; }
+  HN[i] = n; HK[i] = k;
+}
+function hpop() {
+  const top = HN[0], ln = HN[--hLen], lk = HK[hLen];
+  let i = 0;
+  for (;;) {
+    let c = 2 * i + 1;
+    if (c >= hLen) break;
+    if (c + 1 < hLen && HK[c + 1] < HK[c]) c++;
+    if (HK[c] >= lk) break;
+    HN[i] = HN[c]; HK[i] = HK[c]; i = c;
+  }
+  HN[i] = ln; HK[i] = lk;
+  return top;
+}
+const DIST = new Float64Array(NN), PAR = new Int32Array(NN), SRC = new Int32Array(NN);
+function enterCost(m) {
+  const q = D.q[m];
+  return (S.level[m] === 1 ? 0.75 : 1) * Math.min(10, 1 + q * q * q * q);
+}
+function dijkstra(sources, maxCost) {
+  DIST.fill(Infinity); PAR.fill(-1); SRC.fill(-1); hLen = 0;
+  for (const [n, c, s] of sources) if (c < DIST[n]) { DIST[n] = c; SRC[n] = s; hpush(n, c); }
+  while (hLen) {
+    const k = HK[0], n = hpop();
+    if (k > DIST[n]) continue;
+    const x = n % N, y = (n / N) | 0;
+    for (let d = 0; d < 4; d++) {
+      const nx = x + DX[d], ny = y + DY[d];
+      if (!inb(nx, ny)) continue;
+      const m = ny * N + nx;
+      if (!isRoad(m)) continue;
+      const nk = k + enterCost(m);
+      if (nk < DIST[m] && nk <= maxCost) { DIST[m] = nk; PAR[m] = n; SRC[m] = SRC[n]; hpush(m, nk); }
+    }
+  }
+}
+
+/* --- power and water: supply flows from the source through anything built --- */
+const _mark = new Int32Array(NN), _seen = new Uint8Array(NN);
+let markGen = 0;
+function plantAge(o) { return (monthIndex() - S.built[o]) / 12; }
+function plantOutput(o) {
+  const b = B[S.type[o]], age = plantAge(o);
+  let v = b.supply;
+  if (age > b.life) v *= Math.max(0.2, 1 - (age - b.life) * 0.08);
+  if (b.key === 'wind') v *= S.wind;
+  if (b.key === 'solar') v *= S.month >= 4 && S.month <= 9 ? 1.1 : 0.8;
+  return v;
+}
+function waterOutput(o) {
+  if (!D.powered[o]) return 0;
+  return B[S.type[o]].water * (D.poll[o] > 80 ? 0.5 : 1);
+}
+function spreadNet(out, isSrc, srcOut, useOf, viaWire) {
+  out.fill(0); _seen.fill(0);
+  let supply = 0, use = 0;
+  for (let i = 0; i < NN; i++) use += useOf(i);
+  const conducts = n => { const t = S.type[n]; return t !== T.EMPTY && (viaWire || t !== T.WIRE); };
+  for (let i = 0; i < NN; i++) {
+    if (!isSrc(i) || _seen[i]) continue;
     let qh = 0, qt = 0, cap = 0;
-    const plants = [];
+    const srcs = [];
     _q[qt++] = i; _seen[i] = 1;
     while (qh < qt) {
-      const c = _q[qh++], ct = S.type[c];
-      if (isPlant(ct)) { plants.push(c); if (S.owner[c] === c) cap += BLD[ct].supply; }
+      const c = _q[qh++];
+      if (isSrc(c)) { srcs.push(c); if (S.owner[c] === c) cap += srcOut(c); }
       const cx = c % N, cy = (c / N) | 0;
       for (let d = 0; d < 4; d++) {
         const nx = cx + DX[d], ny = cy + DY[d];
         if (!inb(nx, ny)) continue;
         const n = ny * N + nx;
-        if (!_seen[n] && S.type[n] !== T.EMPTY) { _seen[n] = 1; _q[qt++] = n; }
+        if (!_seen[n] && conducts(n)) { _seen[n] = 1; _q[qt++] = n; }
       }
     }
     supply += cap;
-    markGen++;
-    qh = 0; qt = 0;
-    for (const p of plants) { _q[qt++] = p; _mark[p] = markGen; pw[p] = 1; }
+    markGen++; qh = 0; qt = 0;
+    for (const p of srcs) { _q[qt++] = p; _mark[p] = markGen; out[p] = 1; }
     while (qh < qt) {
       const c = _q[qh++], cx = c % N, cy = (c / N) | 0;
       for (let d = 0; d < 4; d++) {
         const nx = cx + DX[d], ny = cy + DY[d];
         if (!inb(nx, ny)) continue;
         const n = ny * N + nx;
-        if (S.type[n] === T.EMPTY || _mark[n] === markGen) continue;
+        if (_mark[n] === markGen || !conducts(n)) continue;
         _mark[n] = markGen;
-        const need = consumption(n);
-        if (cap > 0 && need <= cap) { cap -= need; pw[n] = 1; }
+        const need = useOf(n);
+        if (cap > 0 && need <= cap) { cap -= need; out[n] = 1; }
         _q[qt++] = n;
       }
     }
   }
-  // multi-tile buildings share the origin's power state
-  for (let i = 0; i < NN; i++) { const o = S.owner[i]; if (o >= 0 && o !== i) pw[i] = pw[o]; }
-  let unpowered = 0;
-  for (let i = 0; i < NN; i++) if (isZone(S.type[i]) && !pw[i]) unpowered++;
-  ST.supply = supply; ST.demand = demand; ST.unpowered = unpowered;
+  for (let i = 0; i < NN; i++) { const o = S.owner[i]; if (o >= 0 && o !== i) out[i] = out[o]; }
+  return { supply, use };
+}
+function computeUtilities() {
+  ST.power = spreadNet(D.powered, i => isPlant(S.type[i]), plantOutput, powerUse, true);
+  ST.water = spreadNet(D.watered, i => !!(B[S.type[i]] && B[S.type[i]].water), waterOutput, waterUse, false);
+  let up = 0, uw = 0;
+  for (let i = 0; i < NN; i++) {
+    if (!isZone(S.type[i])) continue;
+    if (!D.powered[i]) up++;
+    if (S.level[i] && !D.watered[i]) uw++;
+  }
+  ST.unpowered = up; ST.unwatered = uw;
 }
 
+/* --- grids: prefix sums, stamps, blur --- */
 const PSA = new Float64Array((N + 1) * (N + 1)), PSB = new Float64Array((N + 1) * (N + 1));
 function buildPS(ps, get) {
   const W = N + 1;
@@ -728,39 +1028,16 @@ function boxSum(ps, x0, y0, x1, y1) {
   const W = N + 1;
   return ps[(y1 + 1) * W + x1 + 1] - ps[y0 * W + x1 + 1] - ps[(y1 + 1) * W + x0] + ps[y0 * W + x0];
 }
-
-function computeAccess() {
-  buildPS(PSA, i => (S.type[i] === T.ROAD ? 1 : 0));
-  let noRoad = 0;
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, a = boxSum(PSA, x - 2, y - 2, x + 2, y + 2) > 0 ? 1 : 0;
-    D.access[i] = a;
-    if (!a && isZone(S.type[i])) noRoad++;
-  }
-  ST.noRoad = noRoad;
-}
-
-function stamp(arr, cx, cy, R, strength) {
+function stamp(arr, cx, cy, R, strength, flat) {
   const y0 = Math.max(0, Math.floor(cy - R)), y1 = Math.min(N - 1, Math.ceil(cy + R));
   const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(N - 1, Math.ceil(cx + R));
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
     if (d > R) continue;
-    const v = strength * (1 - 0.6 * d / R), i = y * N + x;
+    const v = flat ? strength : strength * (1 - 0.6 * d / R), i = y * N + x;
     if (v > arr[i]) arr[i] = v;
   }
 }
-function computeCoverage() {
-  for (const k in D.cov) D.cov[k].fill(0);
-  for (let i = 0; i < NN; i++) {
-    const t = S.type[i];
-    if (t < 6 || S.owner[i] !== i) continue;
-    const b = BLD[t], x = i % N, y = (i / N) | 0, c = b.size / 2;
-    if (b.cov) stamp(D.cov[b.cov], x + c, y + c, b.radius, D.powered[i] ? 255 : 110);
-    if (t === T.PARK) stamp(D.cov.park, x + 0.5, y + 0.5, 4, 255);
-  }
-}
-
 const fa = new Float32Array(NN), fb = new Float32Array(NN);
 function blur(a, passes) {
   for (let p = 0; p < passes; p++) {
@@ -780,227 +1057,558 @@ function blur(a, passes) {
     a.set(fb);
   }
 }
+function computeStamps() {
+  D.amen.fill(0); D.trBus.fill(0); D.trSub.fill(0);
+  let tourism = 0;
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (t < 10 || S.owner[i] !== i) continue;
+    const b = B[t], x = i % N, y = (i / N) | 0, c = b.size / 2;
+    if (b.amen) stamp(D.amen, x + c, y + c, b.amen[0], b.amen[1]);
+    if (b.transit && D.acc[i] >= 0 && (!b.use || D.powered[i])) stamp(b.transit === 'bus' ? D.trBus : D.trSub, x + 0.5, y + 0.5, b.tr, 1, true);
+    if (b.tourism && D.acc[i] >= 0 && D.powered[i]) tourism += b.tourism;
+  }
+  ST.tourism = tourism;
+}
 
-function computeMaps() {
-  computeCoverage();
-  // traffic: trips generated nearby, shared by the roads that carry them
-  buildPS(PSA, i => (isZone(S.type[i]) ? S.level[i] * S.level[i] : 0));
-  buildPS(PSB, i => (S.type[i] === T.ROAD ? 1 : 0));
-  let jam = 0;
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x;
-    if (S.type[i] !== T.ROAD) { D.traffic[i] = 0; continue; }
-    const trips = boxSum(PSA, x - 3, y - 3, x + 3, y + 3), roads = boxSum(PSB, x - 3, y - 3, x + 3, y + 3);
-    const v = Math.min(255, (trips / Math.max(1, roads)) * 16);
-    D.traffic[i] = v;
-    if (v > 220) jam++;
-  }
-  // pollution
+/* --- commuting: residents look for jobs along the roads, congestion slows them down --- */
+const transitShare = (o, d) => Math.max(D.trBus[o] ? 0.15 : 0, D.trSub[o] && D.trSub[d] ? 0.45 : 0);
+function edgeRoads() {
+  const e = [];
   for (let i = 0; i < NN; i++) {
-    const t = S.type[i];
-    let p = 0;
-    if (t === T.IND) p = [0, 35, 70, 110][S.level[i]];
-    else if (t === T.COAL) p = 300;
-    else if (t === T.ROAD) p = D.traffic[i] * 0.3;
-    else if (t === T.COM) p = S.level[i] * 6;
-    if (S.tree[i]) p -= 25;
-    if (t === T.PARK) p -= 40;
-    fa[i] = p;
+    if (!isRoad(i)) continue;
+    const x = i % N, y = (i / N) | 0;
+    if (x === 0 || y === 0 || x === N - 1 || y === N - 1) e.push(i);
   }
-  blur(fa, 3);
-  for (let i = 0; i < NN; i++) D.poll[i] = clamp(fa[i] * 2, 0, 255);
-  // crime
+  return e;
+}
+function computeTraffic() {
+  const orig = new Float32Array(NN), cap = new Float32Array(NN), outCap = new Float32Array(NN);
   for (let i = 0; i < NN; i++) {
-    const t = S.type[i], L = S.level[i];
-    fa[i] = (t === T.RES || t === T.COM) && L > 0 ? 18 + L * 22 + (D.lv[i] < 70 ? 25 : 0) : 0;
+    const t = S.type[i], L = S.level[i], a = D.acc[i];
+    if (!isZone(t) || !L || a < 0) continue;
+    if (t === T.RES) orig[a] += POP[L] * 0.5; else cap[a] += zoneJobs(t, L);
   }
-  blur(fa, 2);
-  for (let i = 0; i < NN; i++) D.crime[i] = clamp(fa[i] * 1.6 - D.cov.police[i] * 0.9, 0, 255);
-  // land value
-  buildPS(PSA, i => S.tree[i]);
-  let crimeHigh = 0, pollHigh = 0;
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x;
-    if (S.terrain[i] && S.type[i] === T.EMPTY) { D.lv[i] = 0; continue; }
-    const trees = boxSum(PSA, x - 2, y - 2, x + 2, y + 2);
-    const v = 70 + D.waterBonus[i] + Math.min(30, trees * 3) + D.cov.park[i] * 0.3 + D.cov.school[i] * 0.12 +
-      D.cov.health[i] * 0.12 + D.cov.police[i] * 0.05 - D.poll[i] * 0.75 - D.crime[i] * 0.4;
-    D.lv[i] = clamp(v, 0, 255);
-    const t = S.type[i];
-    if (S.level[i] > 0) {
-      if ((t === T.RES || t === T.COM) && D.crime[i] > 120) crimeHigh++;
-      if (t === T.RES && D.poll[i] > 80) pollHigh++;
+  const edges = edgeRoads(), outside = edges.length ? 300 + ST.pop * 0.06 : 0, inbound = edges.length ? 150 + ST.pop * 0.04 : 0;
+  const inb = new Float32Array(NN);
+  for (const e of edges) { cap[e] += outside / edges.length; outCap[e] += outside / edges.length; inb[e] = inbound / edges.length; }
+  const filled = new Float32Array(NN), rem = orig.slice(), emp = new Float32Array(NN), comm = new Float32Array(NN), load = new Float32Array(NN);
+  for (const e of edges) rem[e] += inb[e];
+  let riders = 0, outsideWorkers = 0;
+  for (let round = 0; round < 16; round++) {
+    const srcs = [];
+    for (let n = 0; n < NN; n++) if (cap[n] - filled[n] > 0.5) srcs.push([n, outCap[n] > 0 && cap[n] - outCap[n] < 1 ? 10 : 0, n]);
+    if (!srcs.length) break;
+    dijkstra(srcs, 48);
+    const origins = [];
+    for (let n = 0; n < NN; n++) if (rem[n] > 0.5 && DIST[n] < Infinity) origins.push(n);
+    origins.sort((a, b) => DIST[a] - DIST[b]);
+    let progress = 0;
+    for (const o of origins) {
+      const d = SRC[o], free = cap[d] - filled[d];
+      if (free <= 0.5) continue;
+      const take = Math.min(rem[o], free);
+      filled[d] += take; rem[o] -= take; emp[o] += take; comm[o] += take * DIST[o]; progress += take;
+      if (outCap[d] > 0 && cap[d] - outCap[d] < 1) outsideWorkers += take * (orig[o] / (orig[o] + inb[o] || 1));
+      const share = transitShare(o, d), car = take * (1 - share);
+      riders += take * share;
+      for (let n = o; n >= 0; n = PAR[n]) load[n] += car;
+    }
+    if (progress < 1) break;
+  }
+  // freight from factories and deliveries to shops use the roads to the outside
+  if (edges.length) {
+    dijkstra(edges.map(e => [e, 0, e]), 90);
+    for (let i = 0; i < NN; i++) {
+      const t = S.type[i], L = S.level[i], a = D.acc[i];
+      if (!L || a < 0 || DIST[a] === Infinity) continue;
+      let trucks;
+      if (t === T.IND) trucks = JOBS_I[L] * (S.kind[i] ? 0.08 : 0.3);
+      else if (t === T.COM) trucks = JOBS_C[L] * 0.06;
+      else continue;
+      for (let n = a; n >= 0; n = PAR[n]) load[n] += trucks;
     }
   }
-  ST.jam = jam; ST.crimeHigh = crimeHigh; ST.pollHigh = pollHigh;
+  let jams = 0, W = 0, E = 0, CM = 0, own = 0, ownFill = 0;
+  for (let n = 0; n < NN; n++) {
+    if (isRoad(n)) { D.load[n] = load[n]; D.q[n] = load[n] / roadCap(n); if (D.q[n] > 1) jams++; }
+    else { D.load[n] = 0; D.q[n] = 0; }
+    if (orig[n] > 0) {
+      const tot = orig[n] + inb[n], e = emp[n] * orig[n] / tot;
+      D.emp[n] = e / orig[n]; D.commute[n] = emp[n] > 0 ? comm[n] / emp[n] : 0; W += orig[n]; E += e; CM += comm[n] * orig[n] / tot;
+    }
+    else { D.emp[n] = 1; D.commute[n] = 0; }
+    const c = cap[n] - outCap[n];
+    if (c > 0) {
+      const f = Math.min(1, Math.max(0, filled[n] - outCap[n] * (filled[n] / cap[n])) / c);
+      D.jfill[n] = f; own += c; ownFill += c * f;
+    } else D.jfill[n] = 1;
+  }
+  ST.workers = W; ST.employed = E; ST.avgCommute = E > 0 ? CM / E : 0; ST.jams = jams; ST.riders = riders; ST.outsideWorkers = outsideWorkers;
+  const jobs = ST.jc + ST.ji + outside;
+  ST.reach = Math.min(W, jobs) > 0 ? Math.min(1, E / Math.min(W, jobs)) : 1;
+  ST.jobFill = own > 0 ? ownFill / own : 1;
   roadListDirty = true;
 }
 
-function adjustTotals(t, L, s) {
+/* --- public services: capacity shared along the roads, nearest first --- */
+const SVC_DEM = { police: new Float32Array(NN), health: new Float32Array(NN), edu1: new Float32Array(NN), edu2: new Float32Array(NN), edu3: new Float32Array(NN) };
+function facilities(svc) {
+  const out = [];
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (t < 10 || S.owner[i] !== i || B[t].svc !== svc) continue;
+    const b = B[t], a = D.acc[i];
+    if (a < 0) { ST.fac[i] = { used: 0, cap: 0, noRoad: true }; continue; }
+    const f = fundOf(t), pw = !b.use || D.powered[i] ? 1 : 0.3;
+    out.push({ o: i, a, b, cap: (b.cap || 0) * f * pw, range: b.range * (0.7 + 0.3 * f) * (pw < 1 ? 0.7 : 1) });
+  }
+  return out;
+}
+function allocService(s, dem) {
+  const rate = D.svc[s];
+  rate.fill(0);
+  const facs = facilities(s);
+  if (!facs.length) return;
+  const by = new Map(facs.map(f => [f.o, f])), left = new Map(facs.map(f => [f.o, f.cap]));
+  dijkstra(facs.map(f => [f.a, 0, f.o]), Math.max(...facs.map(f => f.range)));
+  const nodes = [];
+  for (let n = 0; n < NN; n++) if (dem[n] > 0 && DIST[n] < Infinity && DIST[n] <= by.get(SRC[n]).range) nodes.push(n);
+  nodes.sort((a, b) => DIST[a] - DIST[b]);
+  for (const n of nodes) {
+    const o = SRC[n], l = left.get(o);
+    if (l <= 0) continue;
+    const take = Math.min(dem[n], l);
+    left.set(o, l - take); rate[n] = take / dem[n];
+  }
+  for (let n = 0; n < NN; n++) if (!dem[n] && DIST[n] < Infinity && DIST[n] <= by.get(SRC[n]).range && left.get(SRC[n]) > 0) rate[n] = 1;
+  for (const f of facs) ST.fac[f.o] = { used: f.cap - left.get(f.o), cap: f.cap, range: f.range };
+}
+function computeServices() {
+  for (const k in SVC_DEM) SVC_DEM[k].fill(0);
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i], L = S.level[i], a = D.acc[i];
+    if (!isZone(t) || !L || a < 0) continue;
+    if (t === T.RES) {
+      const p = POP[L];
+      SVC_DEM.police[a] += p; SVC_DEM.health[a] += p * (0.05 + D.poll[i] / 2500);
+      SVC_DEM.edu1[a] += p * 0.1; SVC_DEM.edu2[a] += p * 0.05; SVC_DEM.edu3[a] += p * 0.04;
+    } else SVC_DEM.police[a] += zoneJobs(t, L) * 0.5;
+  }
+  for (const s of ['police', 'health', 'edu1', 'edu2', 'edu3']) allocService(s, SVC_DEM[s]);
+  D.fireProt.fill(0);
+  const fires = facilities('fire');
+  if (fires.length) {
+    const by = new Map(fires.map(f => [f.o, f]));
+    dijkstra(fires.map(f => [f.a, 0, f.o]), Math.max(...fires.map(f => f.range)));
+    for (let n = 0; n < NN; n++) if (DIST[n] < Infinity) D.fireProt[n] = Math.max(0, 1 - DIST[n] / by.get(SRC[n]).range);
+    for (const f of fires) ST.fac[f.o] = { range: f.range };
+  }
+}
+
+/* --- garbage: trucks collect along the roads; landfills fill up --- */
+function computeGarbage(apply) {
+  const gen = new Float32Array(NN);
+  let reduce = 0;
+  const facs = facilities('garbage');
+  for (const f of facs) if (f.b.reduce && (!f.b.use || D.powered[f.o])) reduce += f.b.reduce;
+  reduce = Math.min(0.4, reduce);
+  let total = 0;
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i], L = S.level[i];
+    if (!isZone(t) || !L) continue;
+    const g = (t === T.RES ? POP[L] * 0.03 : t === T.COM ? JOBS_C[L] * 0.02 : JOBS_I[L] * (S.kind[i] ? 0.02 : 0.05)) * (1 - reduce);
+    total += g;
+    if (D.acc[i] >= 0) gen[D.acc[i]] += g;
+  }
+  const rate = D.svc.garbage;
+  rate.fill(0);
+  let cap = 0, done = 0, room = 0, intake = 0;
+  for (const f of facs) {
+    const pw = !f.b.use || D.powered[f.o] ? 1 : 0;
+    const space = f.b.store ? Math.max(0, f.b.store - S.fill[f.o]) : Infinity;
+    f.left = Math.min(f.b.rate * fundOf(S.type[f.o]) * pw, space);
+    f.start = f.left; cap += f.left;
+    if (f.b.store) room += space;
+  }
+  if (facs.length) {
+    const by = new Map(facs.map(f => [f.o, f]));
+    dijkstra(facs.map(f => [f.a, 0, f.o]), Math.max(...facs.map(f => f.range)));
+    const nodes = [];
+    for (let n = 0; n < NN; n++) if (DIST[n] < Infinity && DIST[n] <= by.get(SRC[n]).range) { if (gen[n] > 0) nodes.push(n); else rate[n] = 1; }
+    nodes.sort((a, b) => DIST[a] - DIST[b]);
+    for (const n of nodes) {
+      const f = by.get(SRC[n]);
+      if (f.left <= 0) continue;
+      const take = Math.min(gen[n], f.left);
+      f.left -= take; rate[n] = take / gen[n]; done += take;
+      if (f.b.store) { intake += take; if (apply) S.fill[f.o] += take; }
+    }
+    for (const f of facs) {
+      ST.fac[f.o] = { used: f.start - f.left, cap: f.start, range: f.range, fill: f.b.store ? S.fill[f.o] / f.b.store : null };
+      if (apply && f.b.store) markTile(f.o);
+    }
+  }
+  if (apply) {
+    const mi = monthIndex();
+    for (let i = 0; i < NN; i++) {
+      const old = S.trash[i];
+      let v = old;
+      if (isZone(S.type[i]) && S.level[i]) {
+        const a = D.acc[i], r = a >= 0 ? rate[a] : 0;
+        const collected = r >= 0.999 || (hash2(i, mi) % 1000) / 1000 < r;
+        v = collected ? Math.max(0, old - 120) : Math.min(255, old + 45);
+      } else if (old) v = Math.max(0, old - 60);
+      S.trash[i] = v;
+      if ((old >= 128) !== (v >= 128)) markTile(i);
+    }
+  }
+  ST.garbage = { gen: total, cap, done };
+  ST.landfillLeft = intake > 0 ? room / intake : Infinity;
+}
+
+/* --- pollution, crime and land value --- */
+function computeMaps() {
+  computeStamps();
+  const park = BKEY.park, bigpark = BKEY.bigpark, incin = BKEY.incin;
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i], L = S.level[i];
+    let p = 0;
+    if (t === T.IND) p = S.kind[i] ? [0, 10, 18, 28][L] : [0, 60, 110, 160][L];
+    else if (t >= 10 && B[t].poll) p = t === incin && !D.powered[i] ? 0 : B[t].poll;
+    else if (t === T.ROAD) p = 22 * Math.min(3, D.q[i]);
+    else if (t === T.COM && L === 4) p = 12;
+    if (S.tree[i]) p -= 25;
+    if (t === park) p -= 40;
+    if (t === bigpark) p -= 60;
+    fa[i] = p;
+  }
+  blur(fa, 3);
+  for (let i = 0; i < NN; i++) D.poll[i] = clamp(fa[i] * 2.2, 0, 255);
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i], L = S.level[i];
+    if ((t === T.RES || t === T.COM) && L > 0) {
+      const a = D.acc[i];
+      fa[i] = 10 + L * 18 + (D.lv[i] < 50 ? 15 : 0) + (t === T.RES && a >= 0 ? (1 - D.emp[a]) * 40 : 0);
+    } else fa[i] = 0;
+  }
+  blur(fa, 2);
+  for (let i = 0; i < NN; i++) D.crime[i] = clamp(fa[i] * 1.5 * (1 - 0.85 * svcAt('police', i)), 0, 255);
+  buildPS(PSA, i => S.tree[i]);
+  buildPS(PSB, i => (S.type[i] === T.COM ? JOBS_C[S.level[i]] : 0));
+  let crimeHigh = 0, pollHigh = 0;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, t = S.type[i];
+    if (S.terrain[i] && t === T.EMPTY) { D.lv[i] = 0; continue; }
+    const a = D.acc[i];
+    const trees = boxSum(PSA, x - 2, y - 2, x + 2, y + 2), downtown = boxSum(PSB, x - 5, y - 5, x + 5, y + 5);
+    const noise = a >= 0 ? Math.min(30, Math.max(0, D.q[a] - 0.8) * 25) : 0;
+    const v = 60 + D.waterBonus[i] + Math.min(30, trees * 3) + D.amen[i] * 0.35 + eqAt(i) * 40 + svcAt('health', i) * 15 +
+      svcAt('police', i) * 8 + (D.trSub[i] ? 25 : D.trBus[i] ? 8 : 0) + Math.min(30, downtown / 150) -
+      D.poll[i] * 0.85 - D.crime[i] * 0.45 - S.trash[i] * 0.3 - noise;
+    D.lv[i] = clamp(v, 0, 255);
+    if (S.level[i] > 0) {
+      if ((t === T.RES || t === T.COM) && D.crime[i] > 110) crimeHigh++;
+      if (t === T.RES && D.poll[i] > 70) pollHigh++;
+    }
+  }
+  ST.crimeHigh = crimeHigh; ST.pollHigh = pollHigh;
+}
+
+/* --- how residents feel --- */
+function computeApproval() {
+  const f = { emp: 0, commute: 0, poll: 0, crime: 0, health: 0, edu: 0, trash: 0, water: 0, power: 0 };
+  let w = 0;
+  for (let i = 0; i < NN; i++) {
+    if (S.type[i] !== T.RES || !S.level[i]) continue;
+    const p = POP[S.level[i]], a = D.acc[i];
+    const e = a >= 0 ? D.emp[a] : 0, cm = a >= 0 ? D.commute[a] : 60;
+    f.emp += p * e;
+    f.commute += p * clamp(1 - (cm - 12) / 35, 0, 1);
+    f.poll += p * clamp(1 - D.poll[i] / 180, 0, 1);
+    f.crime += p * clamp(1 - D.crime[i] / 180, 0, 1);
+    f.health += p * svcAt('health', i);
+    f.edu += p * eqAt(i);
+    f.trash += p * (1 - S.trash[i] / 255);
+    f.water += p * (D.watered[i] ? 1 : 0.3);
+    f.power += p * (D.powered[i] ? 1 : 0);
+    w += p;
+  }
+  let landmark = 0, shrines = 0;
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (t < 10 || S.owner[i] !== i || !B[t].approval) continue;
+    if (B[t].key === 'shrine') { if (shrines++ < 3) landmark += 1; } else landmark += B[t].approval;
+  }
+  landmark = Math.min(15, landmark);
+  if (!w) { ST.approval = clamp(55 + landmark - (S.tax.r - 7) * 2.5, 0, 100); ST.factors = null; ST.eq = 0; return; }
+  for (const k in f) f[k] /= w;
+  const base = 0.18 * f.emp + 0.12 * f.commute + 0.14 * f.poll + 0.12 * f.crime + 0.12 * f.health + 0.1 * f.edu + 0.1 * f.trash + 0.06 * f.water + 0.06 * f.power;
+  ST.approval = clamp(base * 100 - (S.tax.r - 7) * 2.5 + landmark, 0, 100);
+  ST.factors = f; ST.eq = f.edu; ST.landmark = landmark;
+}
+
+/* --- totals and growth --- */
+function adjustTotals(i, t, L, s) {
   if (t === T.RES) ST.pop += s * POP[L];
   else if (t === T.COM) ST.jc += s * JOBS_C[L];
-  else if (t === T.IND) ST.ji += s * JOBS_I[L];
+  else if (t === T.IND) { ST.ji += s * JOBS_I[L]; if (S.kind[i] && L) ST.ht += s; }
   else return;
   if (L > 0) ST.developed += s;
 }
 function recountTotals() {
-  ST.pop = ST.jc = ST.ji = ST.developed = 0;
-  for (let i = 0; i < NN; i++) if (isZone(S.type[i])) adjustTotals(S.type[i], S.level[i], 1);
+  ST.pop = ST.jc = ST.ji = ST.ht = ST.developed = 0;
+  for (let i = 0; i < NN; i++) if (isZone(S.type[i])) adjustTotals(i, S.type[i], S.level[i], 1);
 }
 function setLevel(i, L) {
   const t = S.type[i], old = S.level[i];
   if (old === L) return;
-  adjustTotals(t, old, -1);
-  adjustTotals(t, L, 1);
+  adjustTotals(i, t, old, -1);
   S.level[i] = L;
+  if (L === 0) S.kind[i] = 0;
+  adjustTotals(i, t, L, 1);
   if (L > old || L === 0) S.variant[i] = (rand() * 256) | 0;
   markTile(i);
   flags.power = true;
   computeDemand();
 }
-
 function computeDemand() {
-  const P = ST.pop, W = P * 0.6, k = Math.min(1, P / 200000);
-  const iT = W * (0.5 - 0.2 * k) + 150;
-  const cT = W * (0.42 + 0.2 * k) + 30;
-  const rT = ((ST.jc + ST.ji) / 0.6) * 1.15 + 250;
-  const taxMod = (8 - S.tax) * 0.05;
-  ST.dr = clamp((rT - P) / Math.max(200, rT * 0.3) + taxMod, -1, 1);
-  ST.dc = clamp((cT - ST.jc) / Math.max(100, cT * 0.3) + taxMod * 0.6, -1, 1);
-  ST.di = clamp((iT - ST.ji) / Math.max(150, iT * 0.3) + taxMod * 0.6, -1, 1);
+  const P = ST.pop, W = P * 0.5, outside = ST.hasEdge ? 300 + P * 0.06 : 0;
+  const avail = (ST.jc + ST.ji + outside) * ST.reach;
+  const unemp = Math.max(0, W - avail), open = Math.max(0, avail - W);
+  const base = 120 + (ST.hasEdge ? 250 : 0);
+  ST.dr = clamp((open - unemp + base) / Math.max(250, W * 0.25), -1, 1);
+  const tC = P * 0.25 + ST.tourism * 0.4 + 20;
+  ST.dc = clamp((tC - ST.jc) / Math.max(150, tC * 0.3), -1, 1);
+  const tI = W * 0.5 + 100 + (ST.hasEdge ? 100 : 0);
+  ST.di = clamp((tI - ST.ji) / Math.max(200, tI * 0.3), -1, 1);
 }
-
 function maxLevel(i, t) {
-  const lv = D.lv[i];
-  if (t === T.RES) return lv < 40 ? 1 : lv < 92 ? 2 : (lv < 150 || D.cov.school[i] < 40 || ST.pop < 15000) ? 3 : 4;
-  if (t === T.COM) return lv < 40 ? 1 : lv < 85 ? 2 : (lv < 140 || ST.pop < 30000) ? 3 : 4;
-  return ST.pop < 1500 ? 2 : 3;
-}
-function desirability(i, t) {
-  const lv = D.lv[i];
-  if (t === T.RES) return (lv - 90) / 110 - D.poll[i] / 180 - D.crime[i] / 220 + D.cov.health[i] / 900 + D.cov.school[i] / 900;
-  if (t === T.COM) return (lv - 80) / 130 - D.crime[i] / 250 - D.poll[i] / 400;
-  return 0.2 - D.crime[i] / 400;
+  const lv = D.lv[i], poll = D.poll[i], a = D.acc[i];
+  if (t === T.RES) {
+    let m = lv < 30 ? 1 : lv < 90 ? 2 : lv < 150 ? 3 : 4;
+    if (!D.watered[i]) m = Math.min(m, 1);
+    if (poll > 130) m = 1; else if (poll > 70) m = Math.min(m, 2);
+    if (m === 4 && (eqAt(i) < 0.5 || ST.pop < 15000)) m = 3;
+    return m;
+  }
+  if (t === T.COM) {
+    let m = lv < 30 ? 1 : lv < 85 ? 2 : lv < 140 ? 3 : 4;
+    if (!D.watered[i]) m = Math.min(m, 2);
+    if (poll > 150) m = Math.min(m, 2);
+    if (m === 4 && ST.pop < 30000) m = 3;
+    return m;
+  }
+  let m = ST.pop < 1500 ? 2 : 3;
+  if (!D.watered[i]) m = Math.min(m, 1);
+  if (a < 0 || !compEdge[D.comp[a]]) m = Math.min(m, 1);
+  return m;
 }
 function growTile(i) {
-  const t = S.type[i], L = S.level[i];
+  const t = S.type[i], L = S.level[i], a = D.acc[i];
   if (S.fire[i]) return;
-  if (!D.powered[i] || !D.access[i]) { if (L > 0 && rand() < 0.2) setLevel(i, L - 1); return; }
-  const dem = t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di;
-  const des = desirability(i, t), max = maxLevel(i, t);
+  if (a < 0 || !D.powered[i]) { if (L > 0 && rand() < 0.2) setLevel(i, L - 1); return; }
+  const c = D.comp[a];
+  let dem, des, mult, ok = true, tax;
+  if (t === T.RES) {
+    if (L === 0 && !(compJobs[c] > 0 || compEdge[c])) return;
+    dem = ST.dr; tax = S.tax.r;
+    const emp = D.emp[a], cm = D.commute[a];
+    if (L > 0 && emp < 0.5) ok = false;
+    des = (D.lv[i] - 90) / 110 - D.poll[i] / 110 - D.crime[i] / 200 - S.trash[i] / 200 + svcAt('health', i) * 0.15 + eqAt(i) * 0.15 -
+      Math.max(0, cm - 20) / 40 - (L > 0 && emp < 0.7 ? 0.3 : 0);
+    mult = (0.3 + ST.approval / 100 * 1.2) * taxMult(tax);
+  } else {
+    if (L === 0 && !(compWorkers[c] > 0 || compEdge[c])) return;
+    if (L > 0 && D.jfill[a] < 0.6) ok = false;
+    if (t === T.COM) { dem = ST.dc; tax = S.tax.c; des = (D.lv[i] - 80) / 130 - D.crime[i] / 250 - D.poll[i] / 220 - S.trash[i] / 250; }
+    else { dem = ST.di; tax = S.tax.i; des = 0.2 - D.crime[i] / 400 - S.trash[i] / 400; }
+    mult = taxMult(tax);
+  }
+  const max = maxLevel(i, t);
   if (L > max) { if (rand() < 0.15) setLevel(i, L - 1); return; }
-  if (dem > 0 && L < max) {
-    const p = 0.05 + dem * clamp(0.55 + des * 0.5, 0.1, 1) * 0.6;
-    if (rand() < p) setLevel(i, L + 1);
-  } else if (L > 0 && (dem < -0.25 || des < -0.8)) {
-    if (rand() < 0.04 + Math.max(0, -dem) * 0.08) setLevel(i, L - 1);
+  if (dem > 0 && L < max && ok) {
+    const p = (0.05 + dem * clamp(0.55 + des * 0.5, 0.1, 1) * 0.6) * mult;
+    if (rand() < p) {
+      if (t === T.IND && !S.kind[i] && ST.eq > 0.35 && rand() < (ST.eq - 0.25) * 1.5) {
+        adjustTotals(i, t, L, -1); S.kind[i] = 1; adjustTotals(i, t, L, 1);
+      }
+      setLevel(i, L + 1);
+    }
+  } else if (L > 0 && (dem < -0.25 || des < -0.7 || !ok || (t === T.RES && ST.approval < 30) || tax > 12)) {
+    let p = 0.02 + Math.max(0, -dem) * 0.08 + Math.max(0, -0.7 - des) * 0.1 + (ok ? 0 : 0.03);
+    if (t === T.RES && ST.approval < 30) p += (30 - ST.approval) * 0.004;
+    if (tax > 12) p += (tax - 12) * 0.006;
+    if (rand() < p) setLevel(i, L - 1);
   }
 }
+/* why a lot is not growing, in plain words (for the inspector) */
+function growthNotes(i) {
+  const t = S.type[i], L = S.level[i], a = D.acc[i], notes = [];
+  if (a < 0) { notes.push('道路に面していません。区画のとなりに道路が必要です。'); return notes; }
+  if (!D.powered[i]) notes.push(ST.power.supply > 0 && ST.power.use > ST.power.supply ? '電力が足りず停電しています。発電所を増やしましょう。' : '電気が届いていません。発電所と道路か送電線でつなぎましょう。');
+  const c = D.comp[a];
+  if (t === T.RES && !(compJobs[c] > 0 || compEdge[c])) notes.push('この道路は職場にも街の外にもつながっていません。');
+  if (t !== T.RES && !(compWorkers[c] > 0 || compEdge[c])) notes.push('この道路は住宅にも街の外にもつながっていません。');
+  if (t === T.RES && L > 0 && D.emp[a] < 0.7) notes.push(`道路で通える範囲に仕事があるのは住民の${Math.round(D.emp[a] * 100)}%だけです。`);
+  if (t === T.RES && D.commute[a] > 22) notes.push(`通勤に${Math.round(D.commute[a] * 2)}分かかっています。渋滞か、職場が遠すぎます。`);
+  if (t !== T.RES && L > 0 && D.jfill[a] < 0.6) notes.push(`働き手が${Math.round(D.jfill[a] * 100)}%しか集まりません。道路でつながった住宅を増やしましょう。`);
+  if (t === T.IND && !compEdge[c]) notes.push('街の外へつながる道路がなく、製品を出荷できません（倉庫まで）。');
+  const needWater = (t === T.RES && L >= 1) || (t === T.COM && L >= 2) || (t === T.IND && L >= 1);
+  if (needWater && !D.watered[i]) notes.push('水道が届いていないため、これ以上大きくなれません。給水塔を建てましょう。');
+  const dem = t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di;
+  if (dem <= 0) notes.push(t === T.RES ? 'いまは住宅の需要がありません。働く場所を増やしましょう。' : t === T.COM ? 'いまは商業の需要がありません。住民が増えると伸びます。' : 'いまは工業の需要がありません。住民が増えると伸びます。');
+  const max = maxLevel(i, t), top = t === T.IND ? 3 : 4;
+  if (L >= max && L < top && D.watered[i]) {
+    if (t === T.RES && D.poll[i] > 70) notes.push('汚染がひどく、高い建物は建ちません。工業地や発電所から離しましょう。');
+    else if (t === T.RES && max === 3 && D.lv[i] >= 150) notes.push(ST.pop < 15000 ? 'タワーマンションは人口1万5千人から建ちます。' : 'タワーマンションには高い教育水準（学校・高校）が必要です。');
+    else if (t === T.COM && max === 3 && D.lv[i] >= 140) notes.push('超高層ビルは人口3万人から建ちます。');
+    else if (t === T.IND && ST.pop < 1500) notes.push('大規模工場は人口1,500人から建ちます。');
+    else if (t !== T.IND) notes.push('地価が足りません。公園・学校・病院・駅や水辺で地価が上がり、汚染・犯罪・ゴミで下がります。');
+  }
+  const tax = t === T.RES ? S.tax.r : t === T.COM ? S.tax.c : S.tax.i;
+  if (tax > 12) notes.push(`税率${tax}%は高すぎて、出ていく${t === T.RES ? '人' : '会社'}がいます。`);
+  if (t === T.RES && ST.approval < 30) notes.push('支持率が低く、街を離れる人が増えています。');
+  return notes;
+}
 
+/* --- money --- */
 function computeBudget() {
-  const tx = S.tax / 100;
-  const inc = { res: ST.pop * 0.7 * tx, com: ST.jc * 0.9 * tx, ind: ST.ji * 0.8 * tx };
-  let roads = 0, bridges = 0, wires = 0;
+  const tr = S.tax.r / 100, tc = S.tax.c / 100, ti = S.tax.i / 100;
+  let res = 0, com = 0, ind = 0, roads = 0, avenues = 0, bridges = 0, wires = 0, rTop = 0, cTop = 0;
   const cnt = {}, zones = { 3: 0, 4: 0, 5: 0 };
+  const up = { transport: 0, police: 0, fire: 0, health: 0, edu: 0, garbage: 0, power: 0, water: 0, park: 0 };
   for (let i = 0; i < NN; i++) {
-    const t = S.type[i];
-    if (t === T.ROAD) { if (S.terrain[i]) bridges++; else roads++; }
+    const t = S.type[i], L = S.level[i];
+    if (t === T.ROAD) { if (S.terrain[i]) bridges++; else if (L) avenues++; else roads++; }
     else if (t === T.WIRE) wires++;
-    else if (isZone(t)) zones[t]++;
-    else if (t >= 6 && S.owner[i] === i) cnt[t] = (cnt[t] || 0) + 1;
+    else if (isZone(t)) {
+      zones[t]++;
+      if (!L) continue;
+      if (t === T.RES) { res += POP[L] * tr * (0.75 + D.lv[i] / 300); if (L === 4) rTop++; }
+      else if (t === T.COM) { com += JOBS_C[L] * tc * 1.1; if (L === 4) cTop++; }
+      else ind += JOBS_I[L] * ti * (S.kind[i] ? 1.6 : 1);
+    } else if (t >= 10 && S.owner[i] === i) {
+      cnt[t] = (cnt[t] || 0) + 1;
+      const b = B[t];
+      up[b.fund || (b.supply ? 'power' : b.water ? 'water' : 'park')] += b.upkeep * (b.fund ? S.fund[b.fund] / 100 : 1);
+    }
   }
-  const c = t => cnt[t] || 0;
-  const exp = {
-    road: roads * 0.3 + bridges * 1.5 + wires * 0.05,
-    power: c(T.COAL) * 60 + c(T.SOLAR) * 20,
-    police: c(T.POLICE) * 40, fire: c(T.FIRE) * 40,
-    school: c(T.SCHOOL) * 100, health: c(T.HOSP) * 150, park: c(T.PARK) * 3,
-  };
-  const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
-  ST.inc = inc; ST.exp = exp; ST.cnt = cnt; ST.zones = zones;
-  ST.incTotal = sum(inc); ST.expTotal = sum(exp);
+  up.transport += (roads * 0.25 + avenues * 0.6 + bridges * 2 + wires * 0.05) * S.fund.transport / 100;
+  const loans = S.loans.reduce((s, l) => s + l.pay, 0);
+  ST.inc = { res, com, ind, tourism: ST.tourism * 0.03 };
+  ST.exp = { ...up, loans };
+  const sum = o => Object.values(o).reduce((s, v) => s + v, 0);
+  ST.incTotal = sum(ST.inc); ST.expTotal = sum(ST.exp);
   ST.net = Math.round(ST.incTotal) - Math.round(ST.expTotal);
-  ST.roads = roads; ST.bridges = bridges; ST.wires = wires;
+  Object.assign(ST, { cnt, zones, roads, avenues, bridges, wires, rTop, cTop });
 }
+const count = key => ST.cnt[BKEY[key]] || 0;
 
+/* --- fire --- */
 function fireStep() {
   let burning = 0;
   for (let i = 0; i < NN; i++) {
     if (!S.fire[i]) continue;
-    if (!isZone(S.type[i]) || S.level[i] === 0) { S.fire[i] = 0; continue; }
+    if (!isZone(S.type[i]) || !S.level[i]) { S.fire[i] = 0; continue; }
     burning++;
     S.fire[i]++;
-    const cov = D.cov.fire[i];
-    if (cov > 60 && S.fire[i] > 2 + (255 - cov) / 40) {
+    const a = D.acc[i], prot = a >= 0 ? D.fireProt[a] : 0;
+    if (prot > 0.05 && rand() < 0.1 + prot * 0.5) {
       S.fire[i] = 0;
       if (!S.seen.extinguish) { S.seen.extinguish = 1; toast('消防隊が火事を消し止めました。', { kind: 'good' }); }
       continue;
     }
-    if (S.fire[i] > 10) { S.fire[i] = 0; setLevel(i, 0); continue; }
-    if (rand() < 0.07) {
+    if (S.fire[i] > 9) { S.fire[i] = 0; setLevel(i, 0); continue; }
+    if (rand() < 0.1 * (1 - prot)) {
       const d = (rand() * 4) | 0, x = i % N + DX[d], y = ((i / N) | 0) + DY[d];
       if (inb(x, y)) {
-        const n = y * N + x;
-        if (isZone(S.type[n]) && S.level[n] > 0 && !S.fire[n] && rand() > D.cov.fire[n] / 255) S.fire[n] = 1;
+        const n = y * N + x, an = D.acc[n];
+        if (isZone(S.type[n]) && S.level[n] > 0 && !S.fire[n] && rand() > (an >= 0 ? D.fireProt[an] : 0)) S.fire[n] = 1;
       }
     }
   }
   if (S.disasters && ST.developed > 30 && rand() < 0.004 + ST.developed * 0.000004) {
     for (let k = 0; k < 40; k++) {
       const i = (rand() * NN) | 0;
-      if (isZone(S.type[i]) && S.level[i] > 0 && !S.fire[i]) {
-        if (rand() > D.cov.fire[i] / 200) {
-          S.fire[i] = 1;
-          toast('火事が発生しました！ 消防署の範囲内ならすぐに消し止められます。', { kind: 'bad', action: { label: '見る', fn: () => flyTo(i) } });
-        }
-        break;
+      if (!isZone(S.type[i]) || !S.level[i] || S.fire[i]) continue;
+      const a = D.acc[i], prot = a >= 0 ? D.fireProt[a] : 0;
+      if (rand() > prot * 1.2) {
+        S.fire[i] = 1;
+        toast(prot > 0 ? '火事が発生しました！ 消防隊が向かっています。' : '火事が発生しました！ 消防署から道路で16マス以内なら、すぐに消し止められます。', { kind: 'bad', action: { label: '見る', fn: () => flyTo(i) } });
       }
+      break;
     }
   }
   ST.burning = burning;
 }
 
-const flags = { power: true, maps: true, access: true };
+/* --- clock --- */
+const flags = { power: true, maps: true };
 function refreshAll() {
   markAll();
   computeStatic();
   recountTotals();
   computeAccess();
-  computePower();
+  computeUtilities();
+  computeStamps();
+  computeServices();
+  computeTraffic();
   computeMaps();
+  computeUtilities();
+  computeServices();
   computeMaps();
+  computeGarbage(false);
+  computeApproval();
   computeDemand();
   computeBudget();
-  flags.power = flags.maps = flags.access = false;
+  flags.power = flags.maps = false;
 }
-
 function simDay() {
-  if (flags.access) { computeAccess(); flags.access = false; }
-  if (flags.power) { computePower(); flags.power = false; }
+  computeAccess();
+  if (flags.power) { computeUtilities(); flags.power = false; }
   if (flags.maps || S.day % 4 === 0) { computeMaps(); flags.maps = false; }
-  for (let i = 0; i < NN; i++) if (isZone(S.type[i]) && rand() < 0.16) growTile(i);
+  if (S.day % 10 === 5) computeServices();
+  if (S.day === 15) { computeTraffic(); computeDemand(); }
+  for (let i = 0; i < NN; i++) if (isZone(S.type[i]) && rand() < 0.08) growTile(i);
   fireStep();
   S.day++;
   if (S.day > 30) { S.day = 1; endOfMonth(); }
   hudDirty = true; dirty = true;
   if (sheetKind === 'info' && rand() < 0.25) refreshSheet();
 }
-
 function endOfMonth() {
-  computePower();
+  const mi = monthIndex();
+  S.wind = 0.6 + rand() * 0.7;
+  computeAccess();
+  computeUtilities();
+  computeTraffic();
+  computeServices();
+  computeGarbage(true);
+  computeApproval();
+  computeDemand();
   computeBudget();
   S.money += ST.net;
+  for (const l of S.loans) l.left--;
+  S.loans = S.loans.filter(l => l.left > 0);
+  S.streak = ST.net >= 0 ? S.streak + 1 : 0;
   S.fy.inc += Math.round(ST.incTotal); S.fy.exp += Math.round(ST.expTotal);
   S.month++;
   if (S.month > 12) { S.month = 1; S.year++; }
-  S.history.push({ y: S.year, m: S.month, pop: ST.pop, money: Math.round(S.money) });
+  S.history.push({ y: S.year, m: S.month, pop: ST.pop, money: Math.round(S.money), approval: Math.round(ST.approval) });
   if (S.history.length > 240) S.history.shift();
   if (S.month === 4) {
     const net = S.fy.inc - S.fy.exp;
     toast(`${S.year - 1}年度の決算：収入 ${yen(S.fy.inc)}、支出 ${yen(S.fy.exp)}、差し引き ${net >= 0 ? '+' : ''}${yen(net)}`, { kind: net >= 0 ? 'good' : 'warn', ttl: 6500 });
     S.fy = { inc: 0, exp: 0 };
   }
+  for (let i = 0; i < NN; i++) {
+    if (!isPlant(S.type[i]) || S.owner[i] !== i) continue;
+    const b = B[S.type[i]], age = (mi + 1 - S.built[i]) / 12;
+    if (Math.abs(age - (b.life - 1)) < 1 / 24) toast(`${b.name}が老朽化してきました。あと1年ほどで発電量が落ちはじめます。`, { kind: 'warn', action: { label: '見る', fn: () => flyTo(i) } });
+  }
   checkRank();
+  checkGoals();
   advise();
   checkTutorial();
   if (sheetKind === 'budget') refreshSheet();
@@ -1011,34 +1619,69 @@ function rankIndex(pop) { let r = 0; for (let k = 0; k < RANKS.length; k++) if (
 function cityName() { return S.name + RANKS[S.rank].suffix; }
 function checkRank() {
   const r = rankIndex(ST.pop);
-  if (r > S.rank) {
-    const before = cityName();
-    S.rank = r;
-    toast(`おめでとうございます！ ${before}は人口${compact(RANKS[r].min)}人を超え、「${RANKS[r].label}」になりました。`, { kind: 'good', ttl: 7000 });
+  if (r <= S.rank) return;
+  const before = cityName();
+  S.rank = r;
+  const opened = Object.keys(TOOLS).filter(k => (TOOLS[k].rank || 0) === r).map(k => TOOLS[k].name);
+  toast(`おめでとうございます！ ${before}は人口${compact(RANKS[r].min)}人を超え、「${RANKS[r].label}」になりました。` + (opened.length ? `新しく建てられるもの：${opened.join('・')}` : ''), { kind: 'good', ttl: 9000 });
+  buildToolbar();
+}
+
+/* --- goals --- */
+const GOALS = [
+  { id: 'pop1k', name: '人口1,000人', reward: 3000, test: () => ST.pop >= 1000, prog: () => ST.pop / 1000 },
+  { id: 'water', name: '蛇口から水を', desc: '人口2,000人以上で、断水している建物ゼロ', reward: 3000, test: () => ST.pop >= 2000 && ST.unwatered === 0 },
+  { id: 'town', name: '町になる', desc: '人口1万人', reward: 10000, test: () => ST.pop >= 10000, prog: () => ST.pop / 10000 },
+  { id: 'surplus', name: '健全財政', desc: '12か月連続で黒字', reward: 8000, test: () => S.streak >= 12, prog: () => S.streak / 12 },
+  { id: 'employ', name: '完全雇用', desc: '人口1万人以上で失業率3%以下', reward: 10000, test: () => ST.pop >= 10000 && unemploymentRate() <= 0.03 },
+  { id: 'approval', name: '住みたい街', desc: '人口1万人以上で支持率80%以上', reward: 15000, test: () => ST.pop >= 10000 && ST.approval >= 80 },
+  { id: 'nojam', name: '渋滞知らず', desc: '人口2万人以上で、渋滞している道路ゼロ', reward: 15000, test: () => ST.pop >= 20000 && ST.jams === 0 },
+  { id: 'city', name: '市になる', desc: '人口5万人', reward: 30000, test: () => ST.pop >= 50000, prog: () => ST.pop / 50000 },
+  { id: 'clean', name: 'きれいな空', desc: '人口3万人以上で、汚染のひどい住宅ゼロ', reward: 20000, test: () => ST.pop >= 30000 && ST.pollHigh === 0 },
+  { id: 'green', name: '脱炭素', desc: '石炭・ガス火力なしで人口3万人', reward: 30000, test: () => ST.pop >= 30000 && !count('coal') && !count('gas') },
+  { id: 'transit', name: '公共交通の街', desc: '毎月1万人がバス・地下鉄で通勤', reward: 20000, test: () => ST.riders >= 10000, prog: () => ST.riders / 10000 },
+  { id: 'edu', name: '学園都市', desc: '大学があり、教育水準70%以上', reward: 20000, test: () => count('univ') > 0 && ST.eq >= 0.7, prog: () => (count('univ') ? ST.eq / 0.7 : 0) },
+  { id: 'hightech', name: 'ハイテク都市', desc: 'ハイテク工業 30区画', reward: 25000, test: () => ST.ht >= 30, prog: () => ST.ht / 30 },
+  { id: 'towers', name: 'タワーマンション街', desc: 'タワーマンション 20棟', reward: 25000, test: () => ST.rTop >= 20, prog: () => ST.rTop / 20 },
+  { id: 'sky', name: '摩天楼', desc: '超高層ビル 10棟', reward: 30000, test: () => ST.cTop >= 10, prog: () => ST.cTop / 10 },
+  { id: 'core', name: '中核市になる', desc: '人口20万人', reward: 80000, test: () => ST.pop >= 200000, prog: () => ST.pop / 200000 },
+  { id: 'debtfree', name: '無借金経営', desc: '借金なしで人口10万人', reward: 50000, test: () => ST.pop >= 100000 && !S.loans.length, prog: () => (S.loans.length ? 0 : ST.pop / 100000) },
+  { id: 'designated', name: '政令指定都市になる', desc: '人口50万人', reward: 0, test: () => ST.pop >= 500000, prog: () => ST.pop / 500000 },
+];
+function checkGoals() {
+  for (const g of GOALS) {
+    if (S.goals[g.id] || !g.test()) continue;
+    S.goals[g.id] = monthIndex();
+    S.money += g.reward;
+    toast(`目標達成「${g.name}」` + (g.reward ? `　国から${yen(g.reward)}の交付金が届きました。` : '　おめでとうございます！'), { kind: 'good', ttl: 7000, action: { label: '目標', fn: () => openSheet('budget', 'goals') } });
   }
 }
 
 function advise() {
-  const c = t => ST.cnt[t] || 0;
-  const plants = c(T.COAL) + c(T.SOLAR);
+  const plants = Object.keys(ST.cnt).filter(t => isPlant(+t)).length;
   const list = [];
-  if (!plants) list.push(['plant', '発電所がありません。まずは火力発電所か太陽光発電所を建てましょう。', 'warn']);
-  else if (ST.demand > ST.supply) list.push(['short', `電力が足りません（使用 ${num(ST.demand)}／発電 ${num(ST.supply)}）。発電所を増やしましょう。`, 'warn']);
-  if (plants && ST.unpowered > 3) list.push(['unpow', `電気が届いていない区画が${ST.unpowered}マスあります。道路か送電線で発電所とつなぎましょう。`, 'warn']);
-  if (ST.noRoad > 3) list.push(['noroad', `道路から離れた区画が${ST.noRoad}マスあります。区画は道路から2マス以内でないと発展しません。`, 'warn']);
-  if (S.money < 0) list.push(['debt', '資金がマイナスです。税率を上げるか、維持費のかかる施設を見直しましょう。', 'bad']);
-  else if (ST.net < 0 && S.money < 5000) list.push(['deficit', `毎月 ${yen(-ST.net)} の赤字です。「市政」で税率を見直しましょう。`, 'warn']);
-  if (ST.crimeHigh > 8 && !c(T.POLICE)) list.push(['police', '犯罪が増えてきました。警察署を建てましょう。', 'warn']);
-  else if (ST.crimeHigh > 20) list.push(['crime', '治安の悪い地区があります。「表示」→「犯罪」で場所を確かめましょう。', 'warn']);
-  if (ST.pollHigh > 12) list.push(['poll', '住宅地の汚染がひどくなっています。工業地から離すか、公園を増やしましょう。', 'warn']);
-  if (ST.jam > 6) list.push(['jam', '渋滞している道路があります。道路を増やして交通を分散させましょう。', 'warn']);
-  if (ST.pop > 1500 && !c(T.FIRE)) list.push(['firest', '消防署がありません。火事に備えて消防署を建てましょう。', 'info']);
-  if (ST.pop > 3000 && !c(T.SCHOOL)) list.push(['school', '子どもが増えてきました。学校を建てると地価が上がります。', 'info']);
-  if (ST.pop > 8000 && !c(T.HOSP)) list.push(['hosp', '病院を建てると住みやすさと地価が上がります。', 'info']);
-  if (ST.dr > 0.5) list.push(['dr', '住宅の需要が高まっています。住宅地を増やしましょう。', 'info']);
+  if (!plants) list.push(['plant', '発電所がありません。「インフラ」から発電所を建てて、道路でつなぎましょう。', 'warn']);
+  else if (ST.power.use > ST.power.supply) list.push(['short', `電力が足りず停電しています（使用 ${num(ST.power.use)}／発電 ${num(ST.power.supply)}）。発電所を増やしましょう。`, 'bad']);
+  else if (ST.power.use > ST.power.supply * 0.9) list.push(['short9', `電力に余裕がありません（${Math.round(ST.power.use / ST.power.supply * 100)}%）。次の発電所を準備しましょう。`, 'warn']);
+  if (ST.pop > 300 && ST.unwatered > 5) list.push(['water', ST.water.supply ? `水が足りず断水している建物が${ST.unwatered}あります。給水塔を増やしましょう。` : '水道がないと家は大きくなれません。給水塔を建てて道路でつなぎましょう。', 'warn']);
+  if (ST.noRoad > 4) list.push(['noroad', `道路に面していない区画が${ST.noRoad}マスあります。区画は道路のとなりでないと発展しません。`, 'warn']);
+  if (ST.pop > 500 && ST.garbage.gen > ST.garbage.cap * 1.02) list.push(['trash', ST.garbage.cap ? 'ゴミ処理が追いついていません。処分場や焼却場を増やしましょう。' : 'ゴミを回収する施設がありません。ゴミ処分場を建てましょう。', 'warn']);
+  if (ST.landfillLeft < 18) list.push(['landfill', `ゴミ処分場があと${Math.max(1, Math.round(ST.landfillLeft))}か月でいっぱいになります。新しい処分場か焼却場を用意しましょう。`, 'warn']);
+  if (S.money < 0) list.push(['debt', '資金がマイナスです。税率や予算配分を見直すか、「市政」で借り入れを検討しましょう。', 'bad']);
+  else if (ST.net < 0 && S.money < 5000) list.push(['deficit', `毎月 ${yen(-ST.net)} の赤字です。「市政」で税率や予算を見直しましょう。`, 'warn']);
+  if (ST.jams > 8) list.push(['jam', `渋滞している道路が${ST.jams}か所あります。大通りへの拡幅、迂回路、バスや地下鉄で通勤を分散させましょう。`, 'warn']);
+  if (ST.workers > 500 && unemploymentRate() > 0.15) list.push(['unemp', `失業率が${Math.round(unemploymentRate() * 100)}%です。道路でつながった商業地・工業地を増やしましょう。`, 'warn']);
+  if (ST.jc + ST.ji > 500 && ST.jobFill < 0.75) list.push(['labor', '働き手が足りない職場があります。住宅地と職場を道路でつなぎましょう。', 'info']);
+  if (ST.pollHigh > 6) list.push(['poll', '汚染のひどい住宅地があります。住民の健康と地価に響きます。工業地や発電所から離すか、公園を置きましょう。', 'warn']);
+  if (ST.crimeHigh > 6) list.push(['crime', '治安の悪い地区があります。交番や警察署を道路の届く場所に建てましょう。', 'warn']);
+  if (ST.approval < 40 && ST.pop > 1000) list.push(['approval', `支持率が${Math.round(ST.approval)}%に下がっています。「市政」→「統計」で不満の理由を確かめましょう。`, 'warn']);
+  if (ST.pop > 1200 && !count('fire')) list.push(['firest', '消防署がありません。火事に備えましょう。', 'info']);
+  if (ST.pop > 1500 && !count('school')) list.push(['school', '子どもが増えてきました。小学校を建てると地価と教育水準が上がります。', 'info']);
+  if (ST.pop > 2500 && !count('clinic') && !count('hosp')) list.push(['clinic', '診療所がありません。医療は住民の満足度に大きく影響します。', 'info']);
+  if (ST.dr > 0.5) list.push(['dr', '住宅の需要が高まっています。道路ぞいに住宅地を増やしましょう。', 'info']);
   if (ST.dc > 0.5 && ST.pop > 300) list.push(['dc', '商業の需要が高まっています。商業地を増やしましょう。', 'info']);
-  if (ST.di > 0.5) list.push(['di', '工業の需要が高まっています。工業地を増やしましょう。', 'info']);
-  const m = S.year * 12 + S.month;
+  if (ST.di > 0.5) list.push(['di', '工業の需要が高まっています。住宅から離れた場所に工業地を増やしましょう。', 'info']);
+  const m = monthIndex();
   for (const [k, msg, kind] of list) {
     if ((S.seen[k] ?? -99) + 3 <= m) { S.seen[k] = m; toast(msg, { kind }); break; }
   }
@@ -1047,12 +1690,15 @@ function advise() {
 /* =========================================================
    建設
    ========================================================= */
+/* line tools always run straight along one axis */
+function lockLine(d) {
+  if (Math.abs(d.bx - d.ax) >= Math.abs(d.by - d.ay)) d.by = d.ay; else d.bx = d.ax;
+}
 function linePts(ax, ay, bx, by) {
-  const pts = [[ax, ay]];
-  let x = ax, y = ay;
-  const stepX = () => { while (x !== bx) { x += Math.sign(bx - x); pts.push([x, y]); } };
-  const stepY = () => { while (y !== by) { y += Math.sign(by - y); pts.push([x, y]); } };
-  if (Math.abs(bx - ax) >= Math.abs(by - ay)) { stepX(); stepY(); } else { stepY(); stepX(); }
+  const pts = [];
+  const n = Math.max(Math.abs(bx - ax), Math.abs(by - ay));
+  const sx = Math.sign(bx - ax), sy = Math.sign(by - ay);
+  for (let k = 0; k <= n; k++) pts.push([ax + sx * k, ay + sy * k]);
   return pts;
 }
 function rectPts(ax, ay, bx, by) {
@@ -1060,25 +1706,30 @@ function rectPts(ax, ay, bx, by) {
   for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) pts.push([x, y]);
   return pts;
 }
-/* cost ≥ 0: will change, -1: nothing to do, -2: blocked */
+const locked = tid => (TOOLS[tid].rank || 0) > S.rank;
+/* cost ≥ 0: will change, -1: nothing to do, -2: blocked, -3: water needs a bridge */
 function evalTile(tid, i) {
-  const t = S.type[i], water = S.terrain[i] === 1;
-  switch (tid) {
-    case 'road':
+  const t = S.type[i], water = S.terrain[i] === 1, tool = TOOLS[tid];
+  if (tool.road !== undefined || tool.bridge) {
+    const r = tool.road || 0;
+    if (water) {
+      if (!tool.bridge) return t === T.ROAD ? (S.level[i] >= r ? -1 : -2) : -3;
       if (t === T.ROAD) return -1;
-      if (water) return t === T.EMPTY || t === T.WIRE ? 60 : -2;
-      if (t === T.EMPTY || t === T.WIRE || (isZone(t) && S.level[i] === 0)) return 10;
-      return -2;
+      return t === T.EMPTY || t === T.WIRE ? tool.unit : -2;
+    }
+    if (t === T.ROAD) return S.level[i] >= r ? -1 : TOOLS.avenue.unit - TOOLS.road.unit;
+    if (t === T.EMPTY || t === T.WIRE || (isZone(t) && S.level[i] === 0)) return tool.bridge ? TOOLS.road.unit : tool.unit;
+    return -2;
+  }
+  switch (tid) {
     case 'wire':
       if (t !== T.EMPTY) return -1;
       return water ? 25 : 5;
-    case 'res': case 'com': case 'ind': {
-      const zt = TOOLS[tid].zone;
+    case 'res': case 'com': case 'ind':
       if (water) return -2;
-      if (t === zt) return -1;
+      if (t === tool.zone) return -1;
       if (t === T.EMPTY || t === T.WIRE || (isZone(t) && S.level[i] === 0)) return 5;
       return -2;
-    }
     case 'bulldoze':
       if (t === T.EMPTY) return S.tree[i] ? 2 : -1;
       return 2;
@@ -1087,9 +1738,9 @@ function evalTile(tid, i) {
 }
 function makePlan(tid, d) {
   const tool = TOOLS[tid], items = [];
-  let cost = 0, ok = 0, bad = 0;
+  let cost = 0, ok = 0, bad = 0, reason = '';
   if (tool.kind === 'place') {
-    const b = BLD[tool.b], s = b.size;
+    const b = B[tool.b], s = b.size;
     let valid = true;
     for (let y = d.ay; y < d.ay + s; y++) for (let x = d.ax; x < d.ax + s; x++) {
       if (!inb(x, y)) { valid = false; continue; }
@@ -1097,81 +1748,117 @@ function makePlan(tid, d) {
       if (!good) { valid = false; bad++; }
       items.push({ i, ok: good });
     }
-    if (valid) { cost = b.cost; ok = items.length; }
-    return { items, cost, ok, bad, valid };
+    if (!valid) reason = 'ここには建てられません';
+    if (locked(tid)) { valid = false; reason = `${RANKS[tool.rank].label}になると建てられます`; }
+    else if (b.unique && count(b.key) > 0) { valid = false; reason = `${b.name}は街にひとつだけです`; }
+    if (valid) { cost = b.cost; ok = items.length; } else for (const it of items) it.ok = false;
+    return { items, cost, ok, bad: valid ? 0 : items.length, valid, reason };
+  }
+  if (locked(tid)) {
+    return { items: [], cost: 0, ok: 0, bad: 1, valid: false, reason: `${RANKS[tool.rank].label}になると使えます` };
   }
   const pts = tool.kind === 'line' ? linePts(d.ax, d.ay, d.bx, d.by) : rectPts(d.ax, d.ay, d.bx, d.by);
+  const codes = pts.map(([x, y]) => evalTile(tid, y * N + x));
+  if (tool.bridge && pts.length) {
+    const horiz = pts.length > 1 && pts[0][1] === pts[1][1];
+    let k = 0;
+    while (k < pts.length) {
+      const [kx, ky] = pts[k];
+      if (!S.terrain[ky * N + kx]) { k++; continue; }
+      let e = k;
+      while (e + 1 < pts.length && S.terrain[pts[e + 1][1] * N + pts[e + 1][0]]) e++;
+      let why = '';
+      if (k === 0 || e === pts.length - 1) why = '橋は対岸の陸地までなぞってください';
+      else if (e - k + 1 > 12) why = '橋の長さは12マスまでです';
+      else {
+        for (let j = k; j <= e && !why; j++) {
+          const [x, y] = pts[j];
+          for (const [dx, dy] of horiz ? [[0, 1], [0, -1]] : [[1, 0], [-1, 0]]) {
+            const nx = x + dx, ny = y + dy;
+            if (inb(nx, ny) && S.terrain[ny * N + nx] && S.type[ny * N + nx] === T.ROAD) why = '橋のとなりに橋は架けられません';
+          }
+        }
+      }
+      if (why) { reason = why; for (let j = k; j <= e; j++) codes[j] = -2; }
+      k = e + 1;
+    }
+  }
   const seen = new Set();
-  for (const [x, y] of pts) {
+  pts.forEach(([x, y], k) => {
     const i = y * N + x;
     if (tid === 'bulldoze' && S.owner[i] >= 0) {
       const o = S.owner[i];
-      if (seen.has(o)) continue;
+      if (seen.has(o)) return;
       seen.add(o);
-      const s = BLD[S.type[o]].size, ox = o % N, oy = (o / N) | 0;
+      const s = B[S.type[o]].size, ox = o % N, oy = (o / N) | 0;
       for (let yy = oy; yy < oy + s; yy++) for (let xx = ox; xx < ox + s; xx++) items.push({ i: yy * N + xx, ok: true });
       cost += 2 * s * s; ok += s * s;
-      continue;
+      return;
     }
-    const c = evalTile(tid, i);
+    const c = codes[k];
     if (c >= 0) { items.push({ i, ok: true }); cost += c; ok++; }
-    else if (c === -2) { items.push({ i, ok: false }); bad++; }
-    else items.push({ i, ok: null });
-  }
-  return { items, cost, ok, bad, valid: ok > 0 };
+    else if (c <= -2) {
+      items.push({ i, ok: false }); bad++;
+      if (!reason) reason = c === -3 ? '川を渡るには「橋」を使います' : 'ここには置けません';
+    } else items.push({ i, ok: null });
+  });
+  // a road that would stop at the river bank, or a bridge that cannot be finished, is not built at all
+  const strict = (tool.road !== undefined || tool.bridge) && codes.some(c => c === -3 || (tool.bridge && c === -2));
+  if (strict) for (const it of items) if (it.ok) it.ok = null;
+  return { items, cost: strict ? 0 : cost, ok: strict ? 0 : ok, bad, valid: !strict && ok > 0, reason };
 }
 function clearTile(i) {
   markTile(i);
   const t = S.type[i];
-  if (isZone(t) && S.level[i] > 0) adjustTotals(t, S.level[i], -1);
-  S.type[i] = T.EMPTY; S.level[i] = 0; S.tree[i] = 0; S.owner[i] = -1; S.fire[i] = 0;
+  if (isZone(t) && S.level[i] > 0) adjustTotals(i, t, S.level[i], -1);
+  S.type[i] = T.EMPTY; S.level[i] = 0; S.tree[i] = 0; S.owner[i] = -1; S.fire[i] = 0; S.kind[i] = 0; S.trash[i] = 0; S.built[i] = 0; S.fill[i] = 0;
 }
+const SNAP = ['type', 'level', 'tree', 'owner', 'variant', 'fire', 'kind', 'trash', 'built', 'fill'];
 function applyPlan(tid, plan, at) {
   const tool = TOOLS[tid];
   if (!plan.valid) {
-    if (plan.bad) toast(tool.kind === 'place' ? 'ここには建てられません。木のある土地か、何もない土地が必要です。' : 'ここには置けません。先に撤去してください。', { kind: 'warn' });
+    if (plan.bad || plan.reason) toast((plan.reason || 'ここには置けません') + '。', { kind: 'warn' });
     return false;
   }
-  if (plan.cost > S.money) { toast(`資金が足りません（必要 ${yen(plan.cost)}、手持ち ${yen(S.money)}）。`, { kind: 'bad' }); return false; }
+  if (plan.cost > S.money) { toast(`資金が足りません（必要 ${yen(plan.cost)}、手持ち ${yen(S.money)}）。「市政」で借り入れもできます。`, { kind: 'bad' }); return false; }
   const rec = { money: plan.cost, tiles: [] };
-  for (const it of plan.items) if (it.ok) rec.tiles.push([it.i, S.type[it.i], S.level[it.i], S.tree[it.i], S.owner[it.i], S.variant[it.i], S.fire[it.i]]);
+  for (const it of plan.items) if (it.ok) rec.tiles.push([it.i, ...SNAP.map(k => S[k][it.i])]);
   if (tool.kind === 'place') {
     const o = plan.items[0].i;
     for (const it of plan.items) { clearTile(it.i); S.type[it.i] = tool.b; S.owner[it.i] = o; }
     S.variant[o] = (rand() * 256) | 0;
+    S.built[o] = monthIndex();
   } else {
     for (const it of plan.items) {
       if (!it.ok) continue;
       const i = it.i;
+      if ((tool.road !== undefined || tool.bridge) && S.type[i] === T.ROAD) { S.level[i] = tool.road || 0; markTile(i); continue; }
       clearTile(i);
-      if (tid === 'road') S.type[i] = T.ROAD;
+      if (tool.road !== undefined || tool.bridge) { S.type[i] = T.ROAD; S.level[i] = S.terrain[i] ? 0 : tool.road || 0; }
       else if (tid === 'wire') S.type[i] = T.WIRE;
       else if (tool.zone) { S.type[i] = tool.zone; S.variant[i] = (rand() * 256) | 0; }
     }
   }
   S.money -= plan.cost;
-  if (tool.kind === 'place') {
-    const o = plan.items[0].i, sz = BLD[tool.b].size, ox = o % N, oy = (o / N) | 0;
-    let linked = false;
-    for (let k = -1; k <= sz && !linked; k++) for (const [x, y] of [[ox + k, oy - 1], [ox + k, oy + sz], [ox - 1, oy + k], [ox + sz, oy + k]]) {
-      if (inb(x, y) && S.type[y * N + x] !== T.EMPTY && S.owner[y * N + x] !== o && Math.abs(x - ox - (sz - 1) / 2) + Math.abs(y - oy - (sz - 1) / 2) <= sz) { linked = true; break; }
-    }
-    if (!linked && (isPlant(tool.b) || BLD[tool.b].use)) toast(isPlant(tool.b) ? '発電所のとなりに道路か送電線をつなげると、電気が街に流れます。' : 'となりに道路をつなげると、電気が届いて働きはじめます。', { kind: 'info' });
-  }
   undoStack.push(rec);
   if (undoStack.length > 40) undoStack.shift();
   afterChange();
+  if (tool.kind === 'place' && D.acc[plan.items[0].i] < 0) {
+    toast('この建物は道路に面していないため、まだ働けません。となりに道路をつなげましょう。', { kind: 'info' });
+  }
   if (plan.cost > 0 && at) floaters.push({ text: '−' + yen(plan.cost).slice(1), wx: at[0], wy: at[1], t0: performance.now() });
   try { navigator.vibrate && navigator.vibrate(8); } catch (e) { /* not available */ }
   return true;
 }
 function afterChange() {
   computeAccess();
-  computePower();
+  computeUtilities();
+  computeServices();
   computeMaps();
+  computeGarbage(false);
   computeDemand();
   computeBudget();
-  flags.power = flags.access = flags.maps = false;
+  flags.power = flags.maps = false;
   checkTutorial();
   roadListDirty = true;
   dirty = true; hudDirty = true;
@@ -1180,16 +1867,15 @@ function undo() {
   const rec = undoStack.pop();
   if (!rec) { toast('取り消せる操作はありません。'); return; }
   for (let k = rec.tiles.length - 1; k >= 0; k--) {
-    const [i, t, L, tr, ow, v, f] = rec.tiles[k];
+    const [i, ...vals] = rec.tiles[k];
     clearTile(i);
-    S.type[i] = t; S.level[i] = L; S.tree[i] = tr; S.owner[i] = ow; S.variant[i] = v; S.fire[i] = f;
-    if (isZone(t) && L > 0) adjustTotals(t, L, 1);
+    SNAP.forEach((key, j) => { S[key][i] = vals[j]; });
+    if (isZone(S.type[i]) && S.level[i] > 0) adjustTotals(i, S.type[i], S.level[i], 1);
   }
   S.money += rec.money;
   afterChange();
   toast(`ひとつ前の操作を取り消しました（${yen(rec.money)} 返金）。`);
 }
-
 /* =========================================================
    描画
    ========================================================= */
@@ -1201,15 +1887,16 @@ const cam = { x: 0, y: N * HH, z: 0.7 };
 let lod = 2, HS = 1, overlay = 'none', bgColor = '#d9e4e8';
 let dirty = true, hudDirty = true, selTile = -1, hover = null, drag = null;
 const floaters = [];
-let smokeSrc = [], fireFx = [], powerFx = [];
+let smokeSrc = [], fireFx = [], powerFx = [], windFx = [], roadFx = [];
 
 function resize() {
   dpr = Math.min(2, window.devicePixelRatio || 1);
   const r = cv.getBoundingClientRect();
   vw = Math.max(1, r.width); vh = Math.max(1, r.height); cvLeft = r.left; cvTop = r.top;
   cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
-  const dock = $('#dock');
-  document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
+  const app = $('#app').getBoundingClientRect();
+  document.documentElement.style.setProperty('--dock-h', $('#dock').offsetHeight + 'px');
+  document.documentElement.style.setProperty('--hud-b', ($('#hud').getBoundingClientRect().bottom - app.top) + 'px');
   dirty = true;
 }
 function readTheme() {
@@ -1376,14 +2063,16 @@ function addRoadMarks(p, x, y, m) {
     p.moveTo(cx, cy); p.lineTo((ex - ey) * HW, (ex + ey) * HH);
   }
 }
-function addRails(p, x, y, m) {
-  const w = 0.44, line = (ax, ay, bx, by) => { p.moveTo((ax - ay) * HW, (ax + ay) * HH); p.lineTo((bx - by) * HW, (bx + by) * HH); };
-  const horiz = (m & 5) || !(m & 10);
-  if (horiz) { line(x, y + 0.5 - w, x + 1, y + 0.5 - w); line(x, y + 0.5 + w, x + 1, y + 0.5 + w); }
-  if (m & 10) { line(x + 0.5 - w, y, x + 0.5 - w, y + 1); line(x + 0.5 + w, y, x + 0.5 + w, y + 1); }
+/* parallel line along every connected arm, shifted sideways by `off` tiles */
+function addArmLines(p, x, y, m, off) {
+  const ends = [[1, 0.5], [0.5, 1], [0, 0.5], [0.5, 0]];
+  for (let d = 0; d < 4; d++) {
+    if (!(m & (1 << d))) continue;
+    const px = DY[d] !== 0 ? off : 0, py = DX[d] !== 0 ? off : 0;
+    const ax = x + 0.5 + px, ay = y + 0.5 + py, bx = x + ends[d][0] + px, by = y + ends[d][1] + py;
+    p.moveTo((ax - ay) * HW, (ax + ay) * HH); p.lineTo((bx - by) * HW, (bx + by) * HH);
+  }
 }
-
-/* --- buildings --- */
 function house(x0, y0, x1, y1, v) {
   const wall = pal(HOUSE_WALL[v % 6]), roof = pal(HOUSE_ROOF[(v >> 3) % 6]);
   const h = 8 + ((v >> 1) % 3) * 2;
@@ -1459,7 +2148,28 @@ function chimney(cx, cy, r, h, stripes) {
   if (stripes && lod > 0) { cyl(cx, cy, r * 1.02, h - 16, 6, pal('#d9473a')); cyl(cx, cy, r * 1.02, h - 5, 5, pal('#d9473a')); }
   smokeSrc.push([(cx - cy) * HW, (cx + cy) * HH - h * HS - 2, (cx * 7 + cy * 3) % 1]);
 }
-function drawInd(L, v, x, y) {
+function drawHightech(L, v, x, y) {
+  const c = pal(HIGHTECH[v % 3]);
+  if (L === 1) {
+    box(x + 0.16, y + 0.16, x + 0.84, y + 0.84, 0, 12, c, '#9fb3c2');
+    windows(x + 0.16, y + 0.16, x + 0.84, y + 0.84, 0, 12, 12, 2, '#7fb0d6', '#5f93bd');
+  } else if (L === 2) {
+    box(x + 0.1, y + 0.12, x + 0.9, y + 0.88, 0, 16, c, '#c9d4dc');
+    windows(x + 0.1, y + 0.12, x + 0.9, y + 0.88, 0, 16, 8, 0, '#7fb0d6', '#5f93bd');
+    box(x + 0.28, y + 0.3, x + 0.72, y + 0.7, 16, 12, pal('#e9eef2'), '#b3c2cd');
+    windows(x + 0.28, y + 0.3, x + 0.72, y + 0.7, 16, 12, 6, 0, '#7fb0d6', '#5f93bd');
+  } else {
+    box(x + 0.06, y + 0.08, x + 0.94, y + 0.92, 0, 20, c, '#2b4c80');
+    windows(x + 0.06, y + 0.08, x + 0.94, y + 0.92, 0, 20, 10, 0, '#7fb0d6', '#5f93bd');
+    if (lod > 0) {
+      G.strokeStyle = '#a7bfdf'; G.lineWidth = 0.7; G.beginPath();
+      for (let k = 1; k < 4; k++) { const gy = y + 0.08 + k * 0.21; G.moveTo((x + 0.06 - gy) * HW, (x + 0.06 + gy) * HH - 20 * HS); G.lineTo((x + 0.94 - gy) * HW, (x + 0.94 + gy) * HH - 20 * HS); }
+      G.stroke();
+    }
+  }
+}
+function drawInd(L, v, x, y, ht) {
+  if (ht) { drawHightech(L, v, x, y); return; }
   const c = pal(FACTORY[v % 4]);
   if (L === 1) {
     box(x + 0.1, y + 0.12, x + 0.9, y + 0.88, 0, 10, c, '#9aa0a5');
@@ -1492,84 +2202,6 @@ function drawPark(x, y) {
   G.fillStyle = '#7cc0ec'; pond(x + 0.5, y + 0.5, 0.05);
   tree(x + 0.8, y + 0.78, 1, 0);
 }
-function drawService(t, x, y) {
-  switch (t) {
-    case T.PARK: drawPark(x, y); break;
-    case T.POLICE: {
-      const x0 = x + 0.14, y0 = y + 0.14, x1 = x + 0.86, y1 = y + 0.86;
-      box(x0, y0, x1, y1, 0, 18, pal('#eef1f4'), '#d4d9de');
-      windows(x0, y0, x1, y1, 0, 18, 9, 3);
-      box(x0, y0, x1, y1, 18, 3, pal('#26487f'));
-      faceRect('L', x0, y0, x1, y1, 0.4, 0.6, 0, 7, '#4c5964');
-      if (lod > 0) {
-        const s = 0.5, gx = x0 + (x1 - x0) * s, gy = y1;
-        G.fillStyle = '#e0b531'; G.beginPath(); G.arc((gx - gy) * HW, (gx + gy) * HH - 13 * HS, 2.4, 0, Math.PI * 2); G.fill();
-        box(x + 0.4, y + 0.44, x + 0.48, y + 0.52, 21, 2.5, pal('#e03131'));
-        box(x + 0.52, y + 0.44, x + 0.6, y + 0.52, 21, 2.5, pal('#1c7ed6'));
-      }
-      break;
-    }
-    case T.FIRE: {
-      box(x + 0.1, y + 0.1, x + 0.3, y + 0.3, 0, 36, pal('#c8412f'), '#9f3326');
-      const x0 = x + 0.1, y0 = y + 0.34, x1 = x + 0.9, y1 = y + 0.9;
-      box(x0, y0, x1, y1, 0, 16, pal('#e05a45'), '#b9bec4');
-      faceRect('L', x0, y0, x1, y1, 0.08, 0.44, 0, 10, '#eceff1');
-      faceRect('L', x0, y0, x1, y1, 0.54, 0.9, 0, 10, '#eceff1');
-      windows(x0, y0, x1, y1, 0, 16, 8, 3);
-      break;
-    }
-    case T.SCHOOL: {
-      if (lod > 0) {
-        G.strokeStyle = 'rgba(255,255,255,.85)'; G.lineWidth = 1.2; G.beginPath();
-        addRect(G, x + 0.35, y + 1.05, x + 1.65, y + 1.75, 0); G.stroke();
-      }
-      const c = pal('#efe4ca');
-      box(x + 0.1, y + 0.12, x + 1.9, y + 0.8, 0, 24, c, '#a9aeb3');
-      windows(x + 0.1, y + 0.12, x + 1.9, y + 0.8, 0, 24, 8, 3);
-      box(x + 0.82, y + 0.3, x + 1.18, y + 0.62, 24, 12, c, '#7d8a96');
-      if (lod > 0) {
-        const gx = x + 1.0, gy = y + 0.62;
-        G.fillStyle = '#ffffff'; G.strokeStyle = '#59626b'; G.lineWidth = 0.8;
-        G.beginPath(); G.arc((gx - gy) * HW, (gx + gy) * HH - 31 * HS, 3, 0, Math.PI * 2); G.fill(); G.stroke();
-      }
-      break;
-    }
-    case T.HOSP: {
-      const c = pal('#f3f5f7');
-      box(x + 0.15, y + 0.15, x + 1.2, y + 1.1, 0, 46, c, '#c9d0d6');
-      windows(x + 0.15, y + 0.15, x + 1.2, y + 1.1, 0, 46, 7.5, 4, '#7fa7c9', '#6890b4');
-      if (lod > 0) {
-        G.fillStyle = '#e03131'; G.beginPath();
-        addRect(G, x + 0.6, y + 0.45, x + 0.75, y + 0.8, 46 * HS); addRect(G, x + 0.5, y + 0.55, x + 0.85, y + 0.7, 46 * HS); G.fill();
-      }
-      box(x + 1.3, y + 0.15, x + 1.85, y + 1.1, 0, 22, pal('#e9edf0'), '#c9d0d6');
-      windows(x + 1.3, y + 0.15, x + 1.85, y + 1.1, 0, 22, 7.5, 4, '#7fa7c9', '#6890b4');
-      box(x + 0.15, y + 1.2, x + 1.85, y + 1.85, 0, 16, pal('#e9edf0'), '#c9d0d6');
-      windows(x + 0.15, y + 1.2, x + 1.85, y + 1.85, 0, 16, 8, 4, '#7fa7c9', '#6890b4');
-      break;
-    }
-    case T.COAL: {
-      box(x + 0.1, y + 0.1, x + 1.15, y + 1.2, 0, 28, pal('#a3aab1'), '#8a9198');
-      windows(x + 0.1, y + 0.1, x + 1.15, y + 1.2, 0, 28, 14, 0, '#6f7b86', '#5d6873');
-      chimney(x + 1.5, y + 0.45, 0.13, 86, true);
-      box(x + 0.1, y + 1.32, x + 1.1, y + 1.9, 0, 14, pal('#b5aea3'), '#8f8a82');
-      chimney(x + 1.5, y + 1.15, 0.13, 86, true);
-      const X = (x + 1.55 - (y + 1.68)) * HW, Y = (x + 1.55 + y + 1.68) * HH;
-      G.fillStyle = '#2b2b2e'; G.beginPath(); G.ellipse(X, Y - 2 * HS, 11, 6, 0, Math.PI, 0); G.lineTo(X + 11, Y); G.ellipse(X, Y, 11, 5, 0, 0, Math.PI); G.fill();
-      break;
-    }
-    case T.SOLAR: {
-      for (let b = 0; b < 3; b++) for (let a = 0; a < 3; a++) {
-        const u0 = x + 0.12 + a * 0.6, v0 = y + 0.12 + b * 0.6, u1 = u0 + 0.5, v1 = v0 + 0.42;
-        const pt = (gx, gy, z) => [(gx - gy) * HW, (gx + gy) * HH - z * HS];
-        const p = [pt(u0, v0, 7), pt(u1, v0, 7), pt(u1, v1, 2), pt(u0, v1, 2)];
-        G.fillStyle = '#2b4c80'; G.beginPath(); G.moveTo(...p[0]); G.lineTo(...p[1]); G.lineTo(...p[2]); G.lineTo(...p[3]); G.closePath(); G.fill();
-        if (lod > 0) { G.strokeStyle = '#a7bfdf'; G.lineWidth = 0.7; G.stroke(); }
-      }
-      break;
-    }
-  }
-}
 function drawPole(x, y) {
   const cx = (x - y) * HW, cy = (x + y + 1) * HH, ph = 22 * HS;
   G.strokeStyle = C.pole; G.lineWidth = 1.6; G.beginPath();
@@ -1585,35 +2217,371 @@ function drawPole(x, y) {
   }
   G.stroke();
 }
+
+/* --- more primitives --- */
+const P3 = (gx, gy, z) => [(gx - gy) * HW, (gx + gy) * HH - z * HS];
+function quad(a, b, c, d, col) {
+  G.fillStyle = col; G.beginPath(); G.moveTo(...a); G.lineTo(...b); G.lineTo(...c); G.lineTo(...d); G.closePath(); G.fill();
+}
+/* square frustum centred on (cx, cy): bottom half-size r0, top half-size r1 */
+function frustum(cx, cy, r0, r1, z0, h, c) {
+  const z1 = z0 + h;
+  quad(P3(cx + r0, cy - r0, z0), P3(cx + r0, cy + r0, z0), P3(cx + r1, cy + r1, z1), P3(cx + r1, cy - r1, z1), c[2]);
+  quad(P3(cx - r0, cy + r0, z0), P3(cx + r0, cy + r0, z0), P3(cx + r1, cy + r1, z1), P3(cx - r1, cy + r1, z1), c[1]);
+  quad(P3(cx - r1, cy - r1, z1), P3(cx + r1, cy - r1, z1), P3(cx + r1, cy + r1, z1), P3(cx - r1, cy + r1, z1), c[0]);
+}
+function dome(cx, cy, r, z0, c) {
+  const [X, Y] = P3(cx, cy, z0), rx = r * HW * Math.SQRT2, ry = r * HH * Math.SQRT2;
+  G.fillStyle = c[1]; G.beginPath();
+  G.ellipse(X, Y, rx, rx * 0.75 * HS, 0, Math.PI, 0); G.ellipse(X, Y, rx, ry, 0, 0, Math.PI); G.fill();
+  G.fillStyle = c[0]; G.beginPath(); G.ellipse(X - rx * 0.3, Y - rx * 0.4 * HS, rx * 0.35, rx * 0.22 * HS, -0.4, 0, Math.PI * 2); G.fill();
+}
+function coolingTower(cx, cy, r, h) {
+  const [X, Y] = P3(cx, cy, 0), [, Yt] = P3(cx, cy, h), rx = r * HW * Math.SQRT2, ry = r * HH * Math.SQRT2;
+  const waist = rx * 0.68, top = rx * 0.78, wy = Y + (Yt - Y) * 0.7;
+  const side = (s, col) => {
+    G.fillStyle = col; G.beginPath();
+    G.moveTo(X, Yt); G.lineTo(X + s * top, Yt); G.quadraticCurveTo(X + s * waist, wy, X + s * rx, Y);
+    G.ellipse(X, Y, rx, ry, 0, s > 0 ? 0 : Math.PI, Math.PI / 2, s < 0); G.closePath(); G.fill();
+  };
+  side(-1, '#e4e2dc'); side(1, '#bdb9b0');
+  G.fillStyle = '#7c7a74'; G.beginPath(); G.ellipse(X, Yt, top, top * HH / HW, 0, 0, Math.PI * 2); G.fill();
+  G.fillStyle = '#56544f'; G.beginPath(); G.ellipse(X, Yt + 1, top * 0.86, top * 0.86 * HH / HW, 0, 0, Math.PI * 2); G.fill();
+}
+function pond(gx, gy, rx, ry, col) {
+  const [X, Y] = P3(gx, gy, 0);
+  G.fillStyle = col; G.beginPath(); G.ellipse(X, Y, rx * HW * Math.SQRT2, ry * HH * Math.SQRT2, 0, 0, Math.PI * 2); G.fill();
+}
+function flatRect(x0, y0, x1, y1, z, col) { G.fillStyle = col; G.beginPath(); addRect(G, x0, y0, x1, y1, z * HS); G.fill(); }
+function sign(gx, gy, h, col) {
+  const [X, Y] = P3(gx, gy, 0);
+  G.strokeStyle = '#6b6f73'; G.lineWidth = 1; G.beginPath(); G.moveTo(X, Y); G.lineTo(X, Y - h * HS); G.stroke();
+  G.fillStyle = col; G.beginPath(); G.arc(X, Y - h * HS, 3, 0, Math.PI * 2); G.fill();
+}
+
+/* --- road pieces drawn in the object pass --- */
+function drawBridge(x, y, mm) {
+  const m = mm === undefined ? roadMask(x, y) : mm, horiz = (m & 5) || !(m & 10), w = 0.42, z = 6;
+  const [x0, y0, x1, y1] = horiz ? [x, y + 0.5 - w, x + 1, y + 0.5 + w] : [x + 0.5 - w, y, x + 0.5 + w, y + 1];
+  if ((x + y) % 2 === 0) box(x + 0.43, y + 0.43, x + 0.57, y + 0.57, 0, z - 2, pal('#9d978b'));
+  box(x0, y0, x1, y1, z - 2, 2, pal(C.bridge), C.asphalt);
+  if (lod === 0) return;
+  G.lineWidth = 1.2; G.strokeStyle = C.rail; G.beginPath();
+  const rail = (ax, ay, bx, by) => { G.moveTo(...P3(ax, ay, z + 2.5)); G.lineTo(...P3(bx, by, z + 2.5)); };
+  if (horiz) { rail(x0, y0 + 0.03, x1, y0 + 0.03); rail(x0, y1 - 0.03, x1, y1 - 0.03); } else { rail(x0 + 0.03, y0, x0 + 0.03, y1); rail(x1 - 0.03, y0, x1 - 0.03, y1); }
+  G.stroke();
+  if (lod === 2) {
+    G.strokeStyle = C.mark; G.lineWidth = 0.9; G.setLineDash([3, 3]); G.beginPath();
+    if (horiz) { G.moveTo(...P3(x, y + 0.5, z)); G.lineTo(...P3(x + 1, y + 0.5, z)); } else { G.moveTo(...P3(x + 0.5, y, z)); G.lineTo(...P3(x + 0.5, y + 1, z)); }
+    G.stroke(); G.setLineDash([]);
+  }
+}
+/* blue national-road sign where a road leaves the map */
+function drawEdgeSign(x, y) {
+  const [X, Y] = P3(x + 0.88, y + 0.88, 0);
+  G.strokeStyle = '#8a8f94'; G.lineWidth = 1.4; G.beginPath(); G.moveTo(X, Y); G.lineTo(X, Y - 22 * HS); G.stroke();
+  G.fillStyle = '#1d4f9c'; G.fillRect(X - 8, Y - 30 * HS, 16, 9 * HS);
+  G.strokeStyle = '#ffffff'; G.lineWidth = 1; G.strokeRect(X - 7, Y - 29 * HS, 14, 7 * HS);
+}
+function drawTrashBags(x, y) {
+  G.fillStyle = '#3c4a3a';
+  for (const [u, v] of [[0.78, 0.82], [0.66, 0.9], [0.86, 0.68]]) {
+    const [X, Y] = P3(x + u, y + v, 0);
+    G.beginPath(); G.arc(X, Y - 2.2 * HS, 2.6, 0, Math.PI * 2); G.fill();
+  }
+}
+
+/* --- civic buildings --- */
+function drawBuilding(t, x, y) {
+  const b = B[t], o = y * N + x;
+  switch (b.key) {
+    case 'park': drawPark(x, y); break;
+    case 'bigpark': {
+      G.fillStyle = '#e6d8a8'; G.beginPath();
+      addRect(G, x + 0.92, y, x + 1.08, y + 2, 0); addRect(G, x, y + 0.92, x + 2, y + 1.08, 0); G.fill();
+      pond(x + 0.5, y + 1.45, 0.32, 0.22, '#4f9fd4');
+      for (const [u, v, s] of [[0.3, 0.3, 1.1], [0.7, 0.25, 0.9], [1.45, 0.3, 1], [1.75, 0.6, 1.1], [1.4, 1.5, 1], [1.75, 1.75, 0.9]]) tree(x + u, y + v, s, (u * 10) | 0);
+      box(x + 1.25, y + 1.2, x + 1.55, y + 1.5, 0, 6, pal('#efe6d6'));
+      hipRoof(x + 1.2, y + 1.15, x + 1.6, y + 1.55, 6, 5, pal('#b8443b'));
+      break;
+    }
+    case 'shrine': {
+      tree(x + 0.2, y + 0.2, 1.1, 0); tree(x + 0.5, y + 0.12, 1, 2);
+      box(x + 0.3, y + 0.25, x + 0.75, y + 0.6, 0, 9, pal('#c9a77a'));
+      hipRoof(x + 0.25, y + 0.2, x + 0.8, y + 0.65, 9, 7, pal('#4b4f55'));
+      const red = pal('#d24a33');
+      box(x + 0.32, y + 0.86, x + 0.38, y + 0.92, 0, 13, red);
+      box(x + 0.66, y + 0.86, x + 0.72, y + 0.92, 0, 13, red);
+      box(x + 0.26, y + 0.85, x + 0.78, y + 0.93, 13, 2, pal('#3b3b3b'));
+      box(x + 0.3, y + 0.87, x + 0.74, y + 0.91, 10, 1.5, red);
+      break;
+    }
+    case 'cityhall': {
+      const c = pal('#f1ede4');
+      box(x + 0.15, y + 0.2, x + 1.85, y + 1.3, 0, 30, c, '#a9b0b6');
+      windows(x + 0.15, y + 0.2, x + 1.85, y + 1.3, 0, 30, 10, 4);
+      box(x + 0.8, y + 0.5, x + 1.2, y + 0.9, 30, 22, c, '#7d8a96');
+      if (lod > 0) {
+        const [X, Y] = P3(x + 1, y + 0.9, 44);
+        G.fillStyle = '#fff'; G.strokeStyle = '#59626b'; G.lineWidth = 0.8; G.beginPath(); G.arc(X, Y, 3.4, 0, Math.PI * 2); G.fill(); G.stroke();
+        const [fx, fy] = P3(x + 1.6, y + 1.6, 0);
+        G.strokeStyle = '#8a8f94'; G.lineWidth = 1; G.beginPath(); G.moveTo(fx, fy); G.lineTo(fx, fy - 34 * HS); G.stroke();
+        G.fillStyle = '#ffffff'; G.fillRect(fx, fy - 34 * HS, 9, 6 * HS);
+        G.fillStyle = '#d6336c'; G.beginPath(); G.arc(fx + 4.5, fy - 31 * HS, 1.6, 0, Math.PI * 2); G.fill();
+      }
+      break;
+    }
+    case 'stadium': {
+      const [X, Y] = P3(x + 1, y + 1, 0), rx = 0.92 * HW * Math.SQRT2, ry = 0.92 * HH * Math.SQRT2, h = 16 * HS;
+      G.fillStyle = '#c8ccd2'; G.beginPath(); G.moveTo(X - rx, Y - h); G.lineTo(X - rx, Y); G.ellipse(X, Y, rx, ry, 0, Math.PI, 0, true); G.lineTo(X + rx, Y - h); G.closePath(); G.fill();
+      G.fillStyle = '#dfe2e6'; G.beginPath(); G.ellipse(X, Y - h, rx, ry, 0, 0, Math.PI * 2); G.fill();
+      G.fillStyle = '#a3a9b0'; G.beginPath(); G.ellipse(X, Y - h + 1, rx * 0.78, ry * 0.78, 0, 0, Math.PI * 2); G.fill();
+      G.fillStyle = '#5daa45'; G.beginPath(); G.ellipse(X, Y - h * 0.4, rx * 0.62, ry * 0.62, 0, 0, Math.PI * 2); G.fill();
+      if (lod > 0) {
+        G.strokeStyle = 'rgba(255,255,255,.8)'; G.lineWidth = 1; G.beginPath(); G.ellipse(X, Y - h * 0.4, rx * 0.2, ry * 0.2, 0, 0, Math.PI * 2);
+        G.moveTo(X - rx * 0.4, Y - h * 0.4 - ry * 0.4); G.lineTo(X + rx * 0.4, Y - h * 0.4 + ry * 0.4); G.stroke();
+        for (const [u, v] of [[0.25, 0.25], [1.75, 0.25], [0.25, 1.75], [1.75, 1.75]]) sign(x + u, y + v, 34, '#fff9db');
+      }
+      break;
+    }
+    case 'tvtower': {
+      const cx = x + 0.5, cy = y + 0.5, red = pal('#e0452f'), wht = pal('#f4f1ea');
+      const seg = [[0.4, 0.26, 0, 60], [0.26, 0.15, 60, 60], [0.15, 0.08, 120, 50]];
+      seg.forEach(([r0, r1, z0, h], k) => frustum(cx, cy, r0, r1, z0, h, k % 2 ? wht : red));
+      box(cx - 0.2, cy - 0.2, cx + 0.2, cy + 0.2, 105, 10, pal('#9fb4c8'));
+      box(cx - 0.12, cy - 0.12, cx + 0.12, cy + 0.12, 172, 8, pal('#9fb4c8'));
+      if (lod > 0) {
+        const [X, Y] = P3(cx, cy, 180);
+        G.strokeStyle = '#d64131'; G.lineWidth = 1.6; G.beginPath(); G.moveTo(X, Y); G.lineTo(X, Y - 46 * HS); G.stroke();
+        G.fillStyle = '#ff6b6b'; G.beginPath(); G.arc(X, Y - 46 * HS, 1.8, 0, Math.PI * 2); G.fill();
+      }
+      break;
+    }
+    case 'koban': {
+      box(x + 0.22, y + 0.22, x + 0.78, y + 0.78, 0, 12, pal('#eef1f4'), '#3d4e63');
+      faceRect('L', x + 0.22, y + 0.22, x + 0.78, y + 0.78, 0.35, 0.65, 0, 8, '#59636d');
+      if (lod > 0) { const [X, Y] = P3(x + 0.5, y + 0.78, 10.5); G.fillStyle = '#e03131'; G.beginPath(); G.arc(X, Y, 1.8, 0, Math.PI * 2); G.fill(); }
+      break;
+    }
+    case 'police': {
+      box(x + 0.15, y + 0.15, x + 1.85, y + 1.2, 0, 30, pal('#eef1f4'), '#d4d9de');
+      windows(x + 0.15, y + 0.15, x + 1.85, y + 1.2, 0, 30, 10, 4);
+      box(x + 0.15, y + 0.15, x + 1.85, y + 1.2, 30, 3, pal('#26487f'));
+      if (lod > 0) {
+        const [X, Y] = P3(x + 1, y + 1.2, 24);
+        G.fillStyle = '#e0b531'; G.beginPath(); G.arc(X, Y, 3, 0, Math.PI * 2); G.fill();
+        for (const u of [0.4, 0.9, 1.4]) { box(x + u, y + 1.45, x + u + 0.26, y + 1.62, 0, 3.5, pal('#f8f9fa')); box(x + u + 0.04, y + 1.47, x + u + 0.2, y + 1.6, 3.5, 2.2, pal('#1f2328')); }
+      }
+      break;
+    }
+    case 'fire': {
+      box(x + 0.1, y + 0.1, x + 0.3, y + 0.3, 0, 36, pal('#c8412f'), '#9f3326');
+      const x0 = x + 0.1, y0 = y + 0.34, x1 = x + 0.9, y1 = y + 0.9;
+      box(x0, y0, x1, y1, 0, 16, pal('#e05a45'), '#b9bec4');
+      faceRect('L', x0, y0, x1, y1, 0.08, 0.44, 0, 10, '#eceff1');
+      faceRect('L', x0, y0, x1, y1, 0.54, 0.9, 0, 10, '#eceff1');
+      windows(x0, y0, x1, y1, 0, 16, 8, 3);
+      break;
+    }
+    case 'clinic': {
+      box(x + 0.16, y + 0.16, x + 0.84, y + 0.84, 0, 16, pal('#f5f7f8'), '#c9d0d6');
+      windows(x + 0.16, y + 0.16, x + 0.84, y + 0.84, 0, 16, 8, 3, '#7fa7c9', '#6890b4');
+      if (lod > 0) {
+        const [X, Y] = P3(x + 0.5, y + 0.84, 19);
+        G.fillStyle = '#2f9e44'; G.fillRect(X - 1.5, Y - 4.5, 3, 9); G.fillRect(X - 4.5, Y - 1.5, 9, 3);
+      }
+      break;
+    }
+    case 'hosp': {
+      const c = pal('#f3f5f7');
+      box(x + 0.15, y + 0.15, x + 1.2, y + 1.1, 0, 46, c, '#c9d0d6');
+      windows(x + 0.15, y + 0.15, x + 1.2, y + 1.1, 0, 46, 7.5, 4, '#7fa7c9', '#6890b4');
+      if (lod > 0) { flatRect(x + 0.6, y + 0.45, x + 0.75, y + 0.8, 46, '#e03131'); flatRect(x + 0.5, y + 0.55, x + 0.85, y + 0.7, 46, '#e03131'); }
+      box(x + 1.3, y + 0.15, x + 1.85, y + 1.1, 0, 22, pal('#e9edf0'), '#c9d0d6');
+      windows(x + 1.3, y + 0.15, x + 1.85, y + 1.1, 0, 22, 7.5, 4, '#7fa7c9', '#6890b4');
+      box(x + 0.15, y + 1.2, x + 1.85, y + 1.85, 0, 16, pal('#e9edf0'), '#c9d0d6');
+      windows(x + 0.15, y + 1.2, x + 1.85, y + 1.85, 0, 16, 8, 4, '#7fa7c9', '#6890b4');
+      break;
+    }
+    case 'school': case 'high': {
+      const hi = b.key === 'high';
+      if (lod > 0) { G.strokeStyle = 'rgba(255,255,255,.85)'; G.lineWidth = 1.2; G.beginPath(); addRect(G, x + 0.35, y + 1.05, x + 1.65, y + 1.75, 0); G.stroke(); }
+      const c = pal(hi ? '#e6e8ea' : '#efe4ca');
+      box(x + 0.1, y + 0.12, x + 1.9, y + 0.8, 0, hi ? 30 : 24, c, '#a9aeb3');
+      windows(x + 0.1, y + 0.12, x + 1.9, y + 0.8, 0, hi ? 30 : 24, hi ? 7.5 : 8, 3);
+      if (hi) { box(x + 1.4, y + 0.95, x + 1.9, y + 1.85, 0, 18, pal('#d5dbe0'), '#7d8a96'); }
+      else {
+        box(x + 0.82, y + 0.3, x + 1.18, y + 0.62, 24, 12, c, '#7d8a96');
+        if (lod > 0) {
+          const [X, Y] = P3(x + 1, y + 0.62, 31);
+          G.fillStyle = '#ffffff'; G.strokeStyle = '#59626b'; G.lineWidth = 0.8; G.beginPath(); G.arc(X, Y, 3, 0, Math.PI * 2); G.fill(); G.stroke();
+        }
+      }
+      break;
+    }
+    case 'univ': {
+      tree(x + 1.5, y + 1.5, 1.1, 0); tree(x + 1.75, y + 1.15, 1, 1);
+      const brick = pal('#b3563c');
+      box(x + 0.1, y + 0.1, x + 0.85, y + 1.9, 0, 28, brick, '#6b4a3a');
+      windows(x + 0.1, y + 0.1, x + 0.85, y + 1.9, 0, 28, 9, 4, '#f0e2c8', '#d9c7a6');
+      box(x + 1.0, y + 0.1, x + 1.9, y + 0.8, 0, 22, brick, '#6b4a3a');
+      windows(x + 1.0, y + 0.1, x + 1.9, y + 0.8, 0, 22, 9, 4, '#f0e2c8', '#d9c7a6');
+      box(x + 0.32, y + 0.85, x + 0.62, y + 1.15, 28, 24, brick, '#6b4a3a');
+      hipRoof(x + 0.3, y + 0.83, x + 0.64, y + 1.17, 52, 10, pal('#4f6a5a'));
+      break;
+    }
+    case 'coal': {
+      box(x + 0.1, y + 0.1, x + 1.15, y + 1.2, 0, 28, pal('#a3aab1'), '#8a9198');
+      windows(x + 0.1, y + 0.1, x + 1.15, y + 1.2, 0, 28, 14, 0, '#6f7b86', '#5d6873');
+      chimney(x + 1.5, y + 0.45, 0.13, 86, true);
+      box(x + 0.1, y + 1.32, x + 1.1, y + 1.9, 0, 14, pal('#b5aea3'), '#8f8a82');
+      chimney(x + 1.5, y + 1.15, 0.13, 86, true);
+      const [X, Y] = P3(x + 1.55, y + 1.68, 0);
+      G.fillStyle = '#2b2b2e'; G.beginPath(); G.ellipse(X, Y - 2 * HS, 11, 6 * HS, 0, Math.PI, 0); G.lineTo(X + 11, Y); G.ellipse(X, Y, 11, 5, 0, 0, Math.PI); G.fill();
+      break;
+    }
+    case 'gas': {
+      box(x + 0.1, y + 0.1, x + 1.0, y + 1.0, 0, 22, pal('#c3c9cf'), '#8a9198');
+      windows(x + 0.1, y + 0.1, x + 1.0, y + 1.0, 0, 22, 11, 0, '#6f7b86', '#5d6873');
+      chimney(x + 1.35, y + 0.35, 0.08, 60, false);
+      cyl(x + 0.55, y + 1.45, 0.3, 0, 8, pal('#dfe3e7')); dome(x + 0.55, y + 1.45, 0.3, 8, pal('#dfe3e7'));
+      cyl(x + 1.45, y + 1.45, 0.3, 0, 8, pal('#dfe3e7')); dome(x + 1.45, y + 1.45, 0.3, 8, pal('#dfe3e7'));
+      break;
+    }
+    case 'wind': {
+      cyl(x + 0.5, y + 0.5, 0.05, 0, 56, pal('#f1f3f5'));
+      box(x + 0.44, y + 0.38, x + 0.56, y + 0.62, 56, 5, pal('#e9ecef'));
+      break;
+    }
+    case 'solar': {
+      for (let bb = 0; bb < 3; bb++) for (let a = 0; a < 3; a++) {
+        const u0 = x + 0.12 + a * 0.6, v0 = y + 0.12 + bb * 0.6, u1 = u0 + 0.5, v1 = v0 + 0.42;
+        quad(P3(u0, v0, 7), P3(u1, v0, 7), P3(u1, v1, 2), P3(u0, v1, 2), '#2b4c80');
+        if (lod > 0) { G.strokeStyle = '#a7bfdf'; G.lineWidth = 0.7; G.stroke(); }
+      }
+      break;
+    }
+    case 'nuclear': {
+      coolingTower(x + 0.6, y + 0.6, 0.48, 70);
+      box(x + 1.15, y + 0.2, x + 1.85, y + 1.0, 0, 18, pal('#d5d9de'), '#a2a9b0');
+      cyl(x + 1.45, y + 1.45, 0.34, 0, 24, pal('#e9ecef')); dome(x + 1.45, y + 1.45, 0.34, 24, pal('#e9ecef'));
+      break;
+    }
+    case 'wtower': {
+      const legs = [[0.32, 0.32], [0.68, 0.32], [0.32, 0.68], [0.68, 0.68]];
+      G.strokeStyle = '#7d858c'; G.lineWidth = 1.4; G.beginPath();
+      for (const [u, v] of legs) { const [X, Y] = P3(x + u, y + v, 0); G.moveTo(X, Y); const [X2, Y2] = P3(x + 0.5 + (u - 0.5) * 0.6, y + 0.5 + (v - 0.5) * 0.6, 26); G.lineTo(X2, Y2); }
+      G.stroke();
+      cyl(x + 0.5, y + 0.5, 0.24, 26, 14, pal('#9cc3e0'));
+      frustum(x + 0.5, y + 0.5, 0.22, 0.02, 40, 7, pal('#7fa9c9'));
+      break;
+    }
+    case 'wplant': {
+      for (const [u, v] of [[0.55, 0.55], [1.45, 0.55], [0.55, 1.45]]) {
+        cyl(x + u, y + v, 0.36, 0, 4, pal('#c9ccd0'));
+        const [X, Y] = P3(x + u, y + v, 4);
+        G.fillStyle = '#4f9fd4'; G.beginPath(); G.ellipse(X, Y, 0.3 * HW * Math.SQRT2, 0.3 * HH * Math.SQRT2, 0, 0, Math.PI * 2); G.fill();
+      }
+      box(x + 1.15, y + 1.15, x + 1.85, y + 1.85, 0, 14, pal('#e3e7eb'), '#5c8fb8');
+      windows(x + 1.15, y + 1.15, x + 1.85, y + 1.85, 0, 14, 7, 3);
+      break;
+    }
+    case 'landfill': {
+      const f = clamp(S.fill[o] / b.store, 0, 1);
+      if (f > 0.02) {
+        const [X, Y] = P3(x + 1, y + 1, 0), rx = (0.4 + f * 0.45) * HW * Math.SQRT2, h = (4 + f * 20) * HS;
+        G.fillStyle = '#7d7466'; G.beginPath(); G.ellipse(X, Y, rx, rx * 0.5, 0, 0, Math.PI * 2); G.fill();
+        G.fillStyle = '#93897a'; G.beginPath(); G.moveTo(X - rx, Y); G.quadraticCurveTo(X - rx * 0.4, Y - h * 1.6, X, Y - h * 1.2); G.quadraticCurveTo(X + rx * 0.5, Y - h * 1.5, X + rx, Y); G.ellipse(X, Y, rx, rx * 0.5, 0, 0, Math.PI); G.fill();
+        if (lod > 0) {
+          G.fillStyle = '#5f8a3a'; for (const [dx, dy] of [[-0.3, -0.5], [0.2, -0.7], [0.45, -0.35]]) { G.beginPath(); G.arc(X + dx * rx, Y + dy * h, 1.6, 0, Math.PI * 2); G.fill(); }
+        }
+      }
+      if (lod > 0) {
+        G.strokeStyle = '#8b8378'; G.lineWidth = 1; G.beginPath(); addRect(G, x + 0.05, y + 0.05, x + 1.95, y + 1.95, 3 * HS); G.stroke();
+        box(x + 1.55, y + 1.65, x + 1.8, y + 1.8, 0, 4, pal('#f2c037'));
+      }
+      break;
+    }
+    case 'incin': {
+      box(x + 0.1, y + 0.2, x + 1.3, y + 1.8, 0, 26, pal('#c9c4b9'), '#8f8a82');
+      windows(x + 0.1, y + 0.2, x + 1.3, y + 1.8, 0, 26, 13, 0, '#6f7b86', '#5d6873');
+      chimney(x + 1.6, y + 0.6, 0.12, 74, true);
+      box(x + 1.45, y + 1.2, x + 1.85, y + 1.8, 0, 10, pal('#a9a49a'));
+      break;
+    }
+    case 'recycle': {
+      box(x + 0.12, y + 0.12, x + 1.4, y + 1.2, 0, 20, pal('#cfe3c4'), '#6a9a58');
+      windows(x + 0.12, y + 0.12, x + 1.4, y + 1.2, 0, 20, 10, 0, '#5c7a4f', '#4c6842');
+      if (lod > 0) {
+        const [X, Y] = P3(x + 0.76, y + 0.66, 20);
+        G.strokeStyle = '#2f9e44'; G.lineWidth = 2; G.beginPath(); G.ellipse(X, Y, 9, 4.5, 0, 0.3, Math.PI * 2 - 0.3); G.stroke();
+      }
+      for (const [u, c] of [[0.3, '#1c7ed6'], [0.75, '#f59f00'], [1.2, '#2f9e44']]) box(x + u, y + 1.45, x + u + 0.32, y + 1.75, 0, 7, pal(c));
+      break;
+    }
+    case 'bus': {
+      box(x + 0.25, y + 0.3, x + 0.75, y + 0.42, 0, 9, pal('#cfd6dc'));
+      box(x + 0.22, y + 0.28, x + 0.78, y + 0.5, 9, 1.5, pal('#1c7ed6'));
+      box(x + 0.32, y + 0.44, x + 0.68, y + 0.5, 0, 2.5, pal('#8b6b4a'));
+      if (lod > 0) sign(x + 0.85, y + 0.75, 14, '#1c7ed6');
+      break;
+    }
+    case 'subway': {
+      box(x + 0.2, y + 0.2, x + 0.8, y + 0.8, 0, 11, pal('#dfe6ec'), '#3b5b7a');
+      faceRect('L', x + 0.2, y + 0.2, x + 0.8, y + 0.8, 0.2, 0.8, 0, 8, GLASS_L);
+      faceRect('R', x + 0.2, y + 0.2, x + 0.8, y + 0.8, 0.2, 0.8, 0, 8, GLASS_R);
+      if (lod > 0) {
+        const [X, Y] = P3(x + 0.88, y + 0.88, 0);
+        G.strokeStyle = '#6b6f73'; G.lineWidth = 1.2; G.beginPath(); G.moveTo(X, Y); G.lineTo(X, Y - 18 * HS); G.stroke();
+        G.fillStyle = '#ffffff'; G.beginPath(); G.arc(X, Y - 20 * HS, 4.2, 0, Math.PI * 2); G.fill();
+        G.strokeStyle = '#1971c2'; G.lineWidth = 1.8; G.beginPath(); G.arc(X, Y - 20 * HS, 3, 0, Math.PI * 2); G.stroke();
+      }
+      break;
+    }
+  }
+}
+const GROUND = {
+  park: C.park, bigpark: C.park, shrine: C.gravel, school: C.yard, high: C.yard, univ: C.park, stadium: C.concrete,
+  coal: C.plant, gas: C.plant, nuclear: C.plant, incin: C.plant, solar: C.gravel, landfill: C.dirt, wind: null,
+};
+function groundOf(t, h) {
+  const g = GROUND[B[t].key];
+  return g === undefined ? C.concrete : g === null ? C.grass[h % 3] : g;
+}
 function buildingHeight(i) {
   const t = S.type[i], L = S.level[i];
   if (t === T.RES) return [0, 14, 26, 52, 110][L];
   if (t === T.COM) return [0, 14, 30, 66, 140][L];
-  if (t === T.IND) return [0, 10, 16, 22, 22][L];
-  return 20;
+  if (t === T.IND) return [0, 10, 16, 22][L] || 0;
+  return 24;
 }
 function drawObject(i, x, y) {
   const t = S.type[i];
   if (t === T.EMPTY) { if (S.tree[i]) drawTrees(x, y); return; }
   if (t === T.WIRE) { drawPole(x, y); return; }
-  if (t === T.ROAD) return;
+  if (t === T.ROAD) {
+    if (S.terrain[i]) drawBridge(x, y);
+    else if (lod === 2 && (x === 0 || y === 0 || x === N - 1 || y === N - 1)) drawEdgeSign(x, y);
+    return;
+  }
   if (isZone(t)) {
     const L = S.level[i], v = S.variant[i];
     if (L > 0) {
-      if (t === T.RES) drawRes(L, v, x, y); else if (t === T.COM) drawCom(L, v, x, y); else drawInd(L, v, x, y);
+      if (t === T.RES) drawRes(L, v, x, y); else if (t === T.COM) drawCom(L, v, x, y); else drawInd(L, v, x, y, S.kind[i]);
+      if (lod > 0 && S.trash[i] >= 128) drawTrashBags(x, y);
     }
     return;
   }
-  if (S.owner[i] === i && BLD[t].size === 1) drawService(t, x, y);
+  if (S.owner[i] === i && B[t].size === 1) drawBuilding(t, x, y);
 }
-
-/* --- cars (cosmetic, left-hand traffic) --- */
 const cars = [];
-let roadList = [], roadListDirty = true;
+let roadList = [], roadListDirty = true, carTarget = 0;
 const carBucket = new Map();
 function rebuildRoadList() {
   roadList = [];
-  for (let i = 0; i < NN; i++) if (S.type[i] === T.ROAD && D.traffic[i] > 8) roadList.push(i);
+  carTarget = 0;
+  for (let i = 0; i < NN; i++) if (S.type[i] === T.ROAD && D.q[i] > 0.03) { roadList.push(i); carTarget += Math.min(1.4, D.q[i]) * 0.7; }
+  carTarget = Math.min(240, Math.round(carTarget));
   roadListDirty = false;
 }
 function carDirs(x, y, from) {
@@ -1627,10 +2595,9 @@ function carDirs(x, y, from) {
 }
 function updateCars(dt) {
   if (roadListDirty) rebuildRoadList();
-  const target = Math.min(170, Math.floor(roadList.length * 0.45));
-  for (let k = 0; k < 2 && cars.length < target; k++) {
+  for (let k = 0; k < 3 && cars.length < carTarget; k++) {
     const i = roadList[(rand() * roadList.length) | 0];
-    if (rand() * 255 > D.traffic[i] + 40) continue;
+    if (rand() > D.q[i] + 0.15) continue;
     const x = i % N, y = (i / N) | 0, opts = carDirs(x, y, -1);
     if (!opts.length) continue;
     const big = rand() < 0.06;
@@ -1641,7 +2608,7 @@ function updateCars(dt) {
   for (let k = cars.length - 1; k >= 0; k--) {
     const c = cars[k];
     c.life -= step;
-    c.t += step * c.sp;
+    c.t += step * c.sp / (1 + 2.5 * Math.max(0, D.q[c.y * N + c.x] - 0.6));
     let alive = c.life > 0 && S.type[c.y * N + c.x] === T.ROAD;
     while (alive && c.t >= 1) {
       c.t -= 1;
@@ -1662,17 +2629,17 @@ function drawCar(c) {
   const px = c.x + 0.5 + DX[c.d] * c.t + DY[c.d] * 0.16, py = c.y + 0.5 + DY[c.d] * c.t - DX[c.d] * 0.16;
   const along = DX[c.d] !== 0, hl = c.len / 2, hw = 0.065;
   const x0 = along ? px - hl : px - hw, x1 = along ? px + hl : px + hw, y0 = along ? py - hw : py - hl, y1 = along ? py + hw : py + hl;
-  const p = pal(c.col);
-  box(x0, y0, x1, y1, 0, 3.5, p);
+  const p = pal(c.col), ti = Math.floor(py) * N + Math.floor(px), z = S.terrain[ti] ? 6 : 0;
+  box(x0, y0, x1, y1, z, 3.5, p);
   if (lod === 2) {
     const ix = along ? hl * 0.45 : 0, iy = along ? 0 : hl * 0.45;
-    box(x0 + ix * 0.6, y0 + iy * 0.6, x1 - ix * 1.2, y1 - iy * 1.2, 3.5, 2.5, p, '#cfe3f2');
+    box(x0 + ix * 0.6, y0 + iy * 0.6, x1 - ix * 1.2, y1 - iy * 1.2, z + 3.5, 2.5, p, '#cfe3f2');
   }
 }
 
 /* --- frame --- */
 let curZ = 1;
-const CH = 8, NCH = N / CH, HEADROOM = 190, MAX_CHUNKS = 24;
+const CH = 8, NCH = N / CH, HEADROOM = 270, MAX_CHUNKS = 20;
 const chunks = new Array(NCH * NCH).fill(null);
 let chunkGen = 0;
 function chunkBounds(cx, cy) {
@@ -1699,8 +2666,9 @@ function drawLayer(x0, x1, y0, y1, vis, opts) {
   const expand = lod === 0 ? 0.35 / z : 0.6 / z;
   const add = (col, x, y) => { let p = buckets.get(col); if (!p) { p = new Path2D(); buckets.set(col, p); } addDiamond(p, x, y, expand); };
   const zoneLines = { 3: new Path2D(), 4: new Path2D(), 5: new Path2D() };
-  const curb = new Path2D(), asph = new Path2D(), marks = new Path2D(), deck = new Path2D(), rails = new Path2D(), waves = new Path2D();
-  let hasMarks = false, hasBridge = false;
+  const curb = new Path2D(), asph = new Path2D(), marks = new Path2D(), waves = new Path2D();
+  const curbAv = new Path2D(), asphAv = new Path2D(), median = new Path2D(), lanes = new Path2D();
+  let hasMarks = false, hasAv = false;
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     if (!vis(x, y)) continue;
     const i = y * N + x, t = S.type[i], h = hash2(x, y);
@@ -1713,29 +2681,34 @@ function drawLayer(x0, x1, y0, y1, vis, opts) {
       }
     } else if (t === T.EMPTY || t === T.ROAD || t === T.WIRE) col = S.tree[i] ? C.forest : D.beach[i] && t === T.EMPTY ? C.sand : C.grass[h % 3];
     else if (isZone(t)) col = S.level[i] ? C.lot[t] : C.zone[t];
-    else if (t === T.PARK) col = C.park;
-    else if (t === T.SCHOOL) col = C.yard;
-    else if (t === T.SOLAR) col = C.gravel;
-    else if (t === T.COAL) col = C.plant;
-    else col = C.concrete;
+    else col = groundOf(t, h);
     if (lod === 0 && (col === C.grass[1] || col === C.grass[2])) col = C.grass[0];
     if (col !== C.grass[0]) add(col, x, y);
-    if (t === T.ROAD) {
+    if (t === T.ROAD && !S.terrain[i]) {
       const m = roadMask(x, y);
-      if (S.terrain[i]) { addRoadShape(deck, x, y, m || 5, 0.46); addRails(rails, x, y, m); hasBridge = true; }
-      else addRoadShape(curb, x, y, m, 0.42);
-      addRoadShape(asph, x, y, m, 0.3);
-      if (lod === 2 && m) { addRoadMarks(marks, x, y, m); hasMarks = true; }
+      if (S.level[i]) {
+        addRoadShape(curbAv, x, y, m, 0.49); addRoadShape(asphAv, x, y, m, 0.42); hasAv = true;
+        if (lod > 0 && m) addArmLines(median, x, y, m, 0);
+        if (lod === 2 && m) { addArmLines(lanes, x, y, m, 0.21); addArmLines(lanes, x, y, m, -0.21); }
+      } else {
+        addRoadShape(curb, x, y, m, 0.42);
+        addRoadShape(asph, x, y, m, 0.3);
+        if (lod === 2 && m) { addRoadMarks(marks, x, y, m); hasMarks = true; }
+      }
     } else if (lod > 0 && isZone(t) && S.level[i] === 0) {
       addRect(zoneLines[t], x + 0.14, y + 0.14, x + 0.86, y + 0.86, 0);
     }
   }
   for (const [col, p] of buckets) { G.fillStyle = col; G.fill(p); }
   if (lod === 2) { G.strokeStyle = C.wave; G.lineWidth = 1; G.stroke(waves); }
-  if (hasBridge) { G.fillStyle = C.bridge; G.fill(deck); }
   G.fillStyle = C.curb; G.fill(curb);
+  if (hasAv) { G.fill(curbAv); }
   G.fillStyle = C.asphalt; G.fill(asph);
-  if (hasBridge) { G.strokeStyle = C.rail; G.lineWidth = 1.2; G.stroke(rails); }
+  if (hasAv) {
+    G.fillStyle = C.asphaltAv; G.fill(asphAv);
+    if (lod > 0) { G.strokeStyle = C.median; G.lineWidth = 2.2; G.stroke(median); }
+    if (lod === 2) { G.strokeStyle = C.mark; G.lineWidth = 0.8; G.setLineDash([3, 3]); G.stroke(lanes); G.setLineDash([]); }
+  }
   if (hasMarks) { G.strokeStyle = C.mark; G.lineWidth = 0.9; G.setLineDash([3, 3]); G.stroke(marks); G.setLineDash([]); }
   if (lod > 0) {
     G.lineWidth = 1.2;
@@ -1765,7 +2738,7 @@ function drawLayer(x0, x1, y0, y1, vis, opts) {
       if (o < 0 || o === i) continue;
       const ox = o % N, oy = (o / N) | 0;
       if (ox + 1 !== x || oy + 1 !== y) continue;
-      drawService(S.type[o], ox, oy);
+      drawBuilding(S.type[o], ox, oy);
       if (opts.chunk) {
         // tiles in front of this building that live in an earlier chunk are drawn again on top
         if (x0 === ox + 1 && oy + 2 < N) drawObject((oy + 2) * N + ox, ox, oy + 2);
@@ -1838,8 +2811,13 @@ function collectFx(x0, x1, y0, y1, vis) {
     const i = y * N + x, t = S.type[i];
     if (isZone(t)) {
       if (S.fire[i]) fireFx.push(i);
-      if (!D.powered[i]) powerFx.push(i);
-    } else if (t >= 6 && S.owner[i] === i && BLD[t].use && !D.powered[i]) powerFx.push(i);
+      if (D.acc[i] < 0) roadFx.push(i);
+      else if (!D.powered[i]) powerFx.push(i);
+    } else if (t >= 10 && S.owner[i] === i) {
+      if (B[t].key === 'wind') windFx.push(i);
+      if (D.acc[i] < 0 && !isPlant(t) && !B[t].water && B[t].key !== 'park' && B[t].key !== 'shrine') roadFx.push(i);
+      else if (B[t].use && !D.powered[i]) powerFx.push(i);
+    }
   }
 }
 
@@ -1854,7 +2832,7 @@ function render(now) {
   HS = overlay !== 'none' ? 0.3 : 1;
   const wantScale = Math.pow(2, Math.ceil(Math.log2(z * dpr) * 4) / 4);
   if (wantScale !== spriteScale) { spriteScale = wantScale; treeSprites.clear(); }
-  smokeSrc = []; fireFx = []; powerFx = [];
+  smokeSrc = []; fireFx = []; powerFx = []; windFx = []; roadFx = [];
 
   const wl = cam.x - vw / 2 / z - HW * 2, wr = cam.x + vw / 2 / z + HW * 2;
   const wt = cam.y - vh / 2 / z - HH * 2, wb = cam.y + vh / 2 / z + 170;
@@ -1917,24 +2895,35 @@ function render(now) {
     G.globalAlpha = 1;
   }
 
+  if (lod > 0) {
+    G.strokeStyle = '#f8f9fa'; G.lineWidth = 2.2; G.lineCap = 'round'; G.beginPath();
+    for (const i of windFx) {
+      const [X, Y] = P3(i % N + 0.5, ((i / N) | 0) + 0.38, 59);
+      const a0 = tt * (1 + S.wind * 2.5) + i;
+      for (let k = 0; k < 3; k++) { const a = a0 + k * 2.094; G.moveTo(X, Y); G.lineTo(X + Math.cos(a) * 17, Y + Math.sin(a) * 17); }
+    }
+    G.stroke(); G.lineCap = 'butt';
+  }
+
   // build preview
   if (drag && drag.plan) drawPlan(drag.plan, drag.tool);
   else if (hover && hover.plan) drawPlan(hover.plan, hover.tool);
   if (selTile >= 0) {
-    const o = S.owner[selTile] >= 0 ? S.owner[selTile] : selTile, s = S.owner[selTile] >= 0 ? BLD[S.type[o]].size : 1;
+    const o = S.owner[selTile] >= 0 ? S.owner[selTile] : selTile, s = S.owner[selTile] >= 0 ? B[S.type[o]].size : 1;
     const x = o % N, y = (o / N) | 0;
     G.strokeStyle = '#ffd43b'; G.lineWidth = 2.5 / z; G.beginPath(); addRect(G, x, y, x + s, y + s, 0); G.stroke();
   }
 
   // screen-space marks
   G.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (lod > 0 && powerFx.length && Math.floor(now / 650) % 2 === 0) {
-    for (const i of powerFx) {
-      const [wx, wy] = tileCenterW(i), s = S.owner[i] === i && BLD[S.type[i]] ? BLD[S.type[i]].size : 1;
-      const [sx, sy] = w2s(wx, wy + (s - 1) * HH - (isZone(S.type[i]) ? buildingHeight(i) : 30) * HS - 8);
-      if (sx < -20 || sy < -20 || sx > vw + 20 || sy > vh + 20) continue;
-      boltIcon(sx, sy);
-    }
+  if (lod > 0 && (powerFx.length || roadFx.length) && Math.floor(now / 650) % 2 === 0) {
+    const at = i => {
+      const [wx, wy] = tileCenterW(i), s = S.owner[i] === i && B[S.type[i]] ? B[S.type[i]].size : 1;
+      return w2s(wx, wy + (s - 1) * HH - (isZone(S.type[i]) ? buildingHeight(i) : 30) * HS - 8);
+    };
+    const onScreen = ([sx, sy]) => sx > -20 && sy > -20 && sx < vw + 20 && sy < vh + 20;
+    for (const i of powerFx) { const p = at(i); if (onScreen(p)) boltIcon(...p); }
+    for (const i of roadFx) { const p = at(i); if (onScreen(p)) roadIcon(...p); }
   }
   if (drag && drag.plan) costLabel(drag);
   for (let k = floaters.length - 1; k >= 0; k--) {
@@ -1947,6 +2936,11 @@ function render(now) {
     G.fillStyle = '#c92a2a'; G.fillText(f.text, sx, sy - 30 - age * 26);
     G.globalAlpha = 1;
   }
+}
+function roadIcon(sx, sy) {
+  G.fillStyle = '#1d4f9c'; G.beginPath(); G.arc(sx, sy, 8, 0, Math.PI * 2); G.fill();
+  G.strokeStyle = '#fff'; G.lineWidth = 1.5; G.stroke();
+  G.beginPath(); G.moveTo(sx - 2.5, sy + 5); G.lineTo(sx - 1, sy - 5); G.moveTo(sx + 2.5, sy + 5); G.lineTo(sx + 1, sy - 5); G.stroke();
 }
 function boltIcon(sx, sy) {
   G.fillStyle = '#e03131'; G.beginPath(); G.arc(sx, sy, 8, 0, Math.PI * 2); G.fill();
@@ -1963,7 +2957,7 @@ function drawPlan(plan, tid) {
   if (tool.kind === 'place' && plan.valid) {
     const o = plan.items[0].i;
     G.globalAlpha = 0.85;
-    drawService(tool.b, o % N, (o / N) | 0);
+    drawBuilding(tool.b, o % N, (o / N) | 0);
     G.globalAlpha = 1;
   }
   const okCol = tool.zone ? C.zoneLine[tool.zone] : tid === 'bulldoze' ? '#e8590c' : '#ffffff';
@@ -1973,9 +2967,10 @@ function drawPlan(plan, tid) {
 }
 function costLabel(d) {
   const p = d.plan, tool = TOOLS[d.tool];
-  const ex = tool.kind === 'place' ? d.ax + BLD[tool.b].size / 2 : d.bx + 0.5, ey = tool.kind === 'place' ? d.ay + BLD[tool.b].size / 2 : d.by + 0.5;
+  const ex = tool.kind === 'place' ? d.ax + B[tool.b].size / 2 : d.bx + 0.5, ey = tool.kind === 'place' ? d.ay + B[tool.b].size / 2 : d.by + 0.5;
   const [sx, sy] = w2s((ex - ey) * HW, (ex + ey) * HH);
-  let text = p.valid ? (p.cost ? yen(p.cost) : '¥0') : 'ここには置けません';
+  let text = p.valid ? (p.cost ? yen(p.cost) : '¥0') : p.reason || 'ここには置けません';
+  if (p.valid && p.reason) text += '（一部 不可）';
   if (p.valid && tool.kind === 'rect') text += `  ${Math.abs(d.bx - d.ax) + 1}×${Math.abs(d.by - d.ay) + 1}`;
   if (p.valid && tool.kind === 'line') text += `  ${p.ok}マス`;
   const poor = p.valid && p.cost > S.money;
@@ -1988,18 +2983,29 @@ function costLabel(d) {
   G.beginPath(); G.roundRect ? G.roundRect(lx - w / 2, ly - h / 2, w, h, 13) : G.rect(lx - w / 2, ly - h / 2, w, h); G.fill();
   G.fillStyle = '#ffffff'; G.fillText(text, lx, ly + 0.5);
 }
+const nodeVal = (arr, i) => (S.type[i] === T.ROAD ? arr[i] : D.acc[i] >= 0 ? arr[D.acc[i]] : -1);
 function overlayValue(i) {
   const t = S.type[i];
   switch (overlay) {
     case 'power':
       if (t === T.EMPTY || t === T.ROAD || t === T.WIRE) return -1;
-      if (!isZone(t) && !(BLD[t] && (BLD[t].use || BLD[t].supply))) return -1;
+      if (!isZone(t) && !(B[t].use || B[t].supply)) return -1;
       return D.powered[i] ? 0 : 1;
+    case 'water':
+      if (!isZone(t) && !(B[t] && B[t].water)) return -1;
+      return D.watered[i] ? 0 : 1;
+    case 'traffic': return t === T.ROAD ? Math.min(1, D.q[i] / 1.2) : -1;
+    case 'commute': return t === T.RES && S.level[i] ? (D.acc[i] >= 0 ? D.emp[D.acc[i]] : 0) : -1;
     case 'lv': return S.terrain[i] && t === T.EMPTY ? -1 : D.lv[i] / 200;
     case 'poll': return D.poll[i] < 6 ? -1 : D.poll[i] / 200;
     case 'crime': return D.crime[i] < 6 || S.terrain[i] ? -1 : D.crime[i] / 180;
-    case 'traffic': return t === T.ROAD ? D.traffic[i] / 230 : -1;
-    default: { const v = D.cov[overlay][i]; return v < 4 ? -1 : v / 255; }
+    case 'trash': return isZone(t) && S.level[i] ? S.trash[i] / 255 : -1;
+    case 'fire': { const v = nodeVal(D.fireProt, i); return v > 0.01 ? v : -1; }
+    case 'edu': {
+      if (t === T.ROAD) { const v = 0.45 * D.svc.edu1[i] + 0.35 * D.svc.edu2[i] + 0.2 * D.svc.edu3[i]; return v > 0.01 ? v : -1; }
+      return D.acc[i] >= 0 ? eqAt(i) : -1;
+    }
+    default: { const v = nodeVal(D.svc[overlay], i); return v > 0.01 ? v : -1; }
   }
 }
 function drawOverlay(x0, x1, y0, y1, vis) {
@@ -2030,7 +3036,7 @@ function onMap(gx, gy) { return gx >= -0.5 && gy >= -0.5 && gx < N + 0.5 && gy <
 function dragOrigin(tid, gx, gy) {
   const tool = TOOLS[tid];
   if (tool.kind === 'place') {
-    const s = BLD[tool.b].size;
+    const s = B[tool.b].size;
     const ox = s === 2 ? Math.round(gx) - 1 : Math.floor(gx), oy = s === 2 ? Math.round(gy) - 1 : Math.floor(gy);
     return [clamp(ox, 0, N - s), clamp(oy, 0, N - s)];
   }
@@ -2100,8 +3106,9 @@ cv.addEventListener('pointermove', e => {
       const [ax, ay] = dragOrigin(drag.tool, gx, gy);
       if (ax !== drag.ax || ay !== drag.ay) { drag.ax = ax; drag.ay = ay; drag.plan = makePlan(drag.tool, drag); dirty = true; updateHint(); }
     } else {
-      const bx = clamp(Math.floor(gx), 0, N - 1), by = clamp(Math.floor(gy), 0, N - 1);
-      if (bx !== drag.bx || by !== drag.by) { drag.bx = bx; drag.by = by; drag.plan = makePlan(drag.tool, drag); dirty = true; updateHint(); }
+      const t = { ax: drag.ax, ay: drag.ay, bx: clamp(Math.floor(gx), 0, N - 1), by: clamp(Math.floor(gy), 0, N - 1) };
+      if (tool.kind === 'line') lockLine(t);
+      if (t.bx !== drag.bx || t.by !== drag.by) { drag.bx = t.bx; drag.by = t.by; drag.plan = makePlan(drag.tool, drag); dirty = true; updateHint(); }
     }
   }
 });
@@ -2117,7 +3124,7 @@ function endPointer(e) {
   if (gest.mode === 'build' && drag) {
     if (e.type === 'pointerup') {
       const tool = TOOLS[drag.tool];
-      const ex = tool.kind === 'place' ? drag.ax + BLD[tool.b].size / 2 : drag.bx + 0.5, ey = tool.kind === 'place' ? drag.ay + BLD[tool.b].size / 2 : drag.by + 0.5;
+      const ex = tool.kind === 'place' ? drag.ax + B[tool.b].size / 2 : drag.bx + 0.5, ey = tool.kind === 'place' ? drag.ay + B[tool.b].size / 2 : drag.by + 0.5;
       applyPlan(drag.tool, makePlan(drag.tool, drag), [(ex - ey) * HW, (ex + ey) * HH]);
     }
     drag = null; dirty = true; updateHint();
@@ -2184,9 +3191,6 @@ function stepTween(now) {
   if (k >= 1) tween = null;
 }
 
-/* =========================================================
-   UI
-   ========================================================= */
 let curTool = 'select', lastSpeed = 1, sheetKind = null, sheetArg = null;
 const SPEEDS = [
   { label: '停止', icon: '<rect x="6" y="3" width="4" height="12" rx="1"/><rect x="14" y="3" width="4" height="12" rx="1"/>' },
@@ -2204,117 +3208,7 @@ function setSpeed(s) {
   b.setAttribute('aria-label', 'ゲーム速度：' + SPEEDS[s].label);
 }
 
-const ICON_SVG = {
-  select: '<svg viewBox="0 0 32 24"><circle cx="13" cy="10" r="6.5"/><path d="m18 15 6 6"/></svg>',
-  bulldoze: '<svg viewBox="0 0 32 24"><path d="M3 17h17v-6h-6l-3-5H5v11"/><path d="M20 13h4l4 6H20"/><circle cx="7" cy="19" r="2.2"/><circle cx="15" cy="19" r="2.2"/></svg>',
-};
-function toolCost(id) {
-  const t = TOOLS[id];
-  if (t.kind === 'place') return BLD[t.b].cost;
-  return t.unit || 0;
-}
-function priceText(id) {
-  const t = TOOLS[id];
-  if (t.kind === 'select') return '無料';
-  if (t.kind === 'place') return yen(BLD[t.b].cost);
-  return yen(t.unit) + '/マス';
-}
-function renderIcon(id, canvas) {
-  const tool = TOOLS[id], g = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const size = tool.kind === 'place' ? BLD[tool.b].size : 1;
-  const s = size === 2 ? 0.66 : 1.1;
-  g.setTransform(s * (W / 96), 0, 0, s * (W / 96), W / 2, (66 - 32 * size * s) * (W / 96));
-  const prevG = G, prevLod = lod, prevHS = HS;
-  G = g; lod = 2; HS = 1;
-  const diamond = col => { g.fillStyle = col; g.beginPath(); addRect(g, 0, 0, size, size, 0); g.fill(); };
-  if (tool.kind === 'place') {
-    const b = tool.b;
-    diamond(b === T.PARK ? C.park : b === T.SCHOOL ? C.yard : b === T.SOLAR ? C.gravel : b === T.COAL ? C.plant : C.concrete);
-    drawService(b, 0, 0);
-  } else if (tool.zone) {
-    diamond(C.zone[tool.zone]);
-    g.strokeStyle = C.zoneLine[tool.zone]; g.lineWidth = 1.5; g.beginPath(); addRect(g, 0.1, 0.1, 0.9, 0.9, 0); g.stroke();
-    if (tool.zone === T.RES) drawRes(1, 1, 0, 0); else if (tool.zone === T.COM) drawCom(2, 1, 0, 0); else drawInd(2, 1, 0, 0);
-  } else if (id === 'road') {
-    diamond(C.grass[0]);
-    g.fillStyle = C.curb; g.beginPath(); addRoadShape(g, 0, 0, 5, 0.42); g.fill();
-    g.fillStyle = C.asphalt; g.beginPath(); addRoadShape(g, 0, 0, 5, 0.3); g.fill();
-    g.strokeStyle = C.mark; g.lineWidth = 1.2; g.setLineDash([3, 3]); g.beginPath(); addRoadMarks(g, 0, 0, 5); g.stroke(); g.setLineDash([]);
-  } else if (id === 'wire') {
-    diamond(C.grass[0]);
-    g.strokeStyle = C.wire; g.lineWidth = 1; g.beginPath(); g.moveTo(-28, -2); g.quadraticCurveTo(0, 6, 28, -2); g.stroke();
-    drawPole(0, 0);
-  }
-  G = prevG; lod = prevLod; HS = prevHS;
-  smokeSrc = [];
-}
-function buildToolbar() {
-  const bar = $('#tools');
-  bar.replaceChildren();
-  TOOL_GROUPS.forEach((grp, gi) => {
-    if (gi) bar.append(el('span', 'sep'));
-    for (const id of grp) {
-      const t = TOOLS[id];
-      const b = el('button', 'tool');
-      b.type = 'button'; b.dataset.tool = id; b.setAttribute('aria-pressed', String(id === curTool));
-      b.setAttribute('aria-label', `${t.name}（${priceText(id)}）`);
-      if (t.zone) { b.dataset.zone = t.zone; b.style.setProperty('--zc', `var(--${['', '', '', 'res', 'com', 'ind'][t.zone]})`); }
-      if (ICON_SVG[id]) b.insertAdjacentHTML('beforeend', ICON_SVG[id]);
-      else { const c = document.createElement('canvas'); c.width = 96; c.height = 72; renderIcon(id, c); b.append(c); }
-      b.append(el('span', 'nm', t.name), el('span', 'pr', priceText(id)));
-      b.addEventListener('click', () => selectTool(curTool === id && id !== 'select' ? 'select' : id));
-      bar.append(b);
-    }
-  });
-}
-function selectTool(id) {
-  curTool = id; drag = null; hover = null;
-  for (const b of document.querySelectorAll('.tool')) b.setAttribute('aria-pressed', String(b.dataset.tool === id));
-  const btn = document.querySelector(`.tool[data-tool="${id}"]`);
-  if (btn) btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
-  if (id !== 'select' && sheetKind === 'info') closeSheet();
-  updateHint(); dirty = true;
-}
-function updateHint() {
-  const h = $('#hint'), t = TOOLS[curTool];
-  h.replaceChildren();
-  h.append(el('b', null, t.name));
-  if (drag && drag.plan) {
-    const p = drag.plan, poor = p.valid && p.cost > S.money;
-    h.append(el('span', null, p.valid ? (TOOLS[drag.tool].kind === 'place' ? '指をはなすと建設' : '指をはなすと確定') : 'ここには置けません'));
-    const c = el('span', 'cost' + (!p.valid || poor ? ' bad' : ''), p.valid ? yen(p.cost) : '—');
-    h.append(c);
-  } else {
-    h.append(el('span', null, t.hint));
-    if (t.kind !== 'select') h.append(el('span', 'cost muted', '2本指で移動'));
-  }
-}
 
-function updateHUD() {
-  const m = $('#hud-money');
-  m.textContent = Math.abs(S.money) >= 1e6 ? (S.money < 0 ? '−¥' : '¥') + (Math.abs(S.money) / 1e4).toFixed(Math.abs(S.money) >= 1e7 ? 0 : 1) + '万' : yen(S.money);
-  m.classList.toggle('neg', S.money < 0);
-  const n = $('#hud-net');
-  n.textContent = `${ST.net >= 0 ? '+' : '−'}¥${Math.abs(ST.net).toLocaleString('ja-JP')}／月`;
-  n.className = 'd ' + (ST.net > 0 ? 'up' : ST.net < 0 ? 'down' : '');
-  $('#hud-pop').textContent = ST.pop >= 1e5 ? (ST.pop / 1e4).toFixed(1) + '万' : num(ST.pop);
-  $('#hud-city').textContent = cityName();
-  $('#hud-year').textContent = S.year + '年';
-  $('#hud-month').textContent = S.month + '月';
-  $('#hud-day').textContent = S.day + '日';
-  const bars = document.querySelectorAll('.rci-bar i');
-  [ST.dr, ST.dc, ST.di].forEach((v, k) => {
-    const s = bars[k].style, hgt = Math.abs(v) * 50;
-    s.height = hgt + '%';
-    if (v >= 0) { s.bottom = '50%'; s.top = 'auto'; } else { s.top = '50%'; s.bottom = 'auto'; }
-  });
-  $('#hud-rci').title = `需要　住宅 ${Math.round(ST.dr * 100)}／商業 ${Math.round(ST.dc * 100)}／工業 ${Math.round(ST.di * 100)}`;
-  $('#btn-undo').disabled = undoStack.length === 0;
-  for (const b of document.querySelectorAll('.tool')) b.classList.toggle('poor', toolCost(b.dataset.tool) > S.money);
-}
-
-/* toasts */
 function toast(msg, opt = {}) {
   const box = $('#toasts');
   const t = el('div', 'toast ' + (opt.kind || 'info'));
@@ -2334,29 +3228,7 @@ function toast(msg, opt = {}) {
 }
 
 /* sheets */
-function openSheet(kind, arg) {
-  sheetKind = kind; sheetArg = arg;
-  $('#sheet').hidden = false;
-  $('#btn-layer').setAttribute('aria-pressed', String(kind === 'layers' || overlay !== 'none'));
-  refreshSheet();
-}
-function closeSheet() {
-  $('#sheet').hidden = true;
-  sheetKind = null; selTile = -1; dirty = true;
-  $('#btn-layer').setAttribute('aria-pressed', String(overlay !== 'none'));
-}
-function refreshSheet() {
-  if (!sheetKind) return;
-  const body = $('#sheet-body');
-  const keepScroll = body.scrollTop;
-  body.replaceChildren();
-  const title = $('#sheet-title');
-  if (sheetKind === 'info') buildInfo(body, title, sheetArg);
-  else if (sheetKind === 'budget') buildBudget(body, title);
-  else if (sheetKind === 'layers') buildLayers(body, title);
-  else if (sheetKind === 'menu') buildMenu(body, title);
-  body.scrollTop = keepScroll;
-}
+
 function kv(rows) {
   const dl = el('dl', 'kv');
   for (const r of rows) {
@@ -2368,179 +3240,7 @@ function kv(rows) {
   return dl;
 }
 function level3(v, lo, mid, hi) { return v < 60 ? lo : v < 140 ? mid : hi; }
-function inspect(i) {
-  selTile = i; dirty = true;
-  openSheet('info', i);
-}
-function buildInfo(body, title, i) {
-  const t = S.type[i], x = i % N, y = (i / N) | 0, o = S.owner[i] >= 0 ? S.owner[i] : i;
-  const sec = el('section');
-  const rows = [];
-  const tags = el('div', 'tags');
-  const tag = (txt, cls) => tags.append(el('span', 'tag' + (cls ? ' ' + cls : ''), txt));
-  const yenPerM2 = v => (v * 900 + 8000) >= 10000 ? ((v * 900 + 8000) / 10000).toFixed(1) + '万円/㎡' : num(v * 900 + 8000) + '円/㎡';
-  let name;
-  if (t === T.EMPTY) name = S.terrain[i] ? (D.shallow[i] ? '水辺' : '川・湖') : S.tree[i] ? '森' : D.beach[i] ? '砂浜' : '空き地';
-  else if (t === T.ROAD) name = S.terrain[i] ? '橋' : '道路';
-  else if (t === T.WIRE) name = '送電線';
-  else if (isZone(t)) name = `${ZONE_NAME[t]}・${LEVEL_NAME[t][S.level[i]]}`;
-  else name = BLD[t].name;
-  title.textContent = name;
 
-  if (isZone(t)) {
-    const L = S.level[i];
-    if (t === T.RES) rows.push(['住民', num(POP[L]) + '人']);
-    else rows.push(['働く人', num(t === T.COM ? JOBS_C[L] : JOBS_I[L]) + '人']);
-    rows.push(['地価', yenPerM2(D.lv[i])]);
-    rows.push(['汚染', level3(D.poll[i], '少ない', 'ふつう', 'ひどい')]);
-    rows.push(['治安', level3(D.crime[i], '良い', 'ふつう', '悪い')]);
-    sec.append(kv(rows));
-    tag(D.powered[i] ? '電気あり' : '電気なし', D.powered[i] ? 'on' : 'warn');
-    tag(D.access[i] ? '道路あり' : '道路なし', D.access[i] ? 'on' : 'warn');
-    if (D.cov.police[i] > 40) tag('警察', 'on');
-    if (D.cov.fire[i] > 40) tag('消防', 'on');
-    if (D.cov.school[i] > 40) tag('学校', 'on');
-    if (D.cov.health[i] > 40) tag('病院', 'on');
-    if (S.fire[i]) tag('火災発生中', 'warn');
-    sec.append(tags);
-    const why = [];
-    const dem = t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di;
-    if (!D.powered[i]) why.push(ST.supply > 0 && ST.demand > ST.supply ? '電力が不足しています。発電所を増やしましょう。' : '電気が届いていません。発電所と道路か送電線でつなぎましょう。');
-    if (!D.access[i]) why.push('道路から2マス以内にありません。');
-    if (D.powered[i] && D.access[i]) {
-      if (dem <= 0) why.push(`いまは${ZONE_NAME[t].replace('地', '')}の需要がありません。${t === T.RES ? '働く場所（商業・工業）を増やしましょう。' : '住宅を増やしましょう。'}`);
-      const max = maxLevel(i, t);
-      if (L >= max && L < (t === T.IND ? 3 : 4)) {
-        if (t === T.RES && max === 3 && D.lv[i] >= 150) why.push(ST.pop < 15000 ? 'タワーマンションは人口1万5千人から建ちます。' : 'タワーマンションには学校の近さが必要です。');
-        else if (t === T.COM && max === 3 && D.lv[i] >= 140) why.push('超高層ビルは人口3万人から建ちます。');
-        else if (t === T.IND) why.push('大規模工場は人口1,500人から建ちます。');
-        else if (D.poll[i] > 40 && t !== T.IND) why.push('近くの工場や発電所の汚染で地価が下がり、これ以上は高く建ちません。住宅・商業は工業から離しましょう。');
-        else why.push('地価が低いため、これ以上は高く建ちません。公園・学校・病院や水辺で地価が上がります。');
-      }
-      if (t === T.RES && D.poll[i] > 110) why.push('汚染がひどく、人が住みたがりません。');
-      if (D.crime[i] > 120) why.push('治安が悪いです。警察署を近くに建てましょう。');
-    }
-    if (why.length) {
-      const s2 = el('section'); s2.append(el('h3', null, '発展のための条件'));
-      const ul = el('ul', 'reasons'); for (const w of why) ul.append(el('li', null, w));
-      s2.append(ul); body.append(sec, s2);
-    } else body.append(sec);
-  } else if (t === T.ROAD) {
-    rows.push(['交通量', D.traffic[i] > 220 ? '渋滞' : D.traffic[i] > 140 ? '多い' : D.traffic[i] > 50 ? 'ふつう' : '少ない']);
-    rows.push(['維持費', S.terrain[i] ? '¥1.5／月' : '¥0.3／月']);
-    sec.append(kv(rows)); body.append(sec);
-  } else if (t === T.WIRE) {
-    rows.push(['電気', D.powered[i] ? '通電中' : '通電していません']);
-    sec.append(kv(rows)); body.append(sec);
-  } else if (t >= 6) {
-    const b = BLD[t];
-    if (b.supply) {
-      rows.push(['発電量', num(b.supply)]);
-      rows.push(['街全体の使用量', `${num(ST.demand)}／${num(ST.supply)}`]);
-    } else {
-      if (b.use) rows.push(['電気', D.powered[o] ? '通電中' : '通電していません']);
-      if (b.radius) rows.push(['効果範囲', `半径${b.radius}マス`]);
-      if (t === T.PARK) rows.push(['効果', 'まわり4マスの地価が上がる']);
-    }
-    rows.push(['維持費', `${yen(b.upkeep)}／月`]);
-    sec.append(kv(rows)); body.append(sec);
-  } else {
-    rows.push(['地価', S.terrain[i] ? '—' : yenPerM2(D.lv[i])]);
-    rows.push(['汚染', level3(D.poll[i], '少ない', 'ふつう', 'ひどい')]);
-    sec.append(kv(rows));
-    if (!S.terrain[i]) sec.append(el('p', 'note', S.tree[i] ? '木があるとまわりの地価が上がり、汚染もやわらぎます。建物を建てると木は切られます。' : 'ツールを選んで、道路や区画をつくりましょう。'));
-    body.append(sec);
-  }
-  if (t !== T.EMPTY || S.tree[i]) {
-    const plan = makePlan('bulldoze', { ax: x, ay: y, bx: x, by: y });
-    const row = el('div', 'btn-row');
-    const b = el('button', 'btn danger', `撤去する（${yen(plan.cost)}）`);
-    b.type = 'button';
-    b.addEventListener('click', () => { const [wx, wy] = tileCenterW(i); if (applyPlan('bulldoze', plan, [wx, wy])) closeSheet(); });
-    row.append(b);
-    body.append(row);
-  }
-  body.append(el('p', 'note', `座標 ${x}, ${y}`));
-}
-
-function buildBudget(body, title) {
-  computeBudget();
-  title.textContent = `${cityName()}の市政`;
-  const rank = RANKS[rankIndex(ST.pop)];
-  // tax
-  const s1 = el('section');
-  s1.append(el('h3', null, '税率'));
-  const row = el('div', 'slider-row');
-  const inp = document.createElement('input');
-  inp.type = 'range'; inp.min = 0; inp.max = 20; inp.step = 1; inp.value = S.tax; inp.id = 'tax-rate';
-  inp.setAttribute('aria-label', '税率');
-  const out = el('output', null, S.tax + '%');
-  inp.addEventListener('input', () => {
-    S.tax = +inp.value; out.textContent = S.tax + '%';
-    computeDemand(); computeBudget(); hudDirty = true; updateBudgetNumbers();
-  });
-  row.append(inp, out);
-  s1.append(row, el('p', 'note', '税率を上げると収入が増えますが、人や会社が集まりにくくなります（標準は7%）。'));
-  // money flow
-  const s2 = el('section');
-  s2.append(el('h3', null, '毎月の収支（見込み）'));
-  const flow = el('div'); flow.id = 'budget-flow';
-  s2.append(flow);
-  // power
-  const s3 = el('section');
-  s3.append(el('h3', null, '電力'));
-  const pct = ST.supply ? ST.demand / ST.supply : ST.demand ? 2 : 0;
-  const meter = el('div', 'meter' + (pct > 1 ? ' over' : ''));
-  const fill = el('i'); fill.style.width = Math.min(100, pct * 100) + '%'; meter.append(fill);
-  const cap = el('div', 'meter-cap');
-  cap.append(el('span', null, `使用 ${num(ST.demand)}`), el('span', null, `発電 ${num(ST.supply)}`));
-  s3.append(meter, cap);
-  // people
-  const s4 = el('section');
-  s4.append(el('h3', null, '人口と雇用'));
-  const W = Math.round(ST.pop * 0.6), J = ST.jc + ST.ji;
-  s4.append(kv([
-    ['区分', rank.label],
-    ['人口', num(ST.pop) + '人'],
-    ['働き手', num(W) + '人'],
-    ['商業の雇用', num(ST.jc) + '人'],
-    ['工業の雇用', num(ST.ji) + '人'],
-    ['失業率', W > 0 ? Math.max(0, Math.round((1 - J / W) * 100)) + '%' : '—'],
-  ]));
-  // charts
-  const s5 = el('section');
-  s5.append(el('h3', null, '人口の推移'));
-  const c1 = el('div', 'chart'); s5.append(c1);
-  const s6 = el('section');
-  s6.append(el('h3', null, '資金の推移'));
-  const c2 = el('div', 'chart'); s6.append(c2);
-  body.append(s1, s2, s3, s4, s5, s6);
-  updateBudgetNumbers();
-  const hist = S.history;
-  requestAnimationFrame(() => {
-    lineChart(c1, hist.map(h => ({ v: h.pop, label: `${h.y}年${h.m}月` })), v => num(v) + '人');
-    lineChart(c2, hist.map(h => ({ v: h.money, label: `${h.y}年${h.m}月` })), v => yen(v));
-  });
-}
-function updateBudgetNumbers() {
-  const flow = $('#budget-flow');
-  if (!flow) return;
-  const r = v => yen(Math.round(v));
-  const e = ST.exp;
-  flow.replaceChildren(kv([
-    ['住民税', '+' + r(ST.inc.res), 'pos'],
-    ['法人税（商業）', '+' + r(ST.inc.com), 'pos'],
-    ['法人税（工業）', '+' + r(ST.inc.ind), 'pos'],
-    ['道路・送電線', '−' + r(e.road)],
-    ['発電所', '−' + r(e.power)],
-    e.police ? ['警察', '−' + r(e.police)] : null,
-    e.fire ? ['消防', '−' + r(e.fire)] : null,
-    e.school ? ['学校', '−' + r(e.school)] : null,
-    e.health ? ['病院', '−' + r(e.health)] : null,
-    e.park ? ['公園', '−' + r(e.park)] : null,
-    ['差し引き', (ST.net >= 0 ? '+' : '') + yen(ST.net), 'sum ' + (ST.net >= 0 ? 'pos' : 'neg')],
-  ]));
-}
 function niceCeil(v) {
   if (v <= 0) return 1;
   const p = Math.pow(10, Math.floor(Math.log10(v)));
@@ -2598,17 +3298,7 @@ function lineChart(host, data, fmt) {
   svg.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') setTimeout(leave, 1500); });
 }
 
-function buildLayers(body, title) {
-  title.textContent = 'マップ表示';
-  const grid = el('div', 'layer-grid');
-  for (const id in LAYERS) {
-    const b = el('button', null, LAYERS[id].name);
-    b.type = 'button'; b.setAttribute('aria-pressed', String(overlay === id));
-    b.addEventListener('click', () => { setOverlay(id); refreshSheet(); });
-    grid.append(b);
-  }
-  body.append(grid, el('p', 'note', 'データを色で表示します。表示中は建物が低く描かれます。'));
-}
+
 function setOverlay(id) {
   overlay = id; dirty = true;
   $('#btn-layer').setAttribute('aria-pressed', String(id !== 'none' || sheetKind === 'layers'));
@@ -2631,19 +3321,475 @@ function setOverlay(id) {
   lg.append(x);
 }
 
+
+/* --- toolbar --- */
+let curCat = 'move';
+const ICON_SVG = {
+  select: '<svg viewBox="0 0 32 24"><circle cx="13" cy="10" r="6.5"/><path d="m18 15 6 6"/></svg>',
+  bulldoze: '<svg viewBox="0 0 32 24"><path d="M3 17h17v-6h-6l-3-5H5v11"/><path d="M20 13h4l4 6H20"/><circle cx="7" cy="19" r="2.2"/><circle cx="15" cy="19" r="2.2"/></svg>',
+};
+const LOCK_SVG = '<svg class="lock" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>';
+function toolCost(id) { const t = TOOLS[id]; return t.kind === 'place' ? B[t.b].cost : t.unit || 0; }
+function priceText(id) {
+  const t = TOOLS[id];
+  if (t.kind === 'select') return '無料';
+  if (t.kind === 'place') return yen(B[t.b].cost);
+  return yen(t.unit) + '/マス';
+}
+const iconCache = {};
+function toolIcon(id) {
+  if (iconCache[id]) return iconCache[id];
+  const c = document.createElement('canvas');
+  c.width = 96; c.height = 72;
+  renderIcon(id, c);
+  try { iconCache[id] = c.toDataURL(); } catch (e) { iconCache[id] = ''; }
+  return iconCache[id];
+}
+function renderIcon(id, canvas) {
+  const tool = TOOLS[id], g = canvas.getContext('2d');
+  const W = canvas.width;
+  const size = tool.kind === 'place' ? B[tool.b].size : 1;
+  const tall = tool.kind === 'place' && B[tool.b].key === 'tvtower';
+  const s = tall ? 0.42 : size === 2 ? 0.66 : 1.1;
+  g.setTransform(s * (W / 96), 0, 0, s * (W / 96), W / 2, (66 - 32 * size * s) * (W / 96));
+  const prevG = G, prevLod = lod, prevHS = HS, prevSmoke = smokeSrc;
+  G = g; lod = 2; HS = 1;
+  const diamond = col => { g.fillStyle = col; g.beginPath(); addRect(g, 0, 0, size, size, 0); g.fill(); };
+  if (tool.kind === 'place') {
+    diamond(groundOf(tool.b, 0));
+    drawBuilding(tool.b, 0, 0);
+    if (B[tool.b].key === 'wind') {
+      const [X, Y] = P3(0.5, 0.38, 59);
+      g.strokeStyle = '#f8f9fa'; g.lineWidth = 2.2; g.beginPath();
+      for (let k = 0; k < 3; k++) { const a = -1.57 + k * 2.094; g.moveTo(X, Y); g.lineTo(X + Math.cos(a) * 17, Y + Math.sin(a) * 17); }
+      g.stroke();
+    }
+  } else if (tool.zone) {
+    diamond(C.zone[tool.zone]);
+    g.strokeStyle = C.zoneLine[tool.zone]; g.lineWidth = 1.5; g.beginPath(); addRect(g, 0.1, 0.1, 0.9, 0.9, 0); g.stroke();
+    if (tool.zone === T.RES) drawRes(1, 1, 0, 0); else if (tool.zone === T.COM) drawCom(2, 1, 0, 0); else drawInd(2, 1, 0, 0, 0);
+  } else if (id === 'road' || id === 'avenue') {
+    diamond(C.grass[0]);
+    const av = id === 'avenue';
+    g.fillStyle = C.curb; g.beginPath(); addRoadShape(g, 0, 0, 5, av ? 0.49 : 0.42); g.fill();
+    g.fillStyle = av ? C.asphaltAv : C.asphalt; g.beginPath(); addRoadShape(g, 0, 0, 5, av ? 0.42 : 0.3); g.fill();
+    g.strokeStyle = av ? C.median : C.mark; g.lineWidth = av ? 2.2 : 1.2; g.setLineDash(av ? [] : [3, 3]); g.beginPath(); addArmLines(g, 0, 0, 5, 0); g.stroke();
+    if (av) { g.strokeStyle = C.mark; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath(); addArmLines(g, 0, 0, 5, 0.21); addArmLines(g, 0, 0, 5, -0.21); g.stroke(); }
+    g.setLineDash([]);
+  } else if (id === 'bridge') {
+    diamond(C.water);
+    drawBridge(0, 0, 5);
+  } else if (id === 'wire') {
+    diamond(C.grass[0]);
+    g.strokeStyle = C.wire; g.lineWidth = 1; g.beginPath(); g.moveTo(-28, -2); g.quadraticCurveTo(0, 6, 28, -2); g.stroke();
+    drawPole(0, 0);
+  }
+  G = prevG; lod = prevLod; HS = prevHS; smokeSrc = prevSmoke;
+}
+function buildToolbar() {
+  const cats = $('#cats');
+  cats.replaceChildren();
+  for (const id of ['select', 'bulldoze']) {
+    const b = el('button', 'cat ico');
+    b.type = 'button'; b.dataset.tool = id; b.setAttribute('aria-pressed', String(curTool === id)); b.setAttribute('aria-label', TOOLS[id].name);
+    b.title = TOOLS[id].name;
+    b.insertAdjacentHTML('beforeend', ICON_SVG[id].replace('viewBox="0 0 32 24"', 'viewBox="0 0 32 24" aria-hidden="true"'));
+    b.addEventListener('click', () => selectTool(curTool === id && id !== 'select' ? 'select' : id));
+    cats.append(b);
+  }
+  cats.append(el('span', 'sep'));
+  for (const c of CATS) {
+    const b = el('button', 'cat', c.name);
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.cat = c.id; b.setAttribute('aria-selected', String(c.id === curCat));
+    b.addEventListener('click', () => { curCat = c.id; buildToolStrip(); for (const x of document.querySelectorAll('.cat[data-cat]')) x.setAttribute('aria-selected', String(x.dataset.cat === curCat)); });
+    cats.append(b);
+  }
+  buildToolStrip();
+}
+function buildToolStrip() {
+  const bar = $('#tools');
+  bar.replaceChildren();
+  for (const id of CATS.find(c => c.id === curCat).tools) {
+    const t = TOOLS[id], lockedNow = (t.rank || 0) > S.rank;
+    const b = el('button', 'tool' + (lockedNow ? ' locked' : ''));
+    b.type = 'button'; b.dataset.tool = id; b.setAttribute('aria-pressed', String(id === curTool));
+    b.setAttribute('aria-label', `${t.name}（${lockedNow ? RANKS[t.rank].label + 'で解放' : priceText(id)}）`);
+    if (t.zone) { b.dataset.zone = t.zone; b.style.setProperty('--zc', `var(--${['', '', '', 'res', 'com', 'ind'][t.zone]})`); }
+    const img = document.createElement('img');
+    img.alt = ''; img.width = 48; img.height = 36; img.src = toolIcon(id);
+    img.style.cssText = 'width:48px;height:36px;align-self:end';
+    if (lockedNow) { img.style.opacity = '.35'; img.style.filter = 'grayscale(1)'; }
+    b.append(img, el('span', 'nm', t.name), el('span', 'pr', lockedNow ? RANKS[t.rank].label + 'で解放' : priceText(id)));
+    if (lockedNow) b.insertAdjacentHTML('beforeend', LOCK_SVG);
+    b.addEventListener('click', () => selectTool(curTool === id ? 'select' : id));
+    bar.append(b);
+  }
+  hudDirty = true;
+}
+function selectTool(id) {
+  curTool = id; drag = null; hover = null;
+  const cat = CATS.find(c => c.tools.includes(id));
+  if (cat && cat.id !== curCat) {
+    curCat = cat.id; buildToolStrip();
+    for (const x of document.querySelectorAll('.cat[data-cat]')) x.setAttribute('aria-selected', String(x.dataset.cat === curCat));
+  }
+  for (const b of document.querySelectorAll('.tool, .cat.ico')) b.setAttribute('aria-pressed', String(b.dataset.tool === id));
+  const btn = document.querySelector(`.tool[data-tool="${id}"]`);
+  if (btn) btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  if (id !== 'select' && sheetKind === 'info') closeSheet();
+  updateHint(); dirty = true;
+}
+function updateHint() {
+  const h = $('#hint'), t = TOOLS[curTool];
+  h.replaceChildren();
+  h.append(el('b', null, t.name));
+  if (drag && drag.plan) {
+    const p = drag.plan, poor = p.valid && p.cost > S.money;
+    h.append(el('span', null, p.valid ? (p.reason ? p.reason : TOOLS[drag.tool].kind === 'place' ? '指をはなすと建設' : '指をはなすと確定') : p.reason || 'ここには置けません'));
+    h.append(el('span', 'cost' + (!p.valid || poor ? ' bad' : ''), p.valid ? yen(p.cost) : '—'));
+  } else {
+    h.append(el('span', null, (t.rank || 0) > S.rank ? `${RANKS[t.rank].label}になると使えます。${t.hint}` : t.hint));
+    if (t.kind !== 'select') h.append(el('span', 'cost muted', '2本指で移動'));
+  }
+}
+
+/* --- HUD --- */
+function setChip(id, label, pct, warnAt, badAt, text) {
+  const c = $(id);
+  c.className = 'chip' + (pct >= badAt ? ' bad' : pct >= warnAt ? ' warn' : '');
+  c.replaceChildren(document.createTextNode(label + ' '), el('b', null, text));
+}
+function updateHUD() {
+  const m = $('#hud-money');
+  m.textContent = Math.abs(S.money) >= 1e6 ? (S.money < 0 ? '−¥' : '¥') + (Math.abs(S.money) / 1e4).toFixed(Math.abs(S.money) >= 1e7 ? 0 : 1) + '万' : yen(S.money);
+  m.classList.toggle('neg', S.money < 0);
+  const n = $('#hud-net');
+  n.textContent = `${ST.net >= 0 ? '+' : '−'}¥${Math.abs(ST.net).toLocaleString('ja-JP')}／月`;
+  n.className = 'd ' + (ST.net > 0 ? 'up' : ST.net < 0 ? 'down' : '');
+  $('#hud-pop').textContent = ST.pop >= 1e5 ? (ST.pop / 1e4).toFixed(1) + '万' : num(ST.pop);
+  $('#hud-city').textContent = cityName();
+  $('#hud-year').textContent = S.year + '年';
+  $('#hud-month').textContent = S.month + '月';
+  $('#hud-day').textContent = S.day + '日';
+  const bars = document.querySelectorAll('.rci-bar i');
+  [ST.dr, ST.dc, ST.di].forEach((v, k) => {
+    const s = bars[k].style;
+    s.height = Math.abs(v) * 50 + '%';
+    if (v >= 0) { s.bottom = '50%'; s.top = 'auto'; } else { s.top = '50%'; s.bottom = 'auto'; }
+  });
+  $('#hud-rci').title = `需要　住宅 ${Math.round(ST.dr * 100)}／商業 ${Math.round(ST.dc * 100)}／工業 ${Math.round(ST.di * 100)}`;
+  const pp = ST.power.supply ? ST.power.use / ST.power.supply * 100 : ST.power.use ? 999 : 0;
+  setChip('#chip-power', '電力', pp, 90, 100.5, ST.power.supply ? Math.round(pp) + '%' : ST.power.use ? 'なし' : '—');
+  const wp = ST.water.supply ? ST.water.use / ST.water.supply * 100 : ST.water.use ? 999 : 0;
+  setChip('#chip-water', '水道', wp, 90, 100.5, ST.water.supply ? Math.round(wp) + '%' : ST.water.use ? 'なし' : '—');
+  const gp = ST.garbage.cap ? ST.garbage.gen / ST.garbage.cap * 100 : ST.garbage.gen > 1 ? 999 : 0;
+  setChip('#chip-trash', 'ゴミ', Math.max(gp, ST.landfillLeft < 12 ? 95 : 0), 90, 100.5, ST.garbage.cap ? Math.round(gp) + '%' : ST.garbage.gen > 1 ? 'なし' : '—');
+  setChip('#chip-approval', '支持率', ST.pop ? 100 - ST.approval : 0, 45, 60, ST.pop ? Math.round(ST.approval) + '%' : '—');
+  $('#btn-undo').disabled = undoStack.length === 0;
+  for (const b of document.querySelectorAll('.tool')) b.classList.toggle('poor', !b.classList.contains('locked') && toolCost(b.dataset.tool) > S.money);
+}
+
+/* --- sheets --- */
+const BUDGET_TABS = [['money', '予算'], ['stats', '統計'], ['goals', '目標']];
+function openSheet(kind, arg) {
+  sheetKind = kind; sheetArg = arg;
+  if (kind === 'budget' && !arg) sheetArg = 'money';
+  $('#sheet').hidden = false;
+  $('#btn-layer').setAttribute('aria-pressed', String(kind === 'layers' || overlay !== 'none'));
+  $('#sheet-body').scrollTop = 0;
+  refreshSheet();
+}
+function closeSheet() {
+  $('#sheet').hidden = true;
+  sheetKind = null; selTile = -1; dirty = true;
+  $('#btn-layer').setAttribute('aria-pressed', String(overlay !== 'none'));
+}
+function refreshSheet() {
+  if (!sheetKind) return;
+  const body = $('#sheet-body'), tabs = $('#sheet-tabs');
+  if (sheetKind === 'budget' && document.activeElement && document.activeElement.type === 'range' && body.contains(document.activeElement)) return;
+  const keepScroll = body.scrollTop;
+  body.replaceChildren();
+  tabs.hidden = sheetKind !== 'budget';
+  const title = $('#sheet-title');
+  if (sheetKind === 'budget') {
+    tabs.replaceChildren();
+    for (const [k, label] of BUDGET_TABS) {
+      const b = el('button', null, label);
+      b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(sheetArg === k));
+      b.addEventListener('click', () => { sheetArg = k; body.scrollTop = 0; refreshSheet(); });
+      tabs.append(b);
+    }
+    title.textContent = `${cityName()}の市政`;
+    if (sheetArg === 'stats') buildStats(body); else if (sheetArg === 'goals') buildGoals(body); else buildMoney(body);
+  } else if (sheetKind === 'info') buildInfo(body, title, sheetArg);
+  else if (sheetKind === 'layers') buildLayers(body, title);
+  else if (sheetKind === 'menu') buildMenu(body, title);
+  body.scrollTop = keepScroll;
+}
+function section(body, heading) { const s = el('section'); if (heading) s.append(el('h3', null, heading)); body.append(s); return s; }
+function meter(frac, cls) {
+  const m = el('div', 'meter' + (cls ? ' ' + cls : ''));
+  const f = el('i'); f.style.width = clamp(frac, 0, 1) * 100 + '%'; m.append(f);
+  return m;
+}
+const pct = v => Math.round(v * 100) + '%';
+function inspect(i) { selTile = i; dirty = true; openSheet('info', i); }
+function buildInfo(body, title, i) {
+  const t = S.type[i], x = i % N, y = (i / N) | 0, o = S.owner[i] >= 0 ? S.owner[i] : i, a = D.acc[i];
+  const sec = section(body), rows = [];
+  const tags = el('div', 'tags');
+  const tag = (txt, cls) => tags.append(el('span', 'tag' + (cls ? ' ' + cls : ''), txt));
+  const yenPerM2 = v => { const p = v * 900 + 8000; return p >= 10000 ? (p / 10000).toFixed(1) + '万円/㎡' : num(p) + '円/㎡'; };
+  if (t === T.EMPTY) title.textContent = S.terrain[i] ? (D.shallow[i] ? '水辺' : '川・湖') : S.tree[i] ? '森' : D.beach[i] ? '砂浜' : '空き地';
+  else if (t === T.ROAD) title.textContent = S.terrain[i] ? '橋' : S.level[i] ? '大通り（4車線）' : '道路（2車線）';
+  else if (t === T.WIRE) title.textContent = '送電線';
+  else if (isZone(t)) title.textContent = `${ZONE_NAME[t]}・${(t === T.IND && S.kind[i] ? HT_NAME : LEVEL_NAME[t])[S.level[i]]}`;
+  else title.textContent = B[t].name;
+
+  if (isZone(t)) {
+    const L = S.level[i];
+    if (t === T.RES) {
+      rows.push(['住民', num(POP[L]) + '人']);
+      if (L && a >= 0) { rows.push(['仕事がある人', pct(D.emp[a])]); rows.push(['通勤時間', D.emp[a] > 0 ? `${Math.round(D.commute[a] * 2)}分` : '—']); }
+      if (a >= 0) rows.push(['教育水準', pct(eqAt(i))]);
+    } else {
+      rows.push(['働く人', num(zoneJobs(t, L)) + '人']);
+      if (L && a >= 0) rows.push(['働き手の充足', pct(D.jfill[a])]);
+    }
+    rows.push(['地価', yenPerM2(D.lv[i])], ['汚染', level3(D.poll[i], '少ない', 'ふつう', 'ひどい')], ['治安', level3(D.crime[i], '良い', 'ふつう', '悪い')]);
+    sec.append(kv(rows));
+    tag(a >= 0 ? '道路あり' : '道路なし', a >= 0 ? 'on' : 'warn');
+    tag(D.powered[i] ? '電気あり' : '停電', D.powered[i] ? 'on' : 'warn');
+    if (L) tag(D.watered[i] ? '水道あり' : '断水', D.watered[i] ? 'on' : 'warn');
+    if (L) tag(S.trash[i] >= 128 ? 'ゴミ散乱' : 'ゴミ回収', S.trash[i] >= 128 ? 'warn' : 'on');
+    if (a >= 0) {
+      if (D.svc.police[a] > 0.5) tag('警察', 'on');
+      if (D.fireProt[a] > 0.05) tag('消防', 'on');
+      if (D.svc.health[a] > 0.5) tag('医療', 'on');
+      if (D.svc.edu1[a] > 0.5) tag('小学校', 'on');
+      if (D.trSub[a]) tag('地下鉄', 'on'); else if (D.trBus[a]) tag('バス', 'on');
+      if (!compEdge[D.comp[a]]) tag('街の外と未接続', 'warn');
+    }
+    if (S.fire[i]) tag('火災発生中', 'warn');
+    sec.append(tags);
+    const notes = growthNotes(i);
+    if (notes.length) {
+      const s2 = section(body, L ? '成長をさまたげていること' : '家や店が建つための条件');
+      const ul = el('ul', 'reasons'); for (const w of notes) ul.append(el('li', null, w));
+      s2.append(ul);
+    }
+  } else if (t === T.ROAD) {
+    const cap = roadCap(i), q = D.q[i];
+    rows.push(['交通量', `${num(D.load[i])}人／容量 ${num(cap)}人`]);
+    rows.push(['混雑', q > 1 ? `渋滞（${pct(q)}）` : q > 0.7 ? `混雑（${pct(q)}）` : `${pct(q)}`]);
+    rows.push(['街の外', compEdge[D.comp[i]] ? 'つながっている' : 'つながっていない']);
+    rows.push(['維持費', S.terrain[i] ? '¥3／月' : S.level[i] ? '¥1／月' : '¥0.4／月']);
+    sec.append(kv(rows), meter(q / 1.5, q > 1 ? 'over' : q > 0.7 ? 'warn' : ''));
+    if (x === 0 || y === 0 || x === N - 1 || y === N - 1) sec.append(el('p', 'note', 'ここから街の外の国道へつながっています。外への通勤や工場の出荷はここを通ります。'));
+    if (q > 1) sec.append(el('p', 'note', '渋滞しています。大通りに拡幅するか、迂回路やバス・地下鉄で通勤を分散させましょう。'));
+  } else if (t === T.WIRE) {
+    rows.push(['電気', D.powered[i] ? '通電中' : '通電していません']);
+    sec.append(kv(rows));
+  } else if (t >= 10) {
+    const b = B[t], f = ST.fac[o];
+    if (b.supply) {
+      const age = plantAge(o);
+      rows.push(['発電量', `${num(plantOutput(o))}／${num(b.supply)}`]);
+      rows.push(['築年数', `${Math.floor(age)}年（寿命 ${b.life}年）`]);
+      rows.push(['街全体の電力', `${num(ST.power.use)}／${num(ST.power.supply)}`]);
+      if (b.key === 'wind') rows.push(['今月の風', S.wind > 1.05 ? '強い' : S.wind < 0.8 ? '弱い' : 'ふつう']);
+      if (age > b.life) sec.append(el('p', 'note', '寿命を過ぎ、発電量が落ちています。撤去して建て直しましょう。'));
+    }
+    if (b.water) {
+      rows.push(['給水量', `${num(waterOutput(o))}／${num(b.water)}`]);
+      rows.push(['街全体の水', `${num(ST.water.use)}／${num(ST.water.supply)}`]);
+      if (D.poll[o] > 80) rows.push(['水質', '汚染で能力半減']);
+    }
+    if (b.svc === 'garbage') {
+      if (f && f.cap !== undefined) rows.push(['今月の処理', `${num(f.used)}／${num(f.cap)}トン`]);
+      if (b.store) rows.push(['埋め立て', `${pct(clamp(S.fill[o] / b.store, 0, 1))}（${num(S.fill[o])}／${num(b.store)}トン）`]);
+      if (b.reduce) rows.push(['ゴミ削減', '街全体で20%']);
+    } else if (b.svc && b.svc !== 'fire' && f && f.cap !== undefined) {
+      const unit = b.svc === 'police' ? '人を見守り' : b.svc === 'health' ? '人の患者' : '人の生徒';
+      rows.push(['利用', `${num(f.used)}／${num(f.cap)}${unit}`]);
+    }
+    if (b.svc && f && f.range) rows.push(['届く範囲', `道路で${Math.round(f.range)}マス`]);
+    if (b.transit) rows.push(['効果', b.transit === 'bus' ? 'まわり4マスの通勤の15%がバスに' : '駅のまわり6マスどうしの通勤の45%が地下鉄に']);
+    if (b.amen) rows.push(['効果', `まわり${b.amen[0]}マスの地価が上がる`]);
+    if (b.approval) rows.push(['支持率', `+${b.approval}`]);
+    if (b.tourism) rows.push(['観光客', `${num(b.tourism)}人／月`]);
+    if (b.use) rows.push(['電気', D.powered[o] ? '通電中' : '停電中']);
+    rows.push(['維持費', `${yen(b.upkeep * fundOf(t))}／月`]);
+    sec.append(kv(rows));
+    if (f && f.cap) sec.append(meter(f.used / f.cap, f.used >= f.cap * 0.98 ? 'over' : f.used > f.cap * 0.85 ? 'warn' : ''));
+    if (b.store) sec.append(meter(S.fill[o] / b.store, S.fill[o] > b.store * 0.9 ? 'over' : S.fill[o] > b.store * 0.7 ? 'warn' : ''));
+    if (a < 0 && !b.supply && !b.water && !b.amen) sec.append(el('p', 'note', '道路に面していないため働けません。となりに道路をつなげましょう。'));
+    if (f && f.cap && f.used >= f.cap * 0.98) sec.append(el('p', 'note', 'いっぱいです。近くにもうひとつ建てるか、「市政」で予算を増やしましょう。'));
+  } else {
+    rows.push(['地価', S.terrain[i] ? '—' : yenPerM2(D.lv[i])], ['汚染', level3(D.poll[i], '少ない', 'ふつう', 'ひどい')]);
+    sec.append(kv(rows));
+    if (!S.terrain[i]) sec.append(el('p', 'note', S.tree[i] ? '木があるとまわりの地価が上がり、汚染もやわらぎます。建物を建てると木は切られます。' : 'ツールを選んで、道路や区画をつくりましょう。'));
+  }
+  if (t !== T.EMPTY || S.tree[i]) {
+    const plan = makePlan('bulldoze', { ax: x, ay: y, bx: x, by: y });
+    const row = el('div', 'btn-row');
+    const b = el('button', 'btn danger', `撤去する（${yen(plan.cost)}）`);
+    b.type = 'button';
+    b.addEventListener('click', () => { const [wx, wy] = tileCenterW(i); if (applyPlan('bulldoze', plan, [wx, wy])) closeSheet(); });
+    row.append(b);
+    body.append(row);
+  }
+  body.append(el('p', 'note', `座標 ${x}, ${y}`));
+}
+
+function slider(id, label, min, max, step, value, fmt, onInput) {
+  const row = el('div', 'slider-row');
+  const lab = el('label', null, label); lab.htmlFor = id;
+  const inp = document.createElement('input');
+  inp.type = 'range'; inp.min = min; inp.max = max; inp.step = step; inp.value = value; inp.id = id;
+  const out = el('output', null, fmt(value));
+  inp.addEventListener('input', () => { out.textContent = fmt(+inp.value); onInput(+inp.value); });
+  inp.addEventListener('change', () => refreshSheet());
+  row.append(lab, inp, out);
+  return row;
+}
+function buildMoney(body) {
+  computeBudget();
+  const s1 = section(body, '税率');
+  const box = el('div', 'sliders');
+  [['r', '住宅'], ['c', '商業'], ['i', '工業']].forEach(([k, label]) => box.append(slider('tax-' + k, label, 0, 20, 1, S.tax[k], v => v + '%', v => {
+    S.tax[k] = v; computeApproval(); computeBudget(); hudDirty = true; updateMoneyFlow();
+  })));
+  s1.append(box, el('p', 'note', '税率は人口の上限ではなく、街が育つ速さと支持率に効きます。12%を超えると出ていく人や会社が出はじめます。'));
+  const s2 = section(body, '予算配分');
+  const box2 = el('div', 'sliders');
+  for (const [k, label] of FUNDS) box2.append(slider('fund-' + k, label.replace(/（.*）/, ''), 50, 150, 10, S.fund[k], v => v + '%', v => {
+    S.fund[k] = v; computeBudget(); hudDirty = true; updateMoneyFlow();
+  }));
+  s2.append(box2, el('p', 'note', '予算を増やすと施設の受け入れ人数と届く範囲が広がります。交通予算は道路の容量にも効きます。月末の再計算で反映されます。'));
+  const s3 = section(body, '毎月の収支（見込み）');
+  const flow = el('div'); flow.id = 'budget-flow'; s3.append(flow);
+  const s4 = section(body, '借り入れ');
+  const list = el('div', 'loan-list');
+  for (const l of S.loans) { const d = el('div'); d.append(el('span', null, `${yen(l.amt)} の借り入れ`), el('span', null, `月 ${yen(l.pay)}・残り${l.left}か月`)); list.append(d); }
+  if (!S.loans.length) list.append(el('p', 'note', '借り入れはありません。'));
+  s4.append(list);
+  if (S.loans.length < 3) {
+    const row = el('div', 'btn-row');
+    const amt = [10000, 30000, 100000][Math.min(2, S.rank)];
+    const pay = Math.ceil(amt * 1.25 / 60);
+    const b = el('button', 'btn', `${yen(amt)} を借りる（月 ${yen(pay)} × 60か月）`);
+    b.type = 'button';
+    b.addEventListener('click', () => { S.loans.push({ amt, pay, left: 60 }); S.money += amt; computeBudget(); hudDirty = true; toast(`${yen(amt)}を借り入れました。毎月${yen(pay)}を5年間返済します。`); refreshSheet(); save(); });
+    row.append(b); s4.append(row);
+  }
+  updateMoneyFlow();
+}
+function updateMoneyFlow() {
+  const flow = $('#budget-flow');
+  if (!flow) return;
+  const r = v => yen(Math.round(v)), e = ST.exp, out = (label, v) => (v >= 0.5 ? [label, '−' + r(v)] : null);
+  flow.replaceChildren(kv([
+    ['住民税', '+' + r(ST.inc.res), 'pos'],
+    ['法人税（商業）', '+' + r(ST.inc.com), 'pos'],
+    ['法人税（工業）', '+' + r(ST.inc.ind), 'pos'],
+    ST.inc.tourism >= 0.5 ? ['観光収入', '+' + r(ST.inc.tourism), 'pos'] : null,
+    out('交通（道路・バス・地下鉄）', e.transport), out('発電所', e.power), out('水道', e.water), out('ゴミ処理', e.garbage),
+    out('警察', e.police), out('消防', e.fire), out('医療', e.health), out('教育', e.edu), out('公園・名所', e.park), out('借り入れの返済', e.loans),
+    ['差し引き', (ST.net >= 0 ? '+' : '') + yen(ST.net), 'sum ' + (ST.net >= 0 ? 'pos' : 'neg')],
+  ]));
+}
+function buildStats(body) {
+  const s1 = section(body, '支持率');
+  const big = el('div', 'big-num');
+  big.append(el('b', null, Math.round(ST.approval) + '%'), el('span', null, ST.factors ? '住民の満足度から計算（税率と名所も影響）' : '住民がまだいません'));
+  s1.append(big);
+  if (ST.factors) {
+    const f = ST.factors, list = el('div', 'factors');
+    for (const [k, label] of [['emp', '仕事'], ['commute', '通勤'], ['poll', '空気'], ['crime', '治安'], ['health', '医療'], ['edu', '教育'], ['trash', 'ゴミ'], ['water', '水道'], ['power', '電気']]) {
+      const v = f[k], row = el('div', 'factor' + (v < 0.4 ? ' low' : v < 0.7 ? ' mid' : ''));
+      row.append(el('span', null, label), meter(v), el('span', null, pct(v)));
+      list.append(row);
+    }
+    s1.append(list);
+  }
+  const s2 = section(body, '人口と仕事');
+  s2.append(kv([
+    ['区分', RANKS[S.rank].label],
+    ['人口', num(ST.pop) + '人'],
+    ['働き手', num(ST.workers) + '人'],
+    ['仕事についている人', num(ST.employed) + '人'],
+    ['失業率', ST.workers ? pct(unemploymentRate()) : '—'],
+    ['街の外へ通勤', num(ST.outsideWorkers) + '人'],
+    ['平均通勤時間', ST.employed ? Math.round(ST.avgCommute * 2) + '分' : '—'],
+    ['バス・地下鉄の利用', num(ST.riders) + '人'],
+    ['渋滞している道路', ST.jams + 'か所'],
+    ['教育水準', pct(ST.eq)],
+    ['ハイテク工業', ST.ht + '区画'],
+  ]));
+  const s3 = section(body, 'インフラ');
+  const infra = el('div', 'infra');
+  const row = (label, use, sup, unit) => {
+    const r = el('div', 'row'), frac = sup ? use / sup : use ? 2 : 0;
+    r.append(el('span', null, label), meter(Math.min(1, frac), frac > 1 ? 'over' : frac > 0.9 ? 'warn' : ''));
+    const cap = el('div', 'meter-cap'); cap.append(el('span', null, `使用 ${num(use)}${unit}`), el('span', null, `能力 ${num(sup)}${unit}`));
+    r.append(cap); infra.append(r);
+  };
+  row('電力', ST.power.use, ST.power.supply, '');
+  row('水道', ST.water.use, ST.water.supply, '');
+  row('ゴミ', ST.garbage.gen, ST.garbage.cap, 'トン');
+  s3.append(infra);
+  if (ST.landfillLeft < 600) s3.append(el('p', 'note', `いまのペースだと、ゴミ処分場はあと約${Math.max(1, Math.round(ST.landfillLeft))}か月でいっぱいになります。`));
+  const s4 = section(body, '人口の推移'), c1 = el('div', 'chart'); s4.append(c1);
+  const s5 = section(body, '資金の推移'), c2 = el('div', 'chart'); s5.append(c2);
+  const hist = S.history;
+  requestAnimationFrame(() => {
+    lineChart(c1, hist.map(h => ({ v: h.pop, label: `${h.y}年${h.m}月` })), v => num(v) + '人');
+    lineChart(c2, hist.map(h => ({ v: h.money, label: `${h.y}年${h.m}月` })), v => yen(v));
+  });
+}
+function buildGoals(body) {
+  const done = GOALS.filter(g => S.goals[g.id] !== undefined).length;
+  const s = section(body, `目標（${done}/${GOALS.length} 達成）`);
+  const ol = el('ol', 'goals');
+  for (const g of GOALS) {
+    const ok = S.goals[g.id] !== undefined;
+    const li = el('li', 'goal' + (ok ? ' done' : ''));
+    li.append(el('i', null, ok ? '✓' : ''), el('b', null, g.name), el('span', 'rw', g.reward ? '交付金 ' + yen(g.reward) : ''));
+    if (g.desc) li.append(el('small', null, g.desc));
+    if (!ok && g.prog) {
+      const p = el('div', 'prog'), f = el('i');
+      f.style.width = clamp(g.prog(), 0, 1) * 100 + '%'; p.append(f); li.append(p);
+    }
+    ol.append(li);
+  }
+  s.append(ol, el('p', 'note', '目標を達成すると国から交付金が届きます。人口が増えると、建てられる施設も増えていきます。'));
+}
+
+function buildLayers(body, title) {
+  title.textContent = 'マップ表示';
+  const grid = el('div', 'layer-grid');
+  for (const id in LAYERS) {
+    const b = el('button', null, LAYERS[id].name);
+    b.type = 'button'; b.setAttribute('aria-pressed', String(overlay === id));
+    b.addEventListener('click', () => { setOverlay(id); refreshSheet(); });
+    grid.append(b);
+  }
+  body.append(grid, el('p', 'note', 'データを色で表示します。表示中は建物が低く描かれます。渋滞・通勤は月の半ばと月末に更新されます。'));
+}
+
 let confirmNew = false;
 function buildMenu(body, title) {
   title.textContent = '設定';
-  const s1 = el('section');
-  s1.append(el('h3', null, 'まちの名前'));
+  const s1 = section(body, 'まちの名前');
   const row = el('div', 'name-row');
   const inp = document.createElement('input');
   inp.id = 'rename-city'; inp.maxLength = 8; inp.value = S.name; inp.autocomplete = 'off';
   inp.addEventListener('change', () => { const v = inp.value.trim(); if (v) { S.name = v; hudDirty = true; save(); } });
   row.append(inp, el('span', 'suffix', RANKS[S.rank].suffix));
   s1.append(row);
-  const s2 = el('section');
-  s2.append(el('h3', null, 'ゲーム'));
+  const s2 = section(body, 'ゲーム');
   const sw = el('label', 'switch-row');
   sw.htmlFor = 'opt-disaster';
   const cb = document.createElement('input');
@@ -2651,20 +3797,20 @@ function buildMenu(body, title) {
   cb.addEventListener('change', () => { S.disasters = cb.checked; save(); });
   sw.append(el('span', null, '火災を発生させる'), cb);
   s2.append(sw);
-  const s3 = el('section');
-  s3.append(el('h3', null, 'あそびかた'));
+  const s3 = section(body, 'あそびかた');
   const ol = el('ol', 'help');
   [
-    '発電所を建てます。電気は道路・区画・建物を伝って広がり、離れた場所へは送電線で送ります。',
-    '道路を引き、道路から2マス以内に住宅地・商業地・工業地を指定します。',
-    '上の需要メーター（住・商・工）が伸びている区画を増やすと、街が育ちます。',
-    '公園・学校・病院や水辺は地価を上げ、高い建物が建つようになります。',
-    '警察署は犯罪を、消防署は火事を防ぎます。「表示」で範囲を確かめられます。',
-    '1本指でツール、2本指で移動・ズーム。「調べる」では1本指で地図を動かせます。',
+    '道路は国道（地図の端につながる道）からのばします。道路はまっすぐ引けます。曲げるときは指を離して、続きからなぞります。川は「橋」で渡ります。',
+    '区画は道路に面したマスだけが育ちます。住民は道路を通って職場へ通勤し、道路が混むと渋滞が起き、通勤時間がのびると人は住みたがりません。',
+    '電気・水道は道路や建物を伝って届きます。足りないと停電・断水します。発電所には寿命があります。',
+    'ゴミは処分場や焼却場が道路で回収します。処分場はいつかいっぱいになります。',
+    '警察・消防・医療・教育は「道路で届く範囲」と「受け入れ人数」が決まっています。街が大きくなったら増やし、「市政」で予算を調整しましょう。',
+    '工場は汚染を出し、近くの住宅は高くなれません。教育水準が上がると、汚染の少ないハイテク工業が育ちます。',
+    '税率は街が育つ速さと支持率に効きます。目標を達成すると交付金が届き、人口が増えると新しい施設が解放されます。',
+    '1本指でツール、2本指で移動・ズーム。「調べる」で区画をタップすると、育たない理由がわかります。',
   ].forEach(s => ol.append(el('li', null, s)));
   s3.append(ol);
-  const s4 = el('section');
-  s4.append(el('h3', null, 'データ'));
+  const s4 = section(body, 'データ');
   s4.append(el('p', 'note', '進行状況はこのブラウザに毎月自動で保存されます。ほかの端末やブラウザとは共有されません。'));
   if (!confirmNew) {
     const b = el('button', 'btn danger', '新しい街をつくる');
@@ -2681,17 +3827,17 @@ function buildMenu(body, title) {
     yes.addEventListener('click', () => { confirmNew = false; closeSheet(); storageDel(); startNew(); });
     r.append(no, yes); c.append(r); s4.append(c);
   }
-  body.append(s1, s2, s3, s4);
 }
 
-/* tutorial */
+/* --- tutorial --- */
 const TUT = [
-  ['plant', '発電所を建てる', () => (ST.cnt[T.COAL] || 0) + (ST.cnt[T.SOLAR] || 0) > 0, '「火力発電」を選んで、空き地をタップ'],
-  ['road', '道路を10マス引く', () => ST.roads + ST.bridges >= 10, '「道路」を選んで、発電所の近くからなぞる'],
-  ['res', '住宅地を指定する', () => ST.zones[3] >= 6, '「住宅地」で道路ぞいをなぞる'],
-  ['ind', '工業地を指定する', () => ST.zones[5] >= 4, '住宅から少し離れた道路ぞいに「工業地」'],
-  ['com', '商業地を指定する', () => ST.zones[4] >= 4, '「商業地」も道路ぞいに少し'],
-  ['pop', '人口500人を達成する', () => ST.pop >= 500, '右上の ▶ で速度を上げて待ってみよう'],
+  ['plant', '発電所を建てる', () => Object.keys(ST.cnt).some(t => isPlant(+t)), '「インフラ」→「石炭火力」を、国道ぞいの空き地に'],
+  ['road', '国道から道路をのばす', () => ST.roads + ST.avenues >= 24, '「交通」→「道路」でまっすぐなぞる。曲げるときは指を離して続きから'],
+  ['res', '道路ぞいに住宅地', () => ST.zones[3] >= 8, '「区画」→「住宅地」。道路に面したマスだけが育つ'],
+  ['jobs', '工業地と商業地もつくる', () => ST.zones[5] >= 4 && ST.zones[4] >= 2, '住民は道路で通勤する。工業地は住宅から少し離して'],
+  ['water', '給水塔を建てる', () => count('wtower') + count('wplant') > 0, '水道がないと家は大きくなれない'],
+  ['trash', 'ゴミ処分場を建てる', () => count('landfill') + count('incin') > 0, 'ゴミを回収しないと地価と支持率が下がる'],
+  ['pop', '人口1,000人を達成する', () => ST.pop >= 1000, '速度を上げて待とう。育たない区画は「調べる」でタップ'],
 ];
 function checkTutorial() {
   if (!S || S.tutDone) return;
@@ -2699,7 +3845,7 @@ function checkTutorial() {
   for (const [k, , f] of TUT) if (!S.tut[k] && f()) { S.tut[k] = 1; changed = true; }
   if (TUT.every(([k]) => S.tut[k])) {
     S.tutDone = true;
-    toast('基本はばっちりです。需要メーターを見ながら、街を大きくしていきましょう。', { kind: 'good', ttl: 6500 });
+    toast('基本はばっちりです。「市政」→「目標」を見ながら、街を大きくしていきましょう。', { kind: 'good', ttl: 6500 });
   }
   if (changed || S.tutDone) renderTutorial();
 }
@@ -2732,24 +3878,48 @@ function renderTutorial() {
 /* =========================================================
    保存
    ========================================================= */
+const ARR8 = ['terrain', 'tree', 'type', 'level', 'variant', 'fire', 'kind', 'trash'];
+const ARR32 = ['owner', 'built', 'fill'];
+const SCALARS = ['seed', 'name', 'money', 'year', 'month', 'day', 'tax', 'fund', 'loans', 'disasters', 'rank', 'seen', 'fy', 'goals', 'streak', 'wind', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history'];
 function serialize() {
-  return JSON.stringify({
-    v: 1, seed: S.seed, name: S.name, money: S.money, year: S.year, month: S.month, day: S.day, tax: S.tax, disasters: S.disasters,
-    rank: S.rank, seen: S.seen, fy: S.fy, tut: S.tut, tutDone: S.tutDone, tutClosed: S.tutClosed, tutMin: S.tutMin, history: S.history,
-    terrain: b64(S.terrain), tree: b64(S.tree), type: b64(S.type), level: b64(S.level), variant: b64(S.variant), fire: b64(S.fire),
-    owner: b64(new Uint8Array(S.owner.buffer)), cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed,
-  });
+  const o = { v: SAVE_VERSION, cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed };
+  for (const k of SCALARS) o[k] = S[k];
+  for (const k of ARR8) o[k] = b64(S[k]);
+  for (const k of ARR32) o[k] = b64(new Uint8Array(S[k].buffer));
+  return JSON.stringify(o);
+}
+/* version 1 saves (the first release) are converted in place */
+function migrateV1(s, o) {
+  const MAP = { 6: 10, 7: 20, 8: 22, 9: 25, 10: 24, 11: 30, 12: 33 };
+  for (let i = 0; i < NN; i++) { const t = s.type[i]; if (MAP[t]) s.type[i] = MAP[t]; }
+  const t = typeof o.tax === 'number' ? o.tax : 7;
+  s.tax = { r: t, c: t, i: t };
+  s.fund = blankState(0, '').fund;
+  s.goals = {}; s.loans = []; s.streak = 0; s.wind = 1;
+  const mi = s.year * 12 + s.month - 1;
+  for (let i = 0; i < NN; i++) if (s.type[i] >= 10 && s.owner[i] === i) s.built[i] = mi;
+  s.tut = {}; s.tutDone = true;
+  s.v = SAVE_VERSION;
 }
 function deserialize(str) {
   const o = JSON.parse(str);
-  if (!o || o.v !== 1) throw new Error('unsupported save');
+  if (!o || (o.v !== 1 && o.v !== SAVE_VERSION)) throw new Error('unsupported save');
   const s = blankState(o.seed, o.name);
-  for (const k of ['money', 'year', 'month', 'day', 'tax', 'disasters', 'rank', 'seen', 'fy', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history']) if (o[k] !== undefined) s[k] = o[k];
-  for (const k of ['terrain', 'tree', 'type', 'level', 'variant', 'fire']) { const u = unb64(o[k]); if (u.length !== NN) throw new Error('bad map'); s[k].set(u); }
-  const ow = unb64(o.owner);
-  if (ow.length !== NN * 4) throw new Error('bad map');
-  s.owner = new Int32Array(ow.buffer);
-  return { state: s, cam: o.cam, speed: o.speed };
+  for (const k of SCALARS) if (o[k] !== undefined) s[k] = o[k];
+  for (const k of ARR8) {
+    if (!o[k]) continue;
+    const u = unb64(o[k]);
+    if (u.length !== NN) throw new Error('bad map');
+    s[k].set(u);
+  }
+  for (const k of ARR32) {
+    if (!o[k]) continue;
+    const u = unb64(o[k]);
+    if (u.length !== NN * 4) throw new Error('bad map');
+    s[k] = new Int32Array(u.buffer);
+  }
+  if (o.v === 1) migrateV1(s, o);
+  return { state: s, cam: o.cam, speed: o.speed, migrated: o.v === 1 };
 }
 function storageGet() { try { return localStorage.getItem(SAVE_KEY); } catch (e) { return null; } }
 function storageDel() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* storage unavailable */ } }
@@ -2757,13 +3927,13 @@ function save() {
   if (!started || !S) return;
   try { localStorage.setItem(SAVE_KEY, serialize()); } catch (e) { /* storage unavailable: play continues without saving */ }
 }
-
 /* =========================================================
    起動
    ========================================================= */
 function newMap(seed, name) {
   S = blankState(seed, name);
   genTerrain(seed);
+  placeHighway(seed);
   undoStack.length = 0; cars.length = 0;
   refreshAll();
   roadListDirty = true; dirty = true; hudDirty = true;
@@ -2799,16 +3969,15 @@ function beginGame() {
   resize();
   selectTool('select');
   setSpeed(1);
-  // land near the middle, on dry ground
+  // land at the inner end of the national road
   let best = (N / 2) * N + N / 2, bestScore = -1;
-  for (let y = 20; y < 44; y += 2) for (let x = 20; x < 44; x += 2) {
-    let s = 0;
-    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) if (!S.terrain[(y + dy) * N + x + dx]) s++;
-    s -= Math.hypot(x - N / 2, y - N / 2) * 0.8;
-    if (s > bestScore) { bestScore = s; best = y * N + x; }
+  for (let i = 0; i < NN; i++) {
+    if (!isRoad(i)) continue;
+    const x = i % N, y = (i / N) | 0, s = Math.min(x, y, N - 1 - x, N - 1 - y);
+    if (s > bestScore) { bestScore = s; best = i; }
   }
   flyTo(best, clamp(vw / 520, 0.7, 1.1));
-  S.history = [{ y: S.year, m: S.month, pop: 0, money: S.money }];
+  S.history = [{ y: S.year, m: S.month, pop: 0, money: S.money, approval: 50 }];
   renderTutorial();
   hudDirty = true;
   save();
@@ -2828,7 +3997,7 @@ function frame(now) {
     if (n >= 6) acc = 0;
   }
   if (started) updateCars(dt);
-  const animating = (started && speed > 0 && lod > 0) || ST.burning > 0 || floaters.length > 0 || (lod > 0 && ST.unpowered > 0);
+  const animating = (started && speed > 0 && lod > 0) || ST.burning > 0 || floaters.length > 0 || (lod > 0 && (ST.unpowered > 0 || ST.noRoad > 0 || windFx.length > 0));
   if (dirty || (animating && now - lastRender > 33)) {
     render(now);
     dirty = false; lastRender = now;
@@ -2844,6 +4013,8 @@ function bindUI() {
   $('#btn-undo').addEventListener('click', undo);
   $('#btn-menu').addEventListener('click', () => { confirmNew = false; sheetKind === 'menu' ? closeSheet() : openSheet('menu'); });
   $('#sheet-close').addEventListener('click', closeSheet);
+  $('#hud-status').addEventListener('click', () => (sheetKind === 'budget' && sheetArg === 'stats' ? closeSheet() : openSheet('budget', 'stats')));
+  new ResizeObserver(resize).observe($('#hud'));
   $('#btn-reroll').addEventListener('click', () => {
     const name = $('#city-name').value.trim() || S.name;
     newMap((Math.random() * 2 ** 31) | 0, name);
@@ -2879,7 +4050,8 @@ function boot(data) {
     selectTool('select');
     setSpeed(clamp(loaded.speed || 1, 1, 3));
     renderTutorial();
-    toast(`おかえりなさい。${cityName()}の${S.year}年${S.month}月から再開します。`);
+    if (loaded.migrated) toast('新しいバージョンになりました。区画は道路に面している必要があり、住民は道路で通勤します。水道とゴミ処理も加わりました。「市政」→「目標」も見てみましょう。', { kind: 'info', ttl: 12000 });
+    else toast(`おかえりなさい。${cityName()}の${S.year}年${S.month}月から再開します。`);
   } else {
     newMap((Math.random() * 2 ** 31) | 0, NAMES[(Math.random() * NAMES.length) | 0]);
     buildToolbar();
@@ -2897,7 +4069,8 @@ if (hot?.ready) hot.ready(boot); else boot(hot?.data ?? {});
 
 /* debugging / automated checks */
 window.__city = {
-  get S() { return S; }, ST, D, T, TOOLS, cam, simDay, makePlan, applyPlan, render, refreshAll, setSpeed, selectTool, beginGame, setOverlay,
+  get S() { return S; }, ST, D, T, B, BKEY, TOOLS, GOALS, cam, simDay, makePlan, applyPlan, render, refreshAll, setSpeed, selectTool, beginGame, setOverlay,
+  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet,
   run(days) { for (let k = 0; k < days; k++) simDay(); },
   place(tid, ax, ay, bx = ax, by = ay) { return applyPlan(tid, makePlan(tid, { ax, ay, bx, by })); },
 };
