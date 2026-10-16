@@ -588,6 +588,8 @@ const TOOLS = {
   res:      { name: '住宅地', kind: 'rect', zone: T.RES, unit: 5, hint: '道路に面した区画に家が建つ。電気が必要、2段目からは水道も' },
   com:      { name: '商業地', kind: 'rect', zone: T.COM, unit: 5, hint: '店とオフィス。働き手とお客さんが道路で通ってくる' },
   ind:      { name: '工業地', kind: 'rect', zone: T.IND, unit: 5, hint: '工場。大きくなるには街の外へつながる道路（物流）が必要' },
+  reclaim:  { name: '埋め立て', kind: 'rect', unit: 80, hint: '海や川を陸地にする。岸ぞい ¥80、沖 ¥200/マス' },
+  trees:    { name: '植樹', kind: 'rect', unit: 15, hint: '空き地に木を植える。地価が上がり、汚染がやわらぐ（¥15/マス）' },
 };
 const BLD_HINT = {
   park: 'まわり4マスの地価を上げ、汚染をやわらげる',
@@ -623,7 +625,7 @@ for (const id in B) {
 }
 const CATS = [
   { id: 'move', name: '交通', tools: ['road', 'avenue', 'bridge', 'bus', 'subway'] },
-  { id: 'zone', name: '区画', tools: ['res', 'com', 'ind'] },
+  { id: 'zone', name: '区画・土地', tools: ['res', 'com', 'ind', 'reclaim', 'trees'] },
   { id: 'infra', name: 'インフラ', tools: ['wire', 'coal', 'gas', 'wind', 'solar', 'nuclear', 'wtower', 'wplant', 'landfill', 'incin', 'recycle'] },
   { id: 'pub', name: '公共施設', tools: ['koban', 'police', 'fire', 'clinic', 'hosp', 'school', 'high', 'univ'] },
   { id: 'park', name: '公園・名所', tools: ['park', 'bigpark', 'shrine', 'cityhall', 'stadium', 'tvtower'] },
@@ -715,7 +717,7 @@ const D = {
   amen: new Uint8Array(NN), trBus: new Uint8Array(NN), trSub: new Uint8Array(NN),
   shallow: new Uint8Array(NN), beach: new Uint8Array(NN), waterBonus: new Uint8Array(NN),
 };
-let compEdge = [], compJobs = [], compWorkers = [];
+let compEdge = [], compJobs = [], compWorkers = [], compZR = [], compZJ = [];
 const ST = {
   pop: 0, jc: 0, ji: 0, ht: 0, developed: 0, dr: 0, dc: 0, di: 0,
   power: { supply: 0, use: 0 }, water: { supply: 0, use: 0 }, unpowered: 0, unwatered: 0, noRoad: 0,
@@ -858,7 +860,7 @@ function adjRoad(x, y) {
 }
 function computeAccess() {
   D.comp.fill(-1);
-  compEdge = []; compJobs = []; compWorkers = [];
+  compEdge = []; compJobs = []; compWorkers = []; compZR = []; compZJ = [];
   let nc = 0;
   for (let i = 0; i < NN; i++) {
     if (!isRoad(i) || D.comp[i] >= 0) continue;
@@ -874,7 +876,7 @@ function computeAccess() {
         if (isRoad(n) && D.comp[n] < 0) { D.comp[n] = nc; _q[qt++] = n; }
       }
     }
-    compEdge.push(edge); compJobs.push(0); compWorkers.push(0); nc++;
+    compEdge.push(edge); compJobs.push(0); compWorkers.push(0); compZR.push(0); compZJ.push(0); nc++;
   }
   D.acc.fill(-1);
   let noRoad = 0;
@@ -892,6 +894,7 @@ function computeAccess() {
     const a = adjRoad(i % N, (i / N) | 0);
     D.acc[i] = a;
     if (a < 0) { noRoad++; continue; }
+    if (t === T.RES) compZR[D.comp[a]]++; else compZJ[D.comp[a]]++;
     const L = S.level[i];
     if (!L) continue;
     if (t === T.RES) compWorkers[D.comp[a]] += POP[L] * 0.5; else compJobs[D.comp[a]] += zoneJobs(t, L);
@@ -924,7 +927,7 @@ function hpop() {
 const DIST = new Float64Array(NN), PAR = new Int32Array(NN), SRC = new Int32Array(NN);
 function enterCost(m) {
   const q = D.q[m];
-  return (S.level[m] === 1 ? 0.75 : 1) * Math.min(10, 1 + q * q * q * q);
+  return (S.level[m] === 1 ? 0.75 : 1) * Math.min(4, 1 + q * q * q * q);
 }
 function dijkstra(sources, maxCost) {
   DIST.fill(Infinity); PAR.fill(-1); SRC.fill(-1); hLen = 0;
@@ -1083,38 +1086,51 @@ function edgeRoads() {
   return e;
 }
 function computeTraffic() {
-  const orig = new Float32Array(NN), cap = new Float32Array(NN), outCap = new Float32Array(NN);
+  // own: jobs in this city, out: jobs in neighbouring towns reached through the map edge
+  const orig = new Float32Array(NN), own = new Float32Array(NN), out = new Float32Array(NN);
   for (let i = 0; i < NN; i++) {
     const t = S.type[i], L = S.level[i], a = D.acc[i];
     if (!isZone(t) || !L || a < 0) continue;
-    if (t === T.RES) orig[a] += POP[L] * 0.5; else cap[a] += zoneJobs(t, L);
+    if (t === T.RES) orig[a] += POP[L] * 0.5; else own[a] += zoneJobs(t, L);
   }
   const edges = edgeRoads(), outside = edges.length ? 300 + ST.pop * 0.06 : 0, inbound = edges.length ? 150 + ST.pop * 0.04 : 0;
-  const inb = new Float32Array(NN);
-  for (const e of edges) { cap[e] += outside / edges.length; outCap[e] += outside / edges.length; inb[e] = inbound / edges.length; }
-  const filled = new Float32Array(NN), rem = orig.slice(), emp = new Float32Array(NN), comm = new Float32Array(NN), load = new Float32Array(NN);
-  for (const e of edges) rem[e] += inb[e];
+  for (const e of edges) out[e] += outside / edges.length;
+  const fOwn = new Float32Array(NN), fOut = new Float32Array(NN), emp = new Float32Array(NN), comm = new Float32Array(NN), load = new Float32Array(NN);
   let riders = 0, outsideWorkers = 0;
-  for (let round = 0; round < 16; round++) {
-    const srcs = [];
-    for (let n = 0; n < NN; n++) if (cap[n] - filled[n] > 0.5) srcs.push([n, outCap[n] > 0 && cap[n] - outCap[n] < 1 ? 10 : 0, n]);
-    if (!srcs.length) break;
-    dijkstra(srcs, 48);
-    const origins = [];
-    for (let n = 0; n < NN; n++) if (rem[n] > 0.5 && DIST[n] < Infinity) origins.push(n);
-    origins.sort((a, b) => DIST[a] - DIST[b]);
-    let progress = 0;
-    for (const o of origins) {
-      const d = SRC[o], free = cap[d] - filled[d];
-      if (free <= 0.5) continue;
-      const take = Math.min(rem[o], free);
-      filled[d] += take; rem[o] -= take; emp[o] += take; comm[o] += take * DIST[o]; progress += take;
-      if (outCap[d] > 0 && cap[d] - outCap[d] < 1) outsideWorkers += take * (orig[o] / (orig[o] + inb[o] || 1));
-      const share = transitShare(o, d), car = take * (1 - share);
-      riders += take * share;
-      for (let n = o; n >= 0; n = PAR[n]) load[n] += car;
+  const assign = (rem, useOut, onTake) => {
+    for (let round = 0; round < 16; round++) {
+      const srcs = [];
+      for (let n = 0; n < NN; n++) {
+        if (own[n] - fOwn[n] > 0.5) srcs.push([n, 0, n]);
+        else if (useOut && out[n] - fOut[n] > 0.5) srcs.push([n, 10, n]);
+      }
+      if (!srcs.length) return;
+      dijkstra(srcs, 80);
+      const origins = [];
+      for (let n = 0; n < NN; n++) if (rem[n] > 0.5 && DIST[n] < Infinity) origins.push(n);
+      if (!origins.length) return;
+      origins.sort((x, y) => DIST[x] - DIST[y]);
+      let progress = 0;
+      for (const o of origins) {
+        const d = SRC[o], freeOwn = own[d] - fOwn[d], freeOut = useOut ? out[d] - fOut[d] : 0;
+        if (freeOwn + freeOut <= 0.5) continue;
+        const take = Math.min(rem[o], freeOwn + freeOut), tOwn = Math.min(take, Math.max(0, freeOwn));
+        fOwn[d] += tOwn; fOut[d] += take - tOwn; rem[o] -= take; progress += take;
+        onTake(o, d, take, take - tOwn);
+        const share = transitShare(o, d), car = take * (1 - share);
+        riders += take * share;
+        for (let n = o; n >= 0; n = PAR[n]) load[n] += car;
+      }
+      if (progress < 1) return;
     }
-    if (progress < 1) break;
+  };
+  // residents first: the nearest job wins, a job in the next town costs a longer trip
+  assign(orig.slice(), true, (o, d, take, outTake) => { emp[o] += take; comm[o] += take * DIST[o]; outsideWorkers += outTake; });
+  // then people from neighbouring towns drive in for the jobs that are left
+  if (inbound > 0) {
+    const rem = new Float32Array(NN);
+    for (const e of edges) rem[e] = inbound / edges.length;
+    assign(rem, false, () => {});
   }
   // freight from factories and deliveries to shops use the roads to the outside
   if (edges.length) {
@@ -1129,25 +1145,19 @@ function computeTraffic() {
       for (let n = a; n >= 0; n = PAR[n]) load[n] += trucks;
     }
   }
-  let jams = 0, W = 0, E = 0, CM = 0, own = 0, ownFill = 0;
+  let jams = 0, W = 0, E = 0, CM = 0, capOwn = 0, filledOwn = 0;
   for (let n = 0; n < NN; n++) {
     if (isRoad(n)) { D.load[n] = load[n]; D.q[n] = load[n] / roadCap(n); if (D.q[n] > 1) jams++; }
     else { D.load[n] = 0; D.q[n] = 0; }
-    if (orig[n] > 0) {
-      const tot = orig[n] + inb[n], e = emp[n] * orig[n] / tot;
-      D.emp[n] = e / orig[n]; D.commute[n] = emp[n] > 0 ? comm[n] / emp[n] : 0; W += orig[n]; E += e; CM += comm[n] * orig[n] / tot;
-    }
+    if (orig[n] > 0) { D.emp[n] = emp[n] / orig[n]; D.commute[n] = emp[n] > 0 ? comm[n] / emp[n] : 0; W += orig[n]; E += emp[n]; CM += comm[n]; }
     else { D.emp[n] = 1; D.commute[n] = 0; }
-    const c = cap[n] - outCap[n];
-    if (c > 0) {
-      const f = Math.min(1, Math.max(0, filled[n] - outCap[n] * (filled[n] / cap[n])) / c);
-      D.jfill[n] = f; own += c; ownFill += c * f;
-    } else D.jfill[n] = 1;
+    if (own[n] > 0) { D.jfill[n] = Math.min(1, fOwn[n] / own[n]); capOwn += own[n]; filledOwn += fOwn[n]; } else D.jfill[n] = 1;
   }
   ST.workers = W; ST.employed = E; ST.avgCommute = E > 0 ? CM / E : 0; ST.jams = jams; ST.riders = riders; ST.outsideWorkers = outsideWorkers;
   const jobs = ST.jc + ST.ji + outside;
   ST.reach = Math.min(W, jobs) > 0 ? Math.min(1, E / Math.min(W, jobs)) : 1;
-  ST.jobFill = own > 0 ? ownFill / own : 1;
+  ST.jobFill = capOwn > 0 ? filledOwn / capOwn : 1;
+  ST.inbound = Math.max(0, filledOwn - (E - outsideWorkers));
   roadListDirty = true;
 }
 
@@ -1411,7 +1421,7 @@ function growTile(i) {
   const c = D.comp[a];
   let dem, des, mult, ok = true, tax;
   if (t === T.RES) {
-    if (L === 0 && !(compJobs[c] > 0 || compEdge[c])) return;
+    if (L === 0 && !(compZJ[c] > 0 || compEdge[c])) return;
     dem = ST.dr; tax = S.tax.r;
     const emp = D.emp[a], cm = D.commute[a];
     if (L > 0 && emp < 0.5) ok = false;
@@ -1419,7 +1429,7 @@ function growTile(i) {
       Math.max(0, cm - 20) / 40 - (L > 0 && emp < 0.7 ? 0.3 : 0);
     mult = (0.3 + ST.approval / 100 * 1.2) * taxMult(tax);
   } else {
-    if (L === 0 && !(compWorkers[c] > 0 || compEdge[c])) return;
+    if (L === 0 && !(compZR[c] > 0 || compEdge[c])) return;
     if (L > 0 && D.jfill[a] < 0.6) ok = false;
     if (t === T.COM) { dem = ST.dc; tax = S.tax.c; des = (D.lv[i] - 80) / 130 - D.crime[i] / 250 - D.poll[i] / 220 - S.trash[i] / 250; }
     else { dem = ST.di; tax = S.tax.i; des = 0.2 - D.crime[i] / 400 - S.trash[i] / 400; }
@@ -1448,11 +1458,16 @@ function growthNotes(i) {
   if (a < 0) { notes.push('道路に面していません。区画のとなりに道路が必要です。'); return notes; }
   if (!D.powered[i]) notes.push(ST.power.supply > 0 && ST.power.use > ST.power.supply ? '電力が足りず停電しています。発電所を増やしましょう。' : '電気が届いていません。発電所と道路か送電線でつなぎましょう。');
   const c = D.comp[a];
-  if (t === T.RES && !(compJobs[c] > 0 || compEdge[c])) notes.push('この道路は職場にも街の外にもつながっていません。');
-  if (t !== T.RES && !(compWorkers[c] > 0 || compEdge[c])) notes.push('この道路は住宅にも街の外にもつながっていません。');
+  if (t === T.RES && !(compZJ[c] > 0 || compEdge[c])) notes.push('この道路には商業地・工業地がなく、街の外にもつながっていません。');
+  if (t !== T.RES && !(compZR[c] > 0 || compEdge[c])) notes.push('この道路には住宅地がなく、街の外にもつながっていません。');
   if (t === T.RES && L > 0 && D.emp[a] < 0.7) notes.push(`道路で通える範囲に仕事があるのは住民の${Math.round(D.emp[a] * 100)}%だけです。`);
   if (t === T.RES && D.commute[a] > 22) notes.push(`通勤に${Math.round(D.commute[a] * 2)}分かかっています。渋滞か、職場が遠すぎます。`);
-  if (t !== T.RES && L > 0 && D.jfill[a] < 0.6) notes.push(`働き手が${Math.round(D.jfill[a] * 100)}%しか集まりません。道路でつながった住宅を増やしましょう。`);
+  if (t !== T.RES && L > 0 && D.jfill[a] < 0.6) {
+    const short = ST.jc + ST.ji > ST.workers;
+    notes.push(`働き手が${Math.round(D.jfill[a] * 100)}%しか集まりません。` + (short
+      ? `街全体で住民が足りていません（仕事 ${num(ST.jc + ST.ji)}人分に対し、働き手 ${num(ST.workers)}人）。住宅地を増やしましょう。`
+      : '近くに住宅が少ないか、渋滞で通いにくくなっています。'));
+  }
   if (t === T.IND && !compEdge[c]) notes.push('街の外へつながる道路がなく、製品を出荷できません（倉庫まで）。');
   const needWater = (t === T.RES && L >= 1) || (t === T.COM && L >= 2) || (t === T.IND && L >= 1);
   if (needWater && !D.watered[i]) notes.push('水道が届いていないため、これ以上大きくなれません。給水塔を建てましょう。');
@@ -1671,7 +1686,10 @@ function advise() {
   else if (ST.net < 0 && S.money < 5000) list.push(['deficit', `毎月 ${yen(-ST.net)} の赤字です。「市政」で税率や予算を見直しましょう。`, 'warn']);
   if (ST.jams > 8) list.push(['jam', `渋滞している道路が${ST.jams}か所あります。大通りへの拡幅、迂回路、バスや地下鉄で通勤を分散させましょう。`, 'warn']);
   if (ST.workers > 500 && unemploymentRate() > 0.15) list.push(['unemp', `失業率が${Math.round(unemploymentRate() * 100)}%です。道路でつながった商業地・工業地を増やしましょう。`, 'warn']);
-  if (ST.jc + ST.ji > 500 && ST.jobFill < 0.75) list.push(['labor', '働き手が足りない職場があります。住宅地と職場を道路でつなぎましょう。', 'info']);
+  if (ST.jc + ST.ji > 500 && ST.jobFill < 0.75) {
+    if (ST.jc + ST.ji > ST.workers * 1.05) list.push(['labor', `働き手が足りません（仕事 ${num(ST.jc + ST.ji)}人分に対し、働き手 ${num(ST.workers)}人）。住宅地を増やしましょう。住宅が育たないときは「調べる」で理由を確かめられます。`, 'info']);
+    else if (unemploymentRate() > 0.08) list.push(['labor2', '仕事が空いているのに通えない住民がいます。職場が遠すぎるか、渋滞しています。道路の近道や大通りを検討しましょう。', 'info']);
+  }
   if (ST.pollHigh > 6) list.push(['poll', '汚染のひどい住宅地があります。住民の健康と地価に響きます。工業地や発電所から離すか、公園を置きましょう。', 'warn']);
   if (ST.crimeHigh > 6) list.push(['crime', '治安の悪い地区があります。交番や警察署を道路の届く場所に建てましょう。', 'warn']);
   if (ST.approval < 40 && ST.pop > 1000) list.push(['approval', `支持率が${Math.round(ST.approval)}%に下がっています。「市政」→「統計」で不満の理由を確かめましょう。`, 'warn']);
@@ -1733,6 +1751,13 @@ function evalTile(tid, i) {
     case 'bulldoze':
       if (t === T.EMPTY) return S.tree[i] ? 2 : -1;
       return 2;
+    case 'reclaim':
+      if (!water) return -1;
+      if (t !== T.EMPTY) return -2;
+      return D.shallow[i] ? 80 : 200;
+    case 'trees':
+      if (water || t !== T.EMPTY || S.tree[i]) return t === T.EMPTY || water ? -1 : -2;
+      return 15;
   }
   return -1;
 }
@@ -1813,7 +1838,7 @@ function clearTile(i) {
   if (isZone(t) && S.level[i] > 0) adjustTotals(i, t, S.level[i], -1);
   S.type[i] = T.EMPTY; S.level[i] = 0; S.tree[i] = 0; S.owner[i] = -1; S.fire[i] = 0; S.kind[i] = 0; S.trash[i] = 0; S.built[i] = 0; S.fill[i] = 0;
 }
-const SNAP = ['type', 'level', 'tree', 'owner', 'variant', 'fire', 'kind', 'trash', 'built', 'fill'];
+const SNAP = ['type', 'level', 'tree', 'owner', 'variant', 'fire', 'kind', 'trash', 'built', 'fill', 'terrain'];
 function applyPlan(tid, plan, at) {
   const tool = TOOLS[tid];
   if (!plan.valid) {
@@ -1836,6 +1861,8 @@ function applyPlan(tid, plan, at) {
       clearTile(i);
       if (tool.road !== undefined || tool.bridge) { S.type[i] = T.ROAD; S.level[i] = S.terrain[i] ? 0 : tool.road || 0; }
       else if (tid === 'wire') S.type[i] = T.WIRE;
+      else if (tid === 'reclaim') S.terrain[i] = 0;
+      else if (tid === 'trees') S.tree[i] = 1;
       else if (tool.zone) { S.type[i] = tool.zone; S.variant[i] = (rand() * 256) | 0; }
     }
   }
@@ -1851,6 +1878,7 @@ function applyPlan(tid, plan, at) {
   return true;
 }
 function afterChange() {
+  computeStatic();
   computeAccess();
   computeUtilities();
   computeServices();
@@ -2960,7 +2988,7 @@ function drawPlan(plan, tid) {
     drawBuilding(tool.b, o % N, (o / N) | 0);
     G.globalAlpha = 1;
   }
-  const okCol = tool.zone ? C.zoneLine[tool.zone] : tid === 'bulldoze' ? '#e8590c' : '#ffffff';
+  const okCol = tool.zone ? C.zoneLine[tool.zone] : tid === 'bulldoze' ? '#e8590c' : tid === 'reclaim' ? '#c9a46a' : tid === 'trees' ? '#2f9e44' : '#ffffff';
   G.globalAlpha = 0.42; G.fillStyle = okCol; G.fill(ok); G.fillStyle = '#e03131'; G.fill(bad); G.fillStyle = '#ffffff'; G.globalAlpha = 0.18; G.fill(skip);
   G.globalAlpha = 1; G.lineWidth = 1.5 / cam.z; G.strokeStyle = tid === 'bulldoze' ? '#e8590c' : tool.zone ? C.zoneLine[tool.zone] : '#ffffff'; G.stroke(ok);
   G.strokeStyle = '#e03131'; G.stroke(bad);
@@ -3376,6 +3404,14 @@ function renderIcon(id, canvas) {
     g.strokeStyle = av ? C.median : C.mark; g.lineWidth = av ? 2.2 : 1.2; g.setLineDash(av ? [] : [3, 3]); g.beginPath(); addArmLines(g, 0, 0, 5, 0); g.stroke();
     if (av) { g.strokeStyle = C.mark; g.lineWidth = 1; g.setLineDash([3, 3]); g.beginPath(); addArmLines(g, 0, 0, 5, 0.21); addArmLines(g, 0, 0, 5, -0.21); g.stroke(); }
     g.setLineDash([]);
+  } else if (id === 'reclaim') {
+    g.fillStyle = C.water; g.beginPath(); addRect(g, 0, 0, 1, 1, 0); g.fill();
+    g.fillStyle = C.sand; g.beginPath(); g.moveTo(...P3(0, 0, 0)); g.lineTo(...P3(1, 0, 0)); g.lineTo(...P3(0, 1, 0)); g.closePath(); g.fill();
+    box(0.52, 0.5, 0.82, 0.78, 0, 6, pal('#f2c037'));
+    box(0.56, 0.42, 0.7, 0.52, 6, 4, pal('#f2c037'));
+  } else if (id === 'trees') {
+    diamond(C.forest);
+    for (const [u, v, s] of [[0.3, 0.32, 0.9], [0.72, 0.4, 1], [0.42, 0.74, 1.1]]) tree(u, v, s, (u * 10) | 0);
   } else if (id === 'bridge') {
     diamond(C.water);
     drawBridge(0, 0, 5);
