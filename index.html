@@ -159,11 +159,11 @@ button { touch-action: manipulation; cursor: pointer; }
 .legend .lo, .legend .hi { color: var(--muted); white-space: nowrap; }
 .legend .ramp { flex: 1; min-width: 40px; display: flex; height: 10px; border-radius: 3px; overflow: hidden; }
 .legend .ramp i { flex: 1; }
-.legend .keys { flex: 1; display: flex; gap: 12px; }
+.legend .keys { flex: 1; display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .legend .keys span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .legend .keys i { width: 12px; height: 12px; border-radius: 3px; }
 .legend .x { flex: 0 0 auto; width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--panel-2); font-size: 15px; line-height: 1; padding: 0; }
-.legend:not([hidden]) ~ .toasts { top: calc(var(--hud-b) + 54px); }
+.legend:not([hidden]) ~ .toasts { top: calc(var(--hud-b) + var(--legend-h, 46px) + 8px); }
 
 /* ---------- toasts ---------- */
 .toasts {
@@ -282,6 +282,16 @@ button { touch-action: manipulation; cursor: pointer; }
 .tag { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
 .tag.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
 .tag.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); font-weight: 700; }
+.block-main { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); font-size: 13px; line-height: 1.5; }
+.block-main > i { flex: 0 0 auto; width: 12px; height: 12px; margin-top: 4px; border-radius: 3px; }
+.block-main div { display: flex; flex-direction: column; gap: 2px; }
+.block-main span { color: var(--muted); }
+.blocked { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.blocked li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); }
+.blocked li > i { flex: 0 0 auto; width: 12px; height: 12px; border-radius: 3px; align-self: flex-start; margin-top: 4px; }
+.blocked li div { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.45; }
+.blocked small { color: var(--muted); font-size: 12px; }
+.blocked button { flex: 0 0 auto; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-weight: 600; }
 .reasons { margin: 0; padding-left: 1.2em; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
 .meter { position: relative; height: 10px; border-radius: 5px; background: var(--panel-2); overflow: hidden; }
 .meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--accent); }
@@ -325,6 +335,7 @@ button { touch-action: manipulation; cursor: pointer; }
 }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .btn.danger { color: var(--bad); }
+.btn:disabled { opacity: .45; cursor: default; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1 1 auto; }
 .layer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
@@ -463,11 +474,17 @@ body.intro .dock, body.intro .side, body.intro .hud, body.intro .tut { visibilit
 /* =========================================================
    定数
    ========================================================= */
-const N = 64, NN = N * N, HW = 32, HH = 16;
-const ZMIN = 0.09, ZMAX = 2.6;
+const N = 128, NN = N * N, HW = 32, HH = 16;
+const ZMIN = 0.045, ZMAX = 2.6;
 const START_YEAR = new Date().getFullYear();
 const SAVE_KEY = 'tenohira-city/v1';
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
+/* the city starts on the middle 64×64 of the world and grows by merging with its neighbours */
+const AREAS = [
+  { m: 32, size: 64 },
+  { m: 16, size: 96, rank: 1, cost: 30000 },
+  { m: 0, size: 128, rank: 2, cost: 100000 },
+];
 const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];
 const T = { EMPTY: 0, ROAD: 1, WIRE: 2, RES: 3, COM: 4, IND: 5 };
 const isZone = t => t >= 3 && t <= 5;
@@ -536,6 +553,7 @@ const C = {
   grass: ['#8cbf67', '#88bb63', '#90c36b'],
   forest: '#77ad55', sand: '#e4d7a3',
   water: '#3a8cc4', shallow: '#5ea9d8', wave: 'rgba(255,255,255,.42)',
+  border: 'rgba(32,52,74,.6)',
   curb: '#d2cfc6', asphalt: '#5e646b', asphaltAv: '#535960', mark: '#f4ead0', median: '#a9b3a0', bridge: '#c4beb0', rail: '#6f6a61',
   zone: { 3: '#d0eab6', 4: '#f7d0d9', 5: '#d0daf5' },
   zoneLine: { 3: '#3c9a5c', 4: '#d64a6e', 5: '#4a68cb' },
@@ -564,6 +582,7 @@ const RAMP_GREEN = ['#eef7e4', '#cbe8ad', '#9dd27a', '#68b552', '#368f3a', '#176
 const RAMP_BLUE = ['#e3eefc', '#b8d4f7', '#86b4ef', '#5591e0', '#2c6ec7', '#174c97'];
 const LAYERS = {
   none:    { name: 'なし' },
+  block:   { name: '発展の妨げ', keys: [['#e03131', '道路'], ['#f08c00', '電気・水道'], ['#1c7ed6', '仕事・通勤'], ['#9c36b5', '環境・地価'], ['#868e96', '需要・税'], ['#2f9e44', '順調']] },
   power:   { name: '電力', keys: [['#f5c518', '電気あり'], ['#e03131', '電気なし']] },
   water:   { name: '水道', keys: [['#3b9ae1', '水道あり'], ['#e03131', '断水']] },
   traffic: { name: '渋滞', ramp: ['#fff0d6', '#ffd38a', '#ffab45', '#f07b1a', '#c9520c', '#8f3307'], lo: '空いている', hi: '渋滞' },
@@ -587,7 +606,7 @@ const TOOLS = {
   wire:     { name: '送電線', kind: 'line', unit: 5, hint: '道路のない場所へ電気を届ける（川の上は鉄塔 ¥25）' },
   res:      { name: '住宅地', kind: 'rect', zone: T.RES, unit: 5, hint: '道路に面した区画に家が建つ。電気が必要、2段目からは水道も' },
   com:      { name: '商業地', kind: 'rect', zone: T.COM, unit: 5, hint: '店とオフィス。働き手とお客さんが道路で通ってくる' },
-  ind:      { name: '工業地', kind: 'rect', zone: T.IND, unit: 5, hint: '工場。大きくなるには街の外へつながる道路（物流）が必要' },
+  ind:      { name: '工業地', kind: 'rect', zone: T.IND, unit: 5, hint: '工場。大きくなるには隣の町村へつながる道路（物流）が必要' },
   reclaim:  { name: '埋め立て', kind: 'rect', unit: 80, hint: '海や川を陸地にする。岸ぞい ¥80、沖 ¥200/マス' },
   trees:    { name: '植樹', kind: 'rect', unit: 15, hint: '空き地に木を植える。地価が上がり、汚染がやわらぐ（¥15/マス）' },
 };
@@ -701,19 +720,43 @@ function blankState(seed, name) {
     v: SAVE_VERSION, seed, name, money: 20000, year: START_YEAR, month: 4, day: 1,
     tax: { r: 7, c: 7, i: 7 },
     fund: { transport: 100, police: 100, fire: 100, health: 100, edu: 100, garbage: 100 },
-    loans: [], disasters: true, rank: 0, seen: {}, fy: { inc: 0, exp: 0 }, goals: {}, streak: 0, wind: 1,
+    loans: [], disasters: true, rank: 0, area: 0, seen: {}, fy: { inc: 0, exp: 0 }, goals: {}, streak: 0, wind: 1,
     tut: {}, tutDone: false, tutClosed: false, tutMin: true, history: [],
     terrain: new Uint8Array(NN), tree: new Uint8Array(NN), type: new Uint8Array(NN), level: new Uint8Array(NN),
     variant: new Uint8Array(NN), fire: new Uint8Array(NN), kind: new Uint8Array(NN), trash: new Uint8Array(NN),
     owner: new Int32Array(NN).fill(-1), built: new Int32Array(NN), fill: new Int32Array(NN),
   };
 }
+/* land the city owns: a centred square that widens with each merger */
+let ownLo = AREAS[0].m, ownHi = N - AREAS[0].m;
+/* the simulation only looks at the city and a margin around it */
+let actLo = Math.max(0, ownLo - 6), actHi = Math.min(N, ownHi + 6);
+function setArea(k) {
+  S.area = k; ownLo = AREAS[k].m; ownHi = N - AREAS[k].m;
+  actLo = Math.max(0, ownLo - 6); actHi = Math.min(N, ownHi + 6);
+}
+const ownedXY = (x, y) => x >= ownLo && y >= ownLo && x < ownHi && y < ownHi;
+const owned = i => ownedXY(i % N, (i / N) | 0);
+/* where a road leaves the city: the first tile past its border, or the edge of the world */
+function gateXY(x, y) {
+  if (ownedXY(x, y)) return x === 0 || y === 0 || x === N - 1 || y === N - 1;
+  for (let d = 0; d < 4; d++) if (ownedXY(x + DX[d], y + DY[d])) return true;
+  return false;
+}
+/* an owned road that carries on into a neighbour's road (or off the map) */
+function exitXY(x, y) {
+  if (!ownedXY(x, y)) return false;
+  if (x === 0 || y === 0 || x === N - 1 || y === N - 1) return true;
+  for (let d = 0; d < 4; d++) { const nx = x + DX[d], ny = y + DY[d]; if (!ownedXY(nx, ny) && S.type[ny * N + nx] === T.ROAD) return true; }
+  return false;
+}
 const D = {
   powered: new Uint8Array(NN), watered: new Uint8Array(NN), acc: new Int32Array(NN).fill(-1), comp: new Int32Array(NN).fill(-1),
   lv: new Uint8Array(NN), poll: new Uint8Array(NN), crime: new Uint8Array(NN),
   load: new Float32Array(NN), q: new Float32Array(NN), emp: new Float32Array(NN).fill(1), commute: new Float32Array(NN), jfill: new Float32Array(NN).fill(1),
   svc: { police: new Float32Array(NN), health: new Float32Array(NN), edu1: new Float32Array(NN), edu2: new Float32Array(NN), edu3: new Float32Array(NN), garbage: new Float32Array(NN).fill(1) },
-  fireProt: new Float32Array(NN),
+  fireProt: new Float32Array(NN), jobReach: new Uint8Array(NN).fill(1), labReach: new Uint8Array(NN).fill(1),
+  lastUp: new Int32Array(NN).fill(-1e6), lastDown: new Int32Array(NN).fill(-1e6), downWhy: new Uint8Array(NN), downAt: new Int32Array(NN).fill(-1e6),
   amen: new Uint8Array(NN), trBus: new Uint8Array(NN), trSub: new Uint8Array(NN),
   shallow: new Uint8Array(NN), beach: new Uint8Array(NN), waterBonus: new Uint8Array(NN),
 };
@@ -746,12 +789,13 @@ function genTerrain(seed) {
       return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
     };
   };
-  const h1 = mk(4), h2 = mk(8), h3 = mk(16), t1 = mk(6), t2 = mk(12);
+  // noise is measured in tiles (64 tiles per unit) so lakes keep their size on the larger world
+  const K = N / 64, h1 = mk(4 * K), h2 = mk(8 * K), h3 = mk(16 * K), t1 = mk(6 * K), t2 = mk(12 * K);
   const sea = 0.27 + r() * 0.06;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const u = x / N, v = y / N, i = y * N + x;
+    const u = x / 64, v = y / 64, i = y * N + x;
     let h = h1(u * 4, v * 4) * 0.55 + h2(u * 8, v * 8) * 0.3 + h3(u * 16, v * 16) * 0.15;
-    h += (0.36 - Math.hypot(u - 0.5, v - 0.5)) * 0.3;
+    h += (0.36 - Math.hypot(x / N - 0.5, y / N - 0.5)) * 0.3;
     if (h < sea) terrain[i] = 1;
     const tv = t1(u * 6, v * 6) * 0.65 + t2(u * 12, v * 12) * 0.35;
     if (!terrain[i] && tv > 0.6) tree[i] = 1;
@@ -810,24 +854,56 @@ function computeStatic() {
     D.beach[i] = !S.terrain[i] && water > 0 ? 1 : 0;
   }
 }
-/* a four-lane national road enters from one edge: the city's first link to the outside */
+/* roads of the neighbouring towns: a four-lane national road that reaches 12 tiles into the city,
+   and a local road from each other side that stops at the city's border */
+function roadIn(side, p, len) {
+  const pts = [];
+  for (let k = 0; k < len; k++) {
+    const a = side < 2 ? k : N - 1 - k;
+    pts.push(side % 2 === 0 ? [a, p] : [p, a]);
+  }
+  return pts;
+}
+function layRoad(pts, level) {
+  for (const [x, y] of pts) {
+    const i = y * N + x;
+    if (S.type[i] !== T.EMPTY) continue;
+    S.type[i] = T.ROAD; S.level[i] = S.terrain[i] ? 0 : level; S.tree[i] = 0;
+  }
+}
+const wetCount = pts => pts.reduce((n, [x, y]) => n + S.terrain[y * N + x], 0);
 function placeHighway(seed) {
   const r = mulberry32(seed ^ 0x5bd1e995);
-  const sides = [0, 1, 2, 3].sort(() => r() - 0.5);
+  const sides = [0, 1, 2, 3].sort(() => r() - 0.5), m = AREAS[0].m, len = m + 12;
+  let best = null;
   for (const side of sides) {
     for (let off = 0; off < 30; off++) {
-      const p = 32 + (off % 2 ? -1 : 1) * Math.ceil(off / 2);
-      const pts = [];
-      for (let k = 0; k < 12; k++) {
-        const a = side < 2 ? k : N - 1 - k;
-        pts.push(side % 2 === 0 ? [a, p] : [p, a]);
-      }
-      if (pts.every(([x, y]) => !S.terrain[y * N + x])) {
-        for (const [x, y] of pts) { const i = y * N + x; S.type[i] = T.ROAD; S.level[i] = 1; S.tree[i] = 0; }
-        return;
-      }
+      const p = N / 2 + (off % 2 ? -1 : 1) * Math.ceil(off / 2), pts = roadIn(side, p, len);
+      // the part inside the city must be dry; a few bridges outside are fine
+      if (wetCount(pts.slice(m))) continue;
+      const wet = wetCount(pts);
+      if (!best || wet < best.wet) best = { side, p, pts, wet };
+      if (!wet) break;
     }
+    if (best && !best.wet) break;
   }
+  if (!best) return -1;
+  layRoad(best.pts, 1);
+  // local roads from the other sides
+  for (const side of [0, 1, 2, 3]) {
+    if (side === best.side) continue;
+    let pick = null;
+    for (let k = 0; k < 24; k++) {
+      const p = m + 6 + ((r() * (N - 2 * m - 12)) | 0), pts = roadIn(side, p, m + 1);
+      if (Math.abs(p - best.p) < 4) continue;
+      const wet = wetCount(pts);
+      if (S.terrain[pts[m][1] * N + pts[m][0]] || wet > 6) continue;
+      if (!pick || wet < pick.wet) pick = { pts, wet };
+      if (!wet) break;
+    }
+    if (pick) layRoad(pick.pts, 0);
+  }
+  return best.side;
 }
 
 /* =========================================================
@@ -862,13 +938,13 @@ function computeAccess() {
   D.comp.fill(-1);
   compEdge = []; compJobs = []; compWorkers = []; compZR = []; compZJ = [];
   let nc = 0;
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     if (!isRoad(i) || D.comp[i] >= 0) continue;
     let qh = 0, qt = 0, edge = false;
     _q[qt++] = i; D.comp[i] = nc;
     while (qh < qt) {
       const c = _q[qh++], x = c % N, y = (c / N) | 0;
-      if (x === 0 || y === 0 || x === N - 1 || y === N - 1) edge = true;
+      if (gateXY(x, y)) edge = true;
       for (let d = 0; d < 4; d++) {
         const nx = x + DX[d], ny = y + DY[d];
         if (!inb(nx, ny)) continue;
@@ -880,7 +956,7 @@ function computeAccess() {
   }
   D.acc.fill(-1);
   let noRoad = 0;
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     const t = S.type[i];
     if (t === T.EMPTY || t === T.ROAD || t === T.WIRE) continue;
     if (t >= 10) {
@@ -966,9 +1042,9 @@ function waterOutput(o) {
 function spreadNet(out, isSrc, srcOut, useOf, viaWire) {
   out.fill(0); _seen.fill(0);
   let supply = 0, use = 0;
-  for (let i = 0; i < NN; i++) use += useOf(i);
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) use += useOf(i);
   const conducts = n => { const t = S.type[n]; return t !== T.EMPTY && (viaWire || t !== T.WIRE); };
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     if (!isSrc(i) || _seen[i]) continue;
     let qh = 0, qt = 0, cap = 0;
     const srcs = [];
@@ -1001,14 +1077,14 @@ function spreadNet(out, isSrc, srcOut, useOf, viaWire) {
       }
     }
   }
-  for (let i = 0; i < NN; i++) { const o = S.owner[i]; if (o >= 0 && o !== i) out[i] = out[o]; }
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) { const o = S.owner[i]; if (o >= 0 && o !== i) out[i] = out[o]; }
   return { supply, use };
 }
 function computeUtilities() {
   ST.power = spreadNet(D.powered, i => isPlant(S.type[i]), plantOutput, powerUse, true);
   ST.water = spreadNet(D.watered, i => !!(B[S.type[i]] && B[S.type[i]].water), waterOutput, waterUse, false);
   let up = 0, uw = 0;
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     if (!isZone(S.type[i])) continue;
     if (!D.powered[i]) up++;
     if (S.level[i] && !D.watered[i]) uw++;
@@ -1042,28 +1118,29 @@ function stamp(arr, cx, cy, R, strength, flat) {
   }
 }
 const fa = new Float32Array(NN), fb = new Float32Array(NN);
+/* 3×3 box blur over the part of the world the city can reach */
 function blur(a, passes) {
   for (let p = 0; p < passes; p++) {
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    for (let y = actLo; y < actHi; y++) for (let x = actLo; x < actHi; x++) {
       let s = 0, c = 0;
       for (let dy = -1; dy <= 1; dy++) {
         const yy = y + dy;
-        if (yy < 0 || yy >= N) continue;
+        if (yy < actLo || yy >= actHi) continue;
         for (let dx = -1; dx <= 1; dx++) {
           const xx = x + dx;
-          if (xx < 0 || xx >= N) continue;
+          if (xx < actLo || xx >= actHi) continue;
           s += a[yy * N + xx]; c++;
         }
       }
       fb[y * N + x] = s / c;
     }
-    a.set(fb);
+    for (let y = actLo; y < actHi; y++) a.set(fb.subarray(y * N + actLo, y * N + actHi), y * N + actLo);
   }
 }
 function computeStamps() {
   D.amen.fill(0); D.trBus.fill(0); D.trSub.fill(0);
   let tourism = 0;
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     const t = S.type[i];
     if (t < 10 || S.owner[i] !== i) continue;
     const b = B[t], x = i % N, y = (i / N) | 0, c = b.size / 2;
@@ -1080,8 +1157,7 @@ function edgeRoads() {
   const e = [];
   for (let i = 0; i < NN; i++) {
     if (!isRoad(i)) continue;
-    const x = i % N, y = (i / N) | 0;
-    if (x === 0 || y === 0 || x === N - 1 || y === N - 1) e.push(i);
+    if (gateXY(i % N, (i / N) | 0)) e.push(i);
   }
   return e;
 }
@@ -1125,13 +1201,26 @@ function computeTraffic() {
     }
   };
   // residents first: the nearest job wins, a job in the next town costs a longer trip
-  assign(orig.slice(), true, (o, d, take, outTake) => { emp[o] += take; comm[o] += take * DIST[o]; outsideWorkers += outTake; });
+  const remRes = orig.slice();
+  assign(remRes, true, (o, d, take, outTake) => { emp[o] += take; comm[o] += take * DIST[o]; outsideWorkers += outTake; });
   // then people from neighbouring towns drive in for the jobs that are left
+  const remIn = new Float32Array(NN);
   if (inbound > 0) {
-    const rem = new Float32Array(NN);
-    for (const e of edges) rem[e] = inbound / edges.length;
-    assign(rem, false, () => {});
+    for (const e of edges) remIn[e] = inbound / edges.length;
+    assign(remIn, false, () => {});
   }
+  // where could a new home still find a job, and a new shop or factory still find staff?
+  const free = [];
+  for (let n = 0; n < NN; n++) {
+    if (own[n] - fOwn[n] > 0.5) free.push([n, 0, n]);
+    else if (out[n] - fOut[n] > 0.5) free.push([n, 10, n]);
+  }
+  D.jobReach.fill(0);
+  if (free.length) { dijkstra(free, 80); for (let n = 0; n < NN; n++) if (DIST[n] < Infinity) D.jobReach[n] = 1; }
+  const idle = [];
+  for (let n = 0; n < NN; n++) if (remRes[n] + remIn[n] > 0.5) idle.push([n, 0, n]);
+  D.labReach.fill(0);
+  if (idle.length) { dijkstra(idle, 80); for (let n = 0; n < NN; n++) if (DIST[n] < Infinity) D.labReach[n] = 1; }
   // freight from factories and deliveries to shops use the roads to the outside
   if (edges.length) {
     dijkstra(edges.map(e => [e, 0, e]), 90);
@@ -1147,7 +1236,7 @@ function computeTraffic() {
   }
   let jams = 0, W = 0, E = 0, CM = 0, capOwn = 0, filledOwn = 0;
   for (let n = 0; n < NN; n++) {
-    if (isRoad(n)) { D.load[n] = load[n]; D.q[n] = load[n] / roadCap(n); if (D.q[n] > 1) jams++; }
+    if (isRoad(n)) { D.load[n] = load[n]; D.q[n] = load[n] / roadCap(n); if (D.q[n] > 1 && owned(n)) jams++; }
     else { D.load[n] = 0; D.q[n] = 0; }
     if (orig[n] > 0) { D.emp[n] = emp[n] / orig[n]; D.commute[n] = emp[n] > 0 ? comm[n] / emp[n] : 0; W += orig[n]; E += emp[n]; CM += comm[n]; }
     else { D.emp[n] = 1; D.commute[n] = 0; }
@@ -1278,10 +1367,10 @@ function computeGarbage(apply) {
 }
 
 /* --- pollution, crime and land value --- */
-function computeMaps() {
+function computeMaps(snap) {
   computeStamps();
   const park = BKEY.park, bigpark = BKEY.bigpark, incin = BKEY.incin;
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     const t = S.type[i], L = S.level[i];
     let p = 0;
     if (t === T.IND) p = S.kind[i] ? [0, 10, 18, 28][L] : [0, 60, 110, 160][L];
@@ -1294,8 +1383,8 @@ function computeMaps() {
     fa[i] = p;
   }
   blur(fa, 3);
-  for (let i = 0; i < NN; i++) D.poll[i] = clamp(fa[i] * 2.2, 0, 255);
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) D.poll[i] = clamp(fa[i] * 2.2, 0, 255);
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     const t = S.type[i], L = S.level[i];
     if ((t === T.RES || t === T.COM) && L > 0) {
       const a = D.acc[i];
@@ -1303,11 +1392,11 @@ function computeMaps() {
     } else fa[i] = 0;
   }
   blur(fa, 2);
-  for (let i = 0; i < NN; i++) D.crime[i] = clamp(fa[i] * 1.5 * (1 - 0.85 * svcAt('police', i)), 0, 255);
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) D.crime[i] = clamp(fa[i] * 1.5 * (1 - 0.85 * svcAt('police', i)), 0, 255);
   buildPS(PSA, i => S.tree[i]);
   buildPS(PSB, i => (S.type[i] === T.COM ? JOBS_C[S.level[i]] : 0));
   let crimeHigh = 0, pollHigh = 0;
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+  for (let y = actLo; y < actHi; y++) for (let x = actLo; x < actHi; x++) {
     const i = y * N + x, t = S.type[i];
     if (S.terrain[i] && t === T.EMPTY) { D.lv[i] = 0; continue; }
     const a = D.acc[i];
@@ -1316,7 +1405,7 @@ function computeMaps() {
     const v = 60 + D.waterBonus[i] + Math.min(30, trees * 3) + D.amen[i] * 0.35 + eqAt(i) * 40 + svcAt('health', i) * 15 +
       svcAt('police', i) * 8 + (D.trSub[i] ? 25 : D.trBus[i] ? 8 : 0) + Math.min(30, downtown / 150) -
       D.poll[i] * 0.85 - D.crime[i] * 0.45 - S.trash[i] * 0.3 - noise;
-    D.lv[i] = clamp(v, 0, 255);
+    D.lv[i] = snap ? clamp(v, 0, 255) : Math.round(D.lv[i] * 0.65 + clamp(v, 0, 255) * 0.35);
     if (S.level[i] > 0) {
       if ((t === T.RES || t === T.COM) && D.crime[i] > 110) crimeHigh++;
       if (t === T.RES && D.poll[i] > 70) pollHigh++;
@@ -1368,11 +1457,13 @@ function adjustTotals(i, t, L, s) {
 }
 function recountTotals() {
   ST.pop = ST.jc = ST.ji = ST.ht = ST.developed = 0;
-  for (let i = 0; i < NN; i++) if (isZone(S.type[i])) adjustTotals(i, S.type[i], S.level[i], 1);
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) if (isZone(S.type[i])) adjustTotals(i, S.type[i], S.level[i], 1);
 }
-function setLevel(i, L) {
+const dayStamp = () => monthIndex() * 30 + S.day;
+function setLevel(i, L, quiet) {
   const t = S.type[i], old = S.level[i];
   if (old === L) return;
+  if (!quiet) { if (L > old) D.lastUp[i] = dayStamp(); else D.lastDown[i] = dayStamp(); }
   adjustTotals(i, t, old, -1);
   S.level[i] = L;
   if (L === 0) S.kind[i] = 0;
@@ -1393,8 +1484,8 @@ function computeDemand() {
   const tI = W * 0.5 + 100 + (ST.hasEdge ? 100 : 0);
   ST.di = clamp((tI - ST.ji) / Math.max(200, tI * 0.3), -1, 1);
 }
-function maxLevel(i, t) {
-  const lv = D.lv[i], poll = D.poll[i], a = D.acc[i];
+function maxLevel(i, t, keep) {
+  const a = D.acc[i], lv = D.lv[i] + (keep ? 15 : 0), poll = D.poll[i] - (keep ? 25 : 0);
   if (t === T.RES) {
     let m = lv < 30 ? 1 : lv < 90 ? 2 : lv < 150 ? 3 : 4;
     if (!D.watered[i]) m = Math.min(m, 1);
@@ -1417,27 +1508,32 @@ function maxLevel(i, t) {
 function growTile(i) {
   const t = S.type[i], L = S.level[i], a = D.acc[i];
   if (S.fire[i]) return;
-  if (a < 0 || !D.powered[i]) { if (L > 0 && rand() < 0.2) setLevel(i, L - 1); return; }
+  if (a < 0 || !D.powered[i]) { if (L > 0 && rand() < 0.2) { noteDown(i); setLevel(i, L - 1, true); } return; }
+  const now = dayStamp(), settled = now - D.lastUp[i] > 90, rested = now - D.lastDown[i] > 180;
   const c = D.comp[a];
   let dem, des, mult, ok = true, tax;
+  let grow = true;
   if (t === T.RES) {
     if (L === 0 && !(compZJ[c] > 0 || compEdge[c])) return;
     dem = ST.dr; tax = S.tax.r;
     const emp = D.emp[a], cm = D.commute[a];
-    if (L > 0 && emp < 0.5) ok = false;
+    if (L > 0 && emp < 0.4) ok = false;
+    // new homes only where a vacant job can be reached (a brand-new network may start without one)
+    if (!D.jobReach[a] && compJobs[c] > 0) grow = false;
     des = (D.lv[i] - 90) / 110 - D.poll[i] / 110 - D.crime[i] / 200 - S.trash[i] / 200 + svcAt('health', i) * 0.15 + eqAt(i) * 0.15 -
       Math.max(0, cm - 20) / 40 - (L > 0 && emp < 0.7 ? 0.3 : 0);
     mult = (0.3 + ST.approval / 100 * 1.2) * taxMult(tax);
   } else {
     if (L === 0 && !(compZR[c] > 0 || compEdge[c])) return;
-    if (L > 0 && D.jfill[a] < 0.6) ok = false;
+    if (L > 0 && D.jfill[a] < 0.45) ok = false;
+    if (!D.labReach[a] && compWorkers[c] > 0) grow = false;
     if (t === T.COM) { dem = ST.dc; tax = S.tax.c; des = (D.lv[i] - 80) / 130 - D.crime[i] / 250 - D.poll[i] / 220 - S.trash[i] / 250; }
     else { dem = ST.di; tax = S.tax.i; des = 0.2 - D.crime[i] / 400 - S.trash[i] / 400; }
     mult = taxMult(tax);
   }
   const max = maxLevel(i, t);
-  if (L > max) { if (rand() < 0.15) setLevel(i, L - 1); return; }
-  if (dem > 0 && L < max && ok) {
+  if (L > maxLevel(i, t, true)) { if (settled && rand() < 0.15) { noteDown(i); setLevel(i, L - 1); } return; }
+  if (dem > 0 && L < max && ok && grow && des > -0.6 && rested) {
     const p = (0.05 + dem * clamp(0.55 + des * 0.5, 0.1, 1) * 0.6) * mult;
     if (rand() < p) {
       if (t === T.IND && !S.kind[i] && ST.eq > 0.35 && rand() < (ST.eq - 0.25) * 1.5) {
@@ -1445,11 +1541,11 @@ function growTile(i) {
       }
       setLevel(i, L + 1);
     }
-  } else if (L > 0 && (dem < -0.25 || des < -0.7 || !ok || (t === T.RES && ST.approval < 30) || tax > 12)) {
-    let p = 0.02 + Math.max(0, -dem) * 0.08 + Math.max(0, -0.7 - des) * 0.1 + (ok ? 0 : 0.03);
+  } else if (L > 0 && settled && (dem < -0.25 || des < -0.8 || !ok || (t === T.RES && ST.approval < 30) || tax > 12)) {
+    let p = 0.02 + Math.max(0, -dem) * 0.08 + Math.max(0, -0.8 - des) * 0.1 + (ok ? 0 : 0.03);
     if (t === T.RES && ST.approval < 30) p += (30 - ST.approval) * 0.004;
     if (tax > 12) p += (tax - 12) * 0.006;
-    if (rand() < p) setLevel(i, L - 1);
+    if (rand() < p) { noteDown(i); setLevel(i, L - 1); }
   }
 }
 /* why a lot is not growing, in plain words (for the inspector) */
@@ -1458,8 +1554,8 @@ function growthNotes(i) {
   if (a < 0) { notes.push('道路に面していません。区画のとなりに道路が必要です。'); return notes; }
   if (!D.powered[i]) notes.push(ST.power.supply > 0 && ST.power.use > ST.power.supply ? '電力が足りず停電しています。発電所を増やしましょう。' : '電気が届いていません。発電所と道路か送電線でつなぎましょう。');
   const c = D.comp[a];
-  if (t === T.RES && !(compZJ[c] > 0 || compEdge[c])) notes.push('この道路には商業地・工業地がなく、街の外にもつながっていません。');
-  if (t !== T.RES && !(compZR[c] > 0 || compEdge[c])) notes.push('この道路には住宅地がなく、街の外にもつながっていません。');
+  if (t === T.RES && !(compZJ[c] > 0 || compEdge[c])) notes.push('この道路には商業地・工業地がなく、隣の町村にもつながっていません。');
+  if (t !== T.RES && !(compZR[c] > 0 || compEdge[c])) notes.push('この道路には住宅地がなく、隣の町村にもつながっていません。');
   if (t === T.RES && L > 0 && D.emp[a] < 0.7) notes.push(`道路で通える範囲に仕事があるのは住民の${Math.round(D.emp[a] * 100)}%だけです。`);
   if (t === T.RES && D.commute[a] > 22) notes.push(`通勤に${Math.round(D.commute[a] * 2)}分かかっています。渋滞か、職場が遠すぎます。`);
   if (t !== T.RES && L > 0 && D.jfill[a] < 0.6) {
@@ -1468,7 +1564,7 @@ function growthNotes(i) {
       ? `街全体で住民が足りていません（仕事 ${num(ST.jc + ST.ji)}人分に対し、働き手 ${num(ST.workers)}人）。住宅地を増やしましょう。`
       : '近くに住宅が少ないか、渋滞で通いにくくなっています。'));
   }
-  if (t === T.IND && !compEdge[c]) notes.push('街の外へつながる道路がなく、製品を出荷できません（倉庫まで）。');
+  if (t === T.IND && !compEdge[c]) notes.push('隣の町村へつながる道路がなく、製品を出荷できません（倉庫まで）。国道か、隣の町村の道路につなぎましょう。');
   const needWater = (t === T.RES && L >= 1) || (t === T.COM && L >= 2) || (t === T.IND && L >= 1);
   if (needWater && !D.watered[i]) notes.push('水道が届いていないため、これ以上大きくなれません。給水塔を建てましょう。');
   const dem = t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di;
@@ -1487,14 +1583,117 @@ function growthNotes(i) {
   return notes;
 }
 
+/* the main thing holding a lot back — one reason per lot, checked in the same order as growTile */
+const BLOCKS = {
+  road:     { g: 0, name: '道路に面していない', tip: '区画のとなりに道路を引きましょう。' },
+  link:     { g: 0, name: '住宅と職場がつながっていない', tip: '住宅地と商業地・工業地を同じ道路でつなぐか、国道や隣の町村の道路（市域の境目）につなぎましょう。' },
+  freight:  { g: 0, name: '工場が出荷できない', tip: '工業地の道路を国道か隣の町村の道路につなぐと、工場が大きくなれます。' },
+  power:    { g: 1, name: '電気が来ていない', tip: '発電所を増やすか、道路・送電線で電気をつなぎましょう。停電すると建物は小さくなります。' },
+  water:    { g: 1, name: '水道が来ていない', tip: '給水塔・浄水場を増やして道路でつなぎましょう。水道がないと低い建物のままです。' },
+  jobs:     { g: 2, name: '通える仕事が足りない', tip: '道路で通える場所に商業地・工業地を増やすか、道路を隣の町村へつなぎましょう。' },
+  labor:    { g: 2, name: '働き手が集まらない', tip: '近くに住宅地を増やすか、渋滞を解消して通いやすくしましょう。' },
+  commute:  { g: 2, name: '通勤に時間がかかる', tip: '職場を近くに置くか、大通り・近道・バス停・地下鉄で通勤時間を縮めましょう。' },
+  poll:     { g: 3, name: '汚染がひどい', tip: '工業地・発電所・渋滞道路から離すか、あいだに公園や植樹を。ハイテク工業（教育で増える）は汚染が少なめです。' },
+  crime:    { g: 3, name: '治安が悪い', tip: '交番・警察署を道路で届く場所に建てましょう。受け入れ人数を超えると効きが弱まります。' },
+  trash:    { g: 3, name: 'ゴミが回収されていない', tip: 'ゴミ処分場・焼却場を増やしましょう。' },
+  lv:       { g: 3, name: '地価が足りず高くなれない', tip: '公園・植樹・学校・病院・駅・水辺で地価が上がり、汚染・犯罪・ゴミ・渋滞の騒音で下がります。' },
+  cond:     { g: 4, name: '人口・教育の条件待ち', tip: '' },
+  demand:   { g: 4, name: '需要がない', tip: '' },
+  tax:      { g: 4, name: '税率が高い', tip: '税率を12%以下にすると、出ていく人や会社が減ります。' },
+  approval: { g: 4, name: '支持率が低い', tip: '「統計」で不満の理由を確かめましょう。' },
+  wait:     { g: 5, name: '衰退したばかり', tip: 'しばらくすると、また育ちはじめます。' },
+  grow:     { g: 5, name: '順調', tip: '' },
+  top:      { g: 5, name: '最大まで発展', tip: '' },
+};
+const BLOCK_KEYS = Object.keys(BLOCKS);
+/* why a lot is capped below the top level */
+function capWhy(i, t, L) {
+  if (t === T.IND) return !D.watered[i] ? 'water' : D.acc[i] < 0 || !compEdge[D.comp[D.acc[i]]] ? 'freight' : 'cond';
+  const lv = D.lv[i];
+  if (!D.watered[i] && L >= (t === T.RES ? 1 : 2)) return 'water';
+  if (D.poll[i] > (t === T.RES ? 70 : 150)) return 'poll';
+  if (lv >= (t === T.RES ? 150 : 140)) return 'cond';
+  return 'lv';
+}
+function blockTip(k, t) {
+  if (k === 'demand') return t === T.RES ? 'いまは住宅の需要がありません。働く場所（商業地・工業地）を増やしましょう。' : t === T.COM ? 'いまは商業の需要がありません。住民や観光客が増えると伸びます。' : 'いまは工業の需要がありません。住民が増えると伸びます。';
+  if (k === 'cond') return t === T.RES ? (ST.pop < 15000 ? 'タワーマンションは人口1万5千人から建ちます。' : 'タワーマンションには高い教育水準（学校・高校）が必要です。') : t === T.COM ? '超高層ビルは人口3万人から建ちます。' : '大規模工場は人口1,500人から建ちます。';
+  const jobs = ST.jc + ST.ji;
+  if (k === 'labor' && jobs > ST.workers) return `街全体で働き手が足りません（仕事 ${num(jobs)}人分に対し、働き手 ${num(ST.workers)}人）。住宅地を増やすか、商業地・工業地を減らしましょう。`;
+  if (k === 'jobs' && ST.workers > jobs * 1.1 && !ST.hasEdge) return `街全体で仕事が足りません（働き手 ${num(ST.workers)}人に対し、仕事 ${num(jobs)}人分）。商業地・工業地を増やすか、道路を隣の町村へつなぎましょう。`;
+  return BLOCKS[k].tip;
+}
+function blockOf(i) {
+  const t = S.type[i], L = S.level[i], a = D.acc[i];
+  if (a < 0) return 'road';
+  if (!D.powered[i]) return 'power';
+  const c = D.comp[a];
+  if (t === T.RES ? !(compZJ[c] > 0 || compEdge[c]) : !(compZR[c] > 0 || compEdge[c])) return 'link';
+  if (L > maxLevel(i, t, true)) return capWhy(i, t, L);
+  let dem, tax, des, terms;
+  // an empty lot in a zone nobody needs right now: that is the whole story
+  if (L === 0 && (t === T.RES ? ST.dr : t === T.COM ? ST.dc : ST.di) <= 0) return 'demand';
+  if (t === T.RES) {
+    const emp = D.emp[a], cm = D.commute[a];
+    if ((L > 0 && emp < 0.4) || (!D.jobReach[a] && compJobs[c] > 0)) return 'jobs';
+    dem = ST.dr; tax = S.tax.r;
+    terms = { lv: (D.lv[i] - 90) / 110, poll: -D.poll[i] / 110, crime: -D.crime[i] / 200, trash: -S.trash[i] / 200, commute: -Math.max(0, cm - 20) / 40, jobs: L > 0 && emp < 0.7 ? -0.3 : 0 };
+    des = terms.lv + terms.poll + terms.crime + terms.trash + terms.commute + terms.jobs + svcAt('health', i) * 0.15 + eqAt(i) * 0.15;
+  } else {
+    if ((L > 0 && D.jfill[a] < 0.45) || (!D.labReach[a] && compWorkers[c] > 0)) return 'labor';
+    if (t === T.COM) { dem = ST.dc; tax = S.tax.c; terms = { lv: (D.lv[i] - 80) / 130, crime: -D.crime[i] / 250, poll: -D.poll[i] / 220, trash: -S.trash[i] / 250 }; }
+    else { dem = ST.di; tax = S.tax.i; terms = { crime: -D.crime[i] / 400, trash: -S.trash[i] / 400 }; }
+    des = Object.values(terms).reduce((s, v) => s + v, t === T.IND ? 0.2 : 0);
+  }
+  if (des <= -0.6) {
+    let worst = 'lv', w = Infinity;
+    for (const k in terms) if (terms[k] < w) { w = terms[k]; worst = k; }
+    return worst;
+  }
+  if (tax > 12) return 'tax';
+  if (t === T.RES && ST.approval < 30) return 'approval';
+  if (dem <= 0) return 'demand';
+  const max = maxLevel(i, t), top = t === T.IND ? 3 : 4;
+  if (L >= max) return L >= top ? 'top' : capWhy(i, t, L);
+  if (dayStamp() - D.lastDown[i] <= 180) return 'wait';
+  return 'grow';
+}
+function noteDown(i) {
+  const k = blockOf(i);
+  D.downWhy[i] = BLOCK_KEYS.indexOf(k === 'grow' || k === 'top' || k === 'wait' ? 'demand' : k);
+  D.downAt[i] = dayStamp();
+}
+/* the reason that matters to the player: a lot that just shrank is shown with why it shrank */
+function blockShown(i) {
+  const k = blockOf(i);
+  return k === 'wait' && dayStamp() - D.downAt[i] <= 180 ? BLOCK_KEYS[D.downWhy[i]] : k;
+}
+/* lots that are stuck, grouped by reason, most common first */
+function blockSummary() {
+  const by = {}, now = dayStamp();
+  let flicker = 0;
+  for (let i = 0; i < NN; i++) {
+    const t = S.type[i];
+    if (!isZone(t) || S.fire[i]) continue;
+    const k = blockShown(i);
+    if (now - D.downAt[i] <= 360 && now - D.lastUp[i] <= 360) flicker++;
+    if (k === 'grow' || k === 'top' || k === 'wait') continue;
+    const e = by[k] || (by[k] = { k, n: 0, tiles: [], types: {} });
+    e.n++; e.tiles.push(i); e.types[t] = (e.types[t] || 0) + 1;
+  }
+  return { list: Object.values(by).sort((p, q) => q.n - p.n), flicker };
+}
+
 /* --- money --- */
 function computeBudget() {
   const tr = S.tax.r / 100, tc = S.tax.c / 100, ti = S.tax.i / 100;
-  let res = 0, com = 0, ind = 0, roads = 0, avenues = 0, bridges = 0, wires = 0, rTop = 0, cTop = 0;
+  let res = 0, com = 0, ind = 0, roads = 0, avenues = 0, bridges = 0, wires = 0, rTop = 0, cTop = 0, land = 0, free = 0, wet = 0;
   const cnt = {}, zones = { 3: 0, 4: 0, 5: 0 };
   const up = { transport: 0, police: 0, fire: 0, health: 0, edu: 0, garbage: 0, power: 0, water: 0, park: 0 };
   for (let i = 0; i < NN; i++) {
     const t = S.type[i], L = S.level[i];
+    if (!owned(i)) continue;
+    if (S.terrain[i]) { if (t === T.EMPTY) wet++; } else { land++; if (t === T.EMPTY) free++; }
     if (t === T.ROAD) { if (S.terrain[i]) bridges++; else if (L) avenues++; else roads++; }
     else if (t === T.WIRE) wires++;
     else if (isZone(t)) {
@@ -1516,14 +1715,14 @@ function computeBudget() {
   const sum = o => Object.values(o).reduce((s, v) => s + v, 0);
   ST.incTotal = sum(ST.inc); ST.expTotal = sum(ST.exp);
   ST.net = Math.round(ST.incTotal) - Math.round(ST.expTotal);
-  Object.assign(ST, { cnt, zones, roads, avenues, bridges, wires, rTop, cTop });
+  Object.assign(ST, { cnt, zones, roads, avenues, bridges, wires, rTop, cTop, land, free, wet });
 }
 const count = key => ST.cnt[BKEY[key]] || 0;
 
 /* --- fire --- */
 function fireStep() {
   let burning = 0;
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     if (!S.fire[i]) continue;
     if (!isZone(S.type[i]) || !S.level[i]) { S.fire[i] = 0; continue; }
     burning++;
@@ -1534,7 +1733,7 @@ function fireStep() {
       if (!S.seen.extinguish) { S.seen.extinguish = 1; toast('消防隊が火事を消し止めました。', { kind: 'good' }); }
       continue;
     }
-    if (S.fire[i] > 9) { S.fire[i] = 0; setLevel(i, 0); continue; }
+    if (S.fire[i] > 9) { S.fire[i] = 0; setLevel(i, 0, true); continue; }
     if (rand() < 0.1 * (1 - prot)) {
       const d = (rand() * 4) | 0, x = i % N + DX[d], y = ((i / N) | 0) + DY[d];
       if (inb(x, y)) {
@@ -1545,7 +1744,7 @@ function fireStep() {
   }
   if (S.disasters && ST.developed > 30 && rand() < 0.004 + ST.developed * 0.000004) {
     for (let k = 0; k < 40; k++) {
-      const i = (rand() * NN) | 0;
+      const i = (ownLo + ((rand() * (ownHi - ownLo)) | 0)) * N + ownLo + ((rand() * (ownHi - ownLo)) | 0);
       if (!isZone(S.type[i]) || !S.level[i] || S.fire[i]) continue;
       const a = D.acc[i], prot = a >= 0 ? D.fireProt[a] : 0;
       if (rand() > prot * 1.2) {
@@ -1569,10 +1768,10 @@ function refreshAll() {
   computeStamps();
   computeServices();
   computeTraffic();
-  computeMaps();
+  computeMaps(true);
   computeUtilities();
   computeServices();
-  computeMaps();
+  computeMaps(true);
   computeGarbage(false);
   computeApproval();
   computeDemand();
@@ -1585,7 +1784,7 @@ function simDay() {
   if (flags.maps || S.day % 4 === 0) { computeMaps(); flags.maps = false; }
   if (S.day % 10 === 5) computeServices();
   if (S.day === 15) { computeTraffic(); computeDemand(); }
-  for (let i = 0; i < NN; i++) if (isZone(S.type[i]) && rand() < 0.08) growTile(i);
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) if (isZone(S.type[i]) && rand() < 0.08) growTile(i);
   fireStep();
   S.day++;
   if (S.day > 30) { S.day = 1; endOfMonth(); }
@@ -1617,7 +1816,7 @@ function endOfMonth() {
     toast(`${S.year - 1}年度の決算：収入 ${yen(S.fy.inc)}、支出 ${yen(S.fy.exp)}、差し引き ${net >= 0 ? '+' : ''}${yen(net)}`, { kind: net >= 0 ? 'good' : 'warn', ttl: 6500 });
     S.fy = { inc: 0, exp: 0 };
   }
-  for (let i = 0; i < NN; i++) {
+  for (let y = actLo; y < actHi; y++) for (let i = y * N + actLo, e = y * N + actHi; i < e; i++) {
     if (!isPlant(S.type[i]) || S.owner[i] !== i) continue;
     const b = B[S.type[i]], age = (mi + 1 - S.built[i]) / 12;
     if (Math.abs(age - (b.life - 1)) < 1 / 24) toast(`${b.name}が老朽化してきました。あと1年ほどで発電量が落ちはじめます。`, { kind: 'warn', action: { label: '見る', fn: () => flyTo(i) } });
@@ -1627,7 +1826,8 @@ function endOfMonth() {
   advise();
   checkTutorial();
   if (sheetKind === 'budget') refreshSheet();
-  save();
+  // the world is large: write it out at most every 20 seconds (and whenever the page is hidden)
+  if (performance.now() - lastSave > 20000) save();
 }
 
 function rankIndex(pop) { let r = 0; for (let k = 0; k < RANKS.length; k++) if (pop >= RANKS[k].min) r = k; return r; }
@@ -1693,6 +1893,22 @@ function advise() {
   if (ST.pollHigh > 6) list.push(['poll', '汚染のひどい住宅地があります。住民の健康と地価に響きます。工業地や発電所から離すか、公園を置きましょう。', 'warn']);
   if (ST.crimeHigh > 6) list.push(['crime', '治安の悪い地区があります。交番や警察署を道路の届く場所に建てましょう。', 'warn']);
   if (ST.approval < 40 && ST.pop > 1000) list.push(['approval', `支持率が${Math.round(ST.approval)}%に下がっています。「市政」→「統計」で不満の理由を確かめましょう。`, 'warn']);
+  const nx = AREAS[S.area + 1];
+  if (nx && ST.land > 0 && ST.free < ST.land * 0.25) {
+    if (S.rank >= nx.rank) list.push(['land', `空き地が残り${Math.round(ST.free / ST.land * 100)}%です。隣の町村と合併すると、市域が${nx.size}×${nx.size}マスに広がります（${yen(nx.cost)}）。`, 'info', { label: '市域', fn: () => openSheet('budget', 'land') }]);
+    else list.push(['land0', `空き地が少なくなってきました。${RANKS[nx.rank].label}になると隣の町村と合併して市域を広げられます。それまでは埋め立てや、地価を上げて建物を高くしましょう。`, 'info']);
+  }
+  const stuck = ST.pop > 500 && monthIndex() % 3 === 0 ? blockSummary() : null;
+  if (stuck) {
+    // only real blockers: height limits (land value, population) and missing demand are normal, and roads/power/water have their own messages
+    const real = stuck.list.filter(e => !['lv', 'cond', 'demand', 'road', 'power', 'water'].includes(e.k));
+    const top = real[0], total = real.reduce((n, e) => n + e.n, 0);
+    if (top && total >= 12) {
+      list.push(['stuck', `育ちが止まっている区画が${num(total)}マスあります。いちばん多い理由は「${BLOCKS[top.k].name}」（${num(top.n)}マス）です。`, 'info', { label: '見る', fn: () => showBlocked(top.k, top.tiles) }]);
+    } else if (stuck.flicker >= Math.max(15, (ST.zones[T.RES] + ST.zones[T.COM] + ST.zones[T.IND]) * 0.04)) {
+      list.push(['flicker', `この1年で、建っては小さくなった区画が${num(stuck.flicker)}マスあります。理由はマップ表示「発展の妨げ」で確かめられます。`, 'info', { label: '表示', fn: () => setOverlay('block') }]);
+    }
+  }
   if (ST.pop > 1200 && !count('fire')) list.push(['firest', '消防署がありません。火事に備えましょう。', 'info']);
   if (ST.pop > 1500 && !count('school')) list.push(['school', '子どもが増えてきました。小学校を建てると地価と教育水準が上がります。', 'info']);
   if (ST.pop > 2500 && !count('clinic') && !count('hosp')) list.push(['clinic', '診療所がありません。医療は住民の満足度に大きく影響します。', 'info']);
@@ -1700,8 +1916,8 @@ function advise() {
   if (ST.dc > 0.5 && ST.pop > 300) list.push(['dc', '商業の需要が高まっています。商業地を増やしましょう。', 'info']);
   if (ST.di > 0.5) list.push(['di', '工業の需要が高まっています。住宅から離れた場所に工業地を増やしましょう。', 'info']);
   const m = monthIndex();
-  for (const [k, msg, kind] of list) {
-    if ((S.seen[k] ?? -99) + 3 <= m) { S.seen[k] = m; toast(msg, { kind }); break; }
+  for (const [k, msg, kind, action] of list) {
+    if ((S.seen[k] ?? -99) + 3 <= m) { S.seen[k] = m; toast(msg, { kind, action, ttl: action ? 8000 : undefined }); break; }
   }
 }
 
@@ -1726,7 +1942,9 @@ function rectPts(ax, ay, bx, by) {
 }
 const locked = tid => (TOOLS[tid].rank || 0) > S.rank;
 /* cost ≥ 0: will change, -1: nothing to do, -2: blocked, -3: water needs a bridge */
+const OUTSIDE_MSG = '市域の外です。「市政」→「市域」で隣の町村と合併すると、土地が広がります';
 function evalTile(tid, i) {
+  if (!owned(i)) return -4;
   const t = S.type[i], water = S.terrain[i] === 1, tool = TOOLS[tid];
   if (tool.road !== undefined || tool.bridge) {
     const r = tool.road || 0;
@@ -1769,11 +1987,11 @@ function makePlan(tid, d) {
     let valid = true;
     for (let y = d.ay; y < d.ay + s; y++) for (let x = d.ax; x < d.ax + s; x++) {
       if (!inb(x, y)) { valid = false; continue; }
-      const i = y * N + x, good = S.terrain[i] === 0 && S.type[i] === T.EMPTY;
-      if (!good) { valid = false; bad++; }
+      const i = y * N + x, good = owned(i) && S.terrain[i] === 0 && S.type[i] === T.EMPTY;
+      if (!good) { valid = false; bad++; if (!owned(i)) reason = OUTSIDE_MSG; }
       items.push({ i, ok: good });
     }
-    if (!valid) reason = 'ここには建てられません';
+    if (!valid && !reason) reason = 'ここには建てられません';
     if (locked(tid)) { valid = false; reason = `${RANKS[tool.rank].label}になると建てられます`; }
     else if (b.unique && count(b.key) > 0) { valid = false; reason = `${b.name}は街にひとつだけです`; }
     if (valid) { cost = b.cost; ok = items.length; } else for (const it of items) it.ok = false;
@@ -1811,7 +2029,7 @@ function makePlan(tid, d) {
   const seen = new Set();
   pts.forEach(([x, y], k) => {
     const i = y * N + x;
-    if (tid === 'bulldoze' && S.owner[i] >= 0) {
+    if (tid === 'bulldoze' && S.owner[i] >= 0 && owned(i)) {
       const o = S.owner[i];
       if (seen.has(o)) return;
       seen.add(o);
@@ -1824,11 +2042,11 @@ function makePlan(tid, d) {
     if (c >= 0) { items.push({ i, ok: true }); cost += c; ok++; }
     else if (c <= -2) {
       items.push({ i, ok: false }); bad++;
-      if (!reason) reason = c === -3 ? '川を渡るには「橋」を使います' : 'ここには置けません';
+      if (!reason) reason = c === -3 ? '川を渡るには「橋」を使います' : c === -4 ? OUTSIDE_MSG : 'ここには置けません';
     } else items.push({ i, ok: null });
   });
   // a road that would stop at the river bank, or a bridge that cannot be finished, is not built at all
-  const strict = (tool.road !== undefined || tool.bridge) && codes.some(c => c === -3 || (tool.bridge && c === -2));
+  const strict = (tool.road !== undefined || tool.bridge) && codes.some(c => c === -3 || (tool.bridge && (c === -2 || c === -4)));
   if (strict) for (const it of items) if (it.ok) it.ok = null;
   return { items, cost: strict ? 0 : cost, ok: strict ? 0 : ok, bad, valid: !strict && ok > 0, reason };
 }
@@ -1888,7 +2106,7 @@ function afterChange() {
   computeBudget();
   flags.power = flags.maps = false;
   checkTutorial();
-  roadListDirty = true;
+  roadListDirty = true; blkGen++;
   dirty = true; hudDirty = true;
 }
 function undo() {
@@ -2589,7 +2807,7 @@ function drawObject(i, x, y) {
   if (t === T.WIRE) { drawPole(x, y); return; }
   if (t === T.ROAD) {
     if (S.terrain[i]) drawBridge(x, y);
-    else if (lod === 2 && (x === 0 || y === 0 || x === N - 1 || y === N - 1)) drawEdgeSign(x, y);
+    else if (lod === 2 && exitXY(x, y)) drawEdgeSign(x, y);
     return;
   }
   if (isZone(t)) {
@@ -2666,6 +2884,30 @@ function drawCar(c) {
 }
 
 /* --- frame --- */
+/* land beyond the city is drawn in paler, opaque colours (no translucent overlay, so no seams between chunks) */
+const fogCache = new Map();
+function fogCol(col) {
+  let f = fogCache.get(col);
+  if (!f) {
+    const n = parseInt(col.slice(1), 16), mix = (v, w) => Math.round(v + (w - v) * 0.5);
+    f = '#' + [mix(n >> 16, 238), mix((n >> 8) & 255, 242), mix(n & 255, 244)].map(v => v.toString(16).padStart(2, '0')).join('');
+    fogCache.set(col, f);
+  }
+  return f;
+}
+/* the city limits: a dashed line on the ground */
+function drawBorder(x0, x1, y0, y1) {
+  const line = new Path2D(), X0 = x0, X1 = x1 + 1, Y0 = y0, Y1 = y1 + 1;
+  const seg = (ax, ay, bx, by) => { line.moveTo((ax - ay) * HW, (ax + ay) * HH); line.lineTo((bx - by) * HW, (bx + by) * HH); };
+  const cx0 = Math.max(X0, ownLo), cx1 = Math.min(X1, ownHi), cy0 = Math.max(Y0, ownLo), cy1 = Math.min(Y1, ownHi);
+  if (cx0 >= cx1 || cy0 >= cy1) return;
+  if (X0 <= ownLo && ownLo < X1) seg(ownLo, cy0, ownLo, cy1);
+  if (X0 < ownHi && ownHi <= X1) seg(ownHi, cy0, ownHi, cy1);
+  if (Y0 <= ownLo && ownLo < Y1) seg(cx0, ownLo, cx1, ownLo);
+  if (Y0 < ownHi && ownHi <= Y1) seg(cx0, ownHi, cx1, ownHi);
+  const lw = 2 / Math.min(1, curZ);
+  G.strokeStyle = C.border; G.lineWidth = lw; G.setLineDash([lw * 3, lw * 2]); G.stroke(line); G.setLineDash([]);
+}
 let curZ = 1;
 const CH = 8, NCH = N / CH, HEADROOM = 270, MAX_CHUNKS = 20;
 const chunks = new Array(NCH * NCH).fill(null);
@@ -2711,7 +2953,8 @@ function drawLayer(x0, x1, y0, y1, vis, opts) {
     else if (isZone(t)) col = S.level[i] ? C.lot[t] : C.zone[t];
     else col = groundOf(t, h);
     if (lod === 0 && (col === C.grass[1] || col === C.grass[2])) col = C.grass[0];
-    if (col !== C.grass[0]) add(col, x, y);
+    if (!ownedXY(x, y)) add(fogCol(col), x, y);
+    else if (col !== C.grass[0]) add(col, x, y);
     if (t === T.ROAD && !S.terrain[i]) {
       const m = roadMask(x, y);
       if (S.level[i]) {
@@ -2744,6 +2987,7 @@ function drawLayer(x0, x1, y0, y1, vis, opts) {
   }
 
   if (opts.overlay) drawOverlay(x0, x1, y0, y1, vis);
+  if (ownLo > 0) drawBorder(x0, x1, y0, y1);
 
   // objects in painter's order
   carBucket.clear();
@@ -3012,6 +3256,17 @@ function costLabel(d) {
   G.fillStyle = '#ffffff'; G.fillText(text, lx, ly + 0.5);
 }
 const nodeVal = (arr, i) => (S.type[i] === T.ROAD ? arr[i] : D.acc[i] >= 0 ? arr[D.acc[i]] : -1);
+/* growth reasons are recomputed at most once per game day (or after an edit) while the layer is open */
+const blkCache = new Uint8Array(NN);
+let blkKey = '', blkGen = 0;
+function blockGroup(i) {
+  const key = dayStamp() + ':' + blkGen;
+  if (key !== blkKey) {
+    blkKey = key;
+    for (let j = 0; j < NN; j++) if (isZone(S.type[j])) blkCache[j] = BLOCKS[blockShown(j)].g;
+  }
+  return blkCache[i];
+}
 function overlayValue(i) {
   const t = S.type[i];
   switch (overlay) {
@@ -3022,6 +3277,7 @@ function overlayValue(i) {
     case 'water':
       if (!isZone(t) && !(B[t] && B[t].water)) return -1;
       return D.watered[i] ? 0 : 1;
+    case 'block': return isZone(t) ? blockGroup(i) : -1;
     case 'traffic': return t === T.ROAD ? Math.min(1, D.q[i] / 1.2) : -1;
     case 'commute': return t === T.RES && S.level[i] ? (D.acc[i] >= 0 ? D.emp[D.acc[i]] : 0) : -1;
     case 'lv': return S.terrain[i] && t === T.EMPTY ? -1 : D.lv[i] / 200;
@@ -3347,6 +3603,7 @@ function setOverlay(id) {
   x.type = 'button'; x.setAttribute('aria-label', 'マップ表示を終える');
   x.addEventListener('click', () => { setOverlay('none'); if (sheetKind === 'layers') refreshSheet(); });
   lg.append(x);
+  document.documentElement.style.setProperty('--legend-h', lg.offsetHeight + 'px');
 }
 
 
@@ -3526,7 +3783,7 @@ function updateHUD() {
 }
 
 /* --- sheets --- */
-const BUDGET_TABS = [['money', '予算'], ['stats', '統計'], ['goals', '目標']];
+const BUDGET_TABS = [['money', '予算'], ['stats', '統計'], ['goals', '目標'], ['land', '市域']];
 function openSheet(kind, arg) {
   sheetKind = kind; sheetArg = arg;
   if (kind === 'budget' && !arg) sheetArg = 'money';
@@ -3557,7 +3814,7 @@ function refreshSheet() {
       tabs.append(b);
     }
     title.textContent = `${cityName()}の市政`;
-    if (sheetArg === 'stats') buildStats(body); else if (sheetArg === 'goals') buildGoals(body); else buildMoney(body);
+    if (sheetArg === 'stats') buildStats(body); else if (sheetArg === 'goals') buildGoals(body); else if (sheetArg === 'land') buildLand(body); else buildMoney(body);
   } else if (sheetKind === 'info') buildInfo(body, title, sheetArg);
   else if (sheetKind === 'layers') buildLayers(body, title);
   else if (sheetKind === 'menu') buildMenu(body, title);
@@ -3583,6 +3840,20 @@ function buildInfo(body, title, i) {
   else if (isZone(t)) title.textContent = `${ZONE_NAME[t]}・${(t === T.IND && S.kind[i] ? HT_NAME : LEVEL_NAME[t])[S.level[i]]}`;
   else title.textContent = B[t].name;
 
+  if (!owned(i)) {
+    title.textContent = t === T.ROAD ? (S.level[i] ? '国道（隣の町村）' : '道路（隣の町村）') : '隣の町村の土地';
+    rows.push(['土地', S.terrain[i] ? '水面' : S.tree[i] ? '森' : '空き地']);
+    if (t === T.ROAD) rows.push(['交通量', `${num(D.load[i])}人`]);
+    sec.append(kv(rows));
+    const nx = AREAS[S.area + 1];
+    sec.append(el('p', 'note', (t === T.ROAD ? 'この道路は隣の町村を通って、さらに外へつながっています。市域の境目まで道路をのばしてつなぐと、外への通勤や工場の出荷に使えます。' : 'まだ市の土地ではないため、建物や道路はつくれません。') +
+      (nx ? `「市政」→「市域」で隣の町村と合併すると、${nx.size}×${nx.size}マスまで広がります（${RANKS[nx.rank].label}になると合併できます）。` : '')));
+    const row = el('div', 'btn-row'), go = el('button', 'btn', '市域を見る');
+    go.type = 'button'; go.addEventListener('click', () => openSheet('budget', 'land'));
+    row.append(go); body.append(row);
+    body.append(el('p', 'note', `座標 ${x}, ${y}`));
+    return;
+  }
   if (isZone(t)) {
     const L = S.level[i];
     if (t === T.RES) {
@@ -3605,10 +3876,20 @@ function buildInfo(body, title, i) {
       if (D.svc.health[a] > 0.5) tag('医療', 'on');
       if (D.svc.edu1[a] > 0.5) tag('小学校', 'on');
       if (D.trSub[a]) tag('地下鉄', 'on'); else if (D.trBus[a]) tag('バス', 'on');
-      if (!compEdge[D.comp[a]]) tag('街の外と未接続', 'warn');
+      if (!compEdge[D.comp[a]]) tag('隣の町村と未接続', 'warn');
     }
     if (S.fire[i]) tag('火災発生中', 'warn');
     sec.append(tags);
+    const bk = blockShown(i), bi = BLOCKS[bk], recent = bk !== blockOf(i);
+    const bm = el('div', 'block-main'), dot = el('i'), txt = el('div');
+    dot.style.background = LAYERS.block.keys[bi.g][0];
+    const head = bk === 'grow' ? (L ? 'これからも育ちます' : 'もうすぐ建物が建ちます') : bk === 'top' ? 'これ以上は大きくなりません（最大）' : (recent ? '最近小さくなった理由：' : 'いちばんの理由：') + bi.name;
+    txt.append(el('b', null, head));
+    const tip = blockTip(bk, t);
+    if (tip && bk !== 'grow' && bk !== 'top') txt.append(el('span', null, tip));
+    if (recent) txt.append(el('span', null, 'いまは持ち直していて、しばらくすると再び育ちます。同じことがくり返す場合は、原因の対策をしましょう。'));
+    bm.append(dot, txt);
+    sec.append(bm);
     const notes = growthNotes(i);
     if (notes.length) {
       const s2 = section(body, L ? '成長をさまたげていること' : '家や店が建つための条件');
@@ -3619,10 +3900,10 @@ function buildInfo(body, title, i) {
     const cap = roadCap(i), q = D.q[i];
     rows.push(['交通量', `${num(D.load[i])}人／容量 ${num(cap)}人`]);
     rows.push(['混雑', q > 1 ? `渋滞（${pct(q)}）` : q > 0.7 ? `混雑（${pct(q)}）` : `${pct(q)}`]);
-    rows.push(['街の外', compEdge[D.comp[i]] ? 'つながっている' : 'つながっていない']);
+    rows.push(['隣の町村', compEdge[D.comp[i]] ? 'つながっている' : 'つながっていない']);
     rows.push(['維持費', S.terrain[i] ? '¥3／月' : S.level[i] ? '¥1／月' : '¥0.4／月']);
     sec.append(kv(rows), meter(q / 1.5, q > 1 ? 'over' : q > 0.7 ? 'warn' : ''));
-    if (x === 0 || y === 0 || x === N - 1 || y === N - 1) sec.append(el('p', 'note', 'ここから街の外の国道へつながっています。外への通勤や工場の出荷はここを通ります。'));
+    if (exitXY(x, y)) sec.append(el('p', 'note', 'ここから隣の町村の道路へつながっています。外への通勤や工場の出荷はここを通ります。'));
     if (q > 1) sec.append(el('p', 'note', '渋滞しています。大通りに拡幅するか、迂回路やバス・地下鉄で通勤を分散させましょう。'));
   } else if (t === T.WIRE) {
     rows.push(['電気', D.powered[i] ? '通電中' : '通電していません']);
@@ -3736,7 +4017,40 @@ function updateMoneyFlow() {
     ['差し引き', (ST.net >= 0 ? '+' : '') + yen(ST.net), 'sum ' + (ST.net >= 0 ? 'pos' : 'neg')],
   ]));
 }
+const blockCursor = {};
+function showBlocked(k, tiles) {
+  const n = blockCursor[k] = ((blockCursor[k] ?? -1) + 1) % tiles.length;
+  closeSheet();
+  setOverlay('block');
+  flyTo(tiles[n], Math.max(cam.z, 1.1));
+  selTile = tiles[n];
+}
+function buildBlocked(body) {
+  const { list, flicker } = blockSummary();
+  const s = section(body, '発展が止まっている区画');
+  const zoned = ST.zones[T.RES] + ST.zones[T.COM] + ST.zones[T.IND];
+  if (!list.length) s.append(el('p', 'note', zoned ? 'すべての区画が順調に育っているか、最大まで発展しています。' : '区画を指定すると、育たない理由がここにまとまって表示されます。'));
+  else {
+    const ul = el('ul', 'blocked');
+    for (const e of list.slice(0, 6)) {
+      const b = BLOCKS[e.k], li = el('li'), dot = el('i'), txt = el('div');
+      dot.style.background = LAYERS.block.keys[b.g][0];
+      const main = +Object.keys(e.types).sort((p, q) => e.types[q] - e.types[p])[0];
+      const kinds = [T.RES, T.COM, T.IND].filter(t => e.types[t]).map(t => ZONE_NAME[t]).join('・');
+      txt.append(el('b', null, b.name), el('small', null, `${kinds} ${num(e.n)}マス — ${blockTip(e.k, main)}`));
+      const go = el('button', null, '見る');
+      go.type = 'button'; go.addEventListener('click', () => showBlocked(e.k, e.tiles));
+      li.append(dot, txt, go); ul.append(li);
+    }
+    s.append(ul);
+  }
+  if (flicker >= 4) s.append(el('p', 'note', `この1年で、建っては小さくなった区画が${num(flicker)}マスあります。マップ表示の「発展の妨げ」で、場所と理由を色で確かめられます。`));
+  const map = el('button', 'btn', 'マップ表示「発展の妨げ」を開く');
+  map.type = 'button'; map.addEventListener('click', () => { closeSheet(); setOverlay('block'); });
+  if (zoned) s.append(map);
+}
 function buildStats(body) {
+  buildBlocked(body);
   const s1 = section(body, '支持率');
   const big = el('div', 'big-num');
   big.append(el('b', null, Math.round(ST.approval) + '%'), el('span', null, ST.factors ? '住民の満足度から計算（税率と名所も影響）' : '住民がまだいません'));
@@ -3784,6 +4098,52 @@ function buildStats(body) {
     lineChart(c1, hist.map(h => ({ v: h.pop, label: `${h.y}年${h.m}月` })), v => num(v) + '人');
     lineChart(c2, hist.map(h => ({ v: h.money, label: `${h.y}年${h.m}月` })), v => yen(v));
   });
+}
+/* merging with the neighbouring towns widens the land the city can build on */
+function expandArea() {
+  const nx = AREAS[S.area + 1];
+  if (!nx) return;
+  if (S.rank < nx.rank) { toast(`${RANKS[nx.rank].label}になると合併できます。`, { kind: 'warn' }); return; }
+  if (S.money < nx.cost) { toast(`資金が足りません（必要 ${yen(nx.cost)}、手持ち ${yen(S.money)}）。「予算」で借り入れもできます。`, { kind: 'bad' }); return; }
+  S.money -= nx.cost;
+  setArea(S.area + 1);
+  markAll();
+  afterChange();
+  closeSheet();
+  tween = { x0: cam.x, y0: cam.y, z0: cam.z, x1: 0, y1: N * HH + 13, z1: clamp(Math.min((vw - 16) / (nx.size * HW * 2), (vh - 200) / (nx.size * HH * 2)), ZMIN, 0.5), t0: performance.now(), d: 900 };
+  toast(`隣の町村と合併し、市域が${nx.size}×${nx.size}マスに広がりました！ 境目まで道路をのばして、新しい土地を使いましょう。`, { kind: 'good', ttl: 9000 });
+  save();
+}
+function buildLand(body) {
+  computeBudget();
+  const cur = AREAS[S.area], nx = AREAS[S.area + 1];
+  const s1 = section(body, '市域');
+  const used = ST.land - ST.free;
+  s1.append(kv([
+    ['広さ', `${cur.size}×${cur.size}マス`],
+    ['陸地', `${num(ST.land)}マス`],
+    ['使っている土地', `${num(used)}マス（${pct(ST.land ? used / ST.land : 0)}）`],
+    ['空き地', `${num(ST.free)}マス`],
+    ['水面', `${num(ST.wet)}マス（埋め立てできます）`],
+  ]), meter(ST.land ? used / ST.land : 0, used > ST.land * 0.85 ? 'over' : used > ST.land * 0.7 ? 'warn' : ''));
+  const s2 = section(body, nx ? '隣の町村と合併する' : '合併');
+  if (!nx) {
+    s2.append(el('p', 'note', `市域は最大の${cur.size}×${cur.size}マスです。土地が足りないときは、海や川の埋め立てと、区画の高層化（地価を上げる）で街を伸ばしましょう。`));
+    return;
+  }
+  const gain = nx.size * nx.size - cur.size * cur.size;
+  s2.append(kv([
+    ['合併後の広さ', `${nx.size}×${nx.size}マス（+${num(gain)}マス）`],
+    ['条件', `${RANKS[nx.rank].label}以上（いまは${RANKS[S.rank].label}）`],
+    ['費用', yen(nx.cost)],
+  ]));
+  const okRank = S.rank >= nx.rank, okMoney = S.money >= nx.cost;
+  const row = el('div', 'btn-row'), b = el('button', 'btn primary', okRank ? `合併する（${yen(nx.cost)}）` : `${RANKS[nx.rank].label}になると合併できます`);
+  b.type = 'button'; b.disabled = !okRank || !okMoney;
+  b.addEventListener('click', expandArea);
+  row.append(b); s2.append(row);
+  if (okRank && !okMoney) s2.append(el('p', 'note', `資金があと${yen(nx.cost - S.money)}足りません。「予算」で借り入れもできます。`));
+  s2.append(el('p', 'note', '合併すると、まわりの隣の町村の土地（地図のうすい部分）が市の土地になります。隣の町村の道路はそのまま市道になり、維持費がかかります。'));
 }
 function buildGoals(body) {
   const done = GOALS.filter(g => S.goals[g.id] !== undefined).length;
@@ -3836,18 +4196,19 @@ function buildMenu(body, title) {
   const s3 = section(body, 'あそびかた');
   const ol = el('ol', 'help');
   [
-    '道路は国道（地図の端につながる道）からのばします。道路はまっすぐ引けます。曲げるときは指を離して、続きからなぞります。川は「橋」で渡ります。',
+    '道路は国道（隣の町村へつながる道）からのばします。道路はまっすぐ引けます。曲げるときは指を離して、続きからなぞります。川は「橋」で渡ります。',
     '区画は道路に面したマスだけが育ちます。住民は道路を通って職場へ通勤し、道路が混むと渋滞が起き、通勤時間がのびると人は住みたがりません。',
     '電気・水道は道路や建物を伝って届きます。足りないと停電・断水します。発電所には寿命があります。',
     'ゴミは処分場や焼却場が道路で回収します。処分場はいつかいっぱいになります。',
     '警察・消防・医療・教育は「道路で届く範囲」と「受け入れ人数」が決まっています。街が大きくなったら増やし、「市政」で予算を調整しましょう。',
     '工場は汚染を出し、近くの住宅は高くなれません。教育水準が上がると、汚染の少ないハイテク工業が育ちます。',
     '税率は街が育つ速さと支持率に効きます。目標を達成すると交付金が届き、人口が増えると新しい施設が解放されます。',
-    '1本指でツール、2本指で移動・ズーム。「調べる」で区画をタップすると、育たない理由がわかります。',
+    '1本指でツール、2本指で移動・ズーム。「調べる」で区画をタップすると、育たない理由がわかります。街全体の「育たない理由」は「市政」→「統計」と、マップ表示「発展の妨げ」で確かめられます。',
+    '地図のうすい部分は隣の町村です。土地が足りなくなったら「市政」→「市域」で合併すると、市域が64→96→128マス四方に広がります。',
   ].forEach(s => ol.append(el('li', null, s)));
   s3.append(ol);
   const s4 = section(body, 'データ');
-  s4.append(el('p', 'note', '進行状況はこのブラウザに毎月自動で保存されます。ほかの端末やブラウザとは共有されません。'));
+  s4.append(el('p', 'note', '進行状況はこのブラウザに自動で保存されます。ほかの端末やブラウザとは共有されません。'));
   if (!confirmNew) {
     const b = el('button', 'btn danger', '新しい街をつくる');
     b.type = 'button';
@@ -3916,7 +4277,7 @@ function renderTutorial() {
    ========================================================= */
 const ARR8 = ['terrain', 'tree', 'type', 'level', 'variant', 'fire', 'kind', 'trash'];
 const ARR32 = ['owner', 'built', 'fill'];
-const SCALARS = ['seed', 'name', 'money', 'year', 'month', 'day', 'tax', 'fund', 'loans', 'disasters', 'rank', 'seen', 'fy', 'goals', 'streak', 'wind', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history'];
+const SCALARS = ['seed', 'name', 'money', 'year', 'month', 'day', 'tax', 'fund', 'loans', 'disasters', 'rank', 'area', 'seen', 'fy', 'goals', 'streak', 'wind', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history'];
 function serialize() {
   const o = { v: SAVE_VERSION, cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed };
   for (const k of SCALARS) o[k] = S[k];
@@ -3925,42 +4286,92 @@ function serialize() {
   return JSON.stringify(o);
 }
 /* version 1 saves (the first release) are converted in place */
-function migrateV1(s, o) {
+function migrateV1(src, s) {
   const MAP = { 6: 10, 7: 20, 8: 22, 9: 25, 10: 24, 11: 30, 12: 33 };
-  for (let i = 0; i < NN; i++) { const t = s.type[i]; if (MAP[t]) s.type[i] = MAP[t]; }
-  const t = typeof o.tax === 'number' ? o.tax : 7;
-  s.tax = { r: t, c: t, i: t };
+  for (let i = 0; i < src.type.length; i++) { const t = src.type[i]; if (MAP[t]) src.type[i] = MAP[t]; }
   s.fund = blankState(0, '').fund;
   s.goals = {}; s.loans = []; s.streak = 0; s.wind = 1;
   const mi = s.year * 12 + s.month - 1;
-  for (let i = 0; i < NN; i++) if (s.type[i] >= 10 && s.owner[i] === i) s.built[i] = mi;
+  for (let i = 0; i < src.type.length; i++) if (src.type[i] >= 10 && src.owner[i] === i) src.built[i] = mi;
   s.tut = {}; s.tutDone = true;
-  s.v = SAVE_VERSION;
+}
+/* saves from the 64×64 versions become the middle of the larger world */
+function growWorld(s, src, n, seed) {
+  const off = (N - n) / 2, prev = S;
+  S = s;
+  genTerrain(seed ^ 0x2c1b3c6d);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const ox = clamp(x - off, 0, n - 1), oy = clamp(y - off, 0, n - 1), j = oy * n + ox, i = y * N + x;
+    if (ox === x - off && oy === y - off) {
+      for (const k of ARR8) s[k][i] = src[k][j];
+      s.built[i] = src.built[j]; s.fill[i] = src.fill[j];
+      const o = src.owner[j];
+      s.owner[i] = o < 0 ? -1 : (((o / n) | 0) + off) * N + (o % n) + off;
+    } else if (Math.max(off - x, x - off - n + 1, off - y, y - off - n + 1) <= 2) {
+      // let the old shoreline run on for a couple of tiles
+      s.terrain[i] = src.terrain[j]; s.tree[i] = src.tree[j];
+    }
+  }
+  // each road that used to leave the map now runs on through the neighbouring town to the edge of the world
+  const road = (x, y) => x >= 0 && y >= 0 && x < n && y < n && src.type[y * n + x] === T.ROAD;
+  for (let side = 0; side < 4; side++) {
+    const at = k => (side === 0 ? [0, k] : side === 1 ? [k, 0] : side === 2 ? [n - 1, k] : [k, n - 1]);
+    const inward = k => { const [x, y] = at(k); return side === 0 ? [x + 1, y] : side === 1 ? [x, y + 1] : side === 2 ? [x - 1, y] : [x, y - 1]; };
+    for (let k = 0; k < n;) {
+      if (!road(...at(k))) { k++; continue; }
+      let e = k;
+      while (e + 1 < n && road(...at(e + 1))) e++;
+      let pick = (k + e) >> 1, best = Infinity;
+      for (let q = k; q <= e; q++) {
+        const [ix, iy] = inward(q), [x, y] = at(q), score = Math.abs(q - (k + e) / 2) - (road(ix, iy) ? 100 : 0) - (src.level[y * n + x] ? 50 : 0);
+        if (score < best) { best = score; pick = q; }
+      }
+      const [px, py] = at(pick), lvl = src.level[py * n + px], pts = [];
+      for (let d = 1; d <= off; d++) {
+        const x = px + off + (side === 0 ? -d : side === 2 ? d : 0), y = py + off + (side === 1 ? -d : side === 3 ? d : 0);
+        pts.push([x, y]);
+      }
+      layRoad(pts, src.terrain[py * n + px] ? 0 : lvl);
+      k = e + 1;
+    }
+  }
+  S = prev;
 }
 function deserialize(str) {
   const o = JSON.parse(str);
-  if (!o || (o.v !== 1 && o.v !== SAVE_VERSION)) throw new Error('unsupported save');
-  const s = blankState(o.seed, o.name);
+  if (!o || !(o.v >= 1 && o.v <= SAVE_VERSION)) throw new Error('unsupported save');
+  const n = o.v < 3 ? 64 : N, s = blankState(o.seed, o.name), src = {};
   for (const k of SCALARS) if (o[k] !== undefined) s[k] = o[k];
   for (const k of ARR8) {
-    if (!o[k]) continue;
-    const u = unb64(o[k]);
-    if (u.length !== NN) throw new Error('bad map');
-    s[k].set(u);
+    const u = o[k] ? unb64(o[k]) : new Uint8Array(n * n);
+    if (u.length !== n * n) throw new Error('bad map');
+    src[k] = u;
   }
   for (const k of ARR32) {
-    if (!o[k]) continue;
-    const u = unb64(o[k]);
-    if (u.length !== NN * 4) throw new Error('bad map');
-    s[k] = new Int32Array(u.buffer);
+    const u = o[k] ? unb64(o[k]) : null;
+    if (u && u.length !== n * n * 4) throw new Error('bad map');
+    src[k] = u ? new Int32Array(u.buffer) : new Int32Array(n * n).fill(k === 'owner' ? -1 : 0);
   }
-  if (o.v === 1) migrateV1(s, o);
-  return { state: s, cam: o.cam, speed: o.speed, migrated: o.v === 1 };
+  if (o.v === 1) {
+    migrateV1(src, s);
+    const t = typeof o.tax === 'number' ? o.tax : 7;
+    s.tax = { r: t, c: t, i: t };
+  }
+  if (n === N) { for (const k of ARR8) s[k].set(src[k]); for (const k of ARR32) s[k] = src[k]; }
+  else {
+    growWorld(s, src, n, o.seed);
+    if (o.cam) o.cam.y += (N - n) * HH;
+  }
+  s.v = SAVE_VERSION;
+  if (!(s.area >= 0 && s.area < AREAS.length)) s.area = 0;
+  return { state: s, cam: o.cam, speed: o.speed, migrated: o.v === 1, grown: n !== N && o.v !== 1 };
 }
 function storageGet() { try { return localStorage.getItem(SAVE_KEY); } catch (e) { return null; } }
 function storageDel() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* storage unavailable */ } }
+let lastSave = -Infinity;
 function save() {
   if (!started || !S) return;
+  lastSave = performance.now();
   try { localStorage.setItem(SAVE_KEY, serialize()); } catch (e) { /* storage unavailable: play continues without saving */ }
 }
 /* =========================================================
@@ -3968,6 +4379,7 @@ function save() {
    ========================================================= */
 function newMap(seed, name) {
   S = blankState(seed, name);
+  setArea(0);
   genTerrain(seed);
   placeHighway(seed);
   undoStack.length = 0; cars.length = 0;
@@ -3977,7 +4389,8 @@ function newMap(seed, name) {
 function fitCamera() {
   const w = $('#welcome'), cover = w.hidden ? 0 : w.offsetHeight + 16;
   const availH = Math.max(160, vh - cover - 24);
-  cam.z = clamp(Math.min((vw - 16) / (N * HW * 2), availH / (N * HH * 2 + 40)), ZMIN, 0.5);
+  const n = AREAS[S.area].size;
+  cam.z = clamp(Math.min((vw - 16) / (n * HW * 2), availH / (n * HH * 2 + 40)), ZMIN, 0.5);
   cam.x = 0;
   cam.y = N * HH + 13 + (vh / 2 - (vh - cover) / 2) / cam.z;
   dirty = true;
@@ -4077,6 +4490,7 @@ function boot(data) {
   if (raw) { try { loaded = deserialize(raw); } catch (e) { loaded = null; } }
   if (loaded) {
     S = loaded.state;
+    setArea(S.area || 0);
     refreshAll();
     buildToolbar();
     document.body.classList.remove('intro');
@@ -4086,7 +4500,8 @@ function boot(data) {
     selectTool('select');
     setSpeed(clamp(loaded.speed || 1, 1, 3));
     renderTutorial();
-    if (loaded.migrated) toast('新しいバージョンになりました。区画は道路に面している必要があり、住民は道路で通勤します。水道とゴミ処理も加わりました。「市政」→「目標」も見てみましょう。', { kind: 'info', ttl: 12000 });
+    if (loaded.grown) toast('新しいバージョンになりました。街のまわりに隣の町村が加わり、「市政」→「市域」で合併すると土地を広げられます。育たない区画の理由は「市政」→「統計」と、マップ表示「発展の妨げ」で確かめられます。', { kind: 'info', ttl: 14000 });
+    else if (loaded.migrated) toast('新しいバージョンになりました。区画は道路に面している必要があり、住民は道路で通勤します。水道とゴミ処理も加わりました。「市政」→「目標」も見てみましょう。', { kind: 'info', ttl: 12000 });
     else toast(`おかえりなさい。${cityName()}の${S.year}年${S.month}月から再開します。`);
   } else {
     newMap((Math.random() * 2 ** 31) | 0, NAMES[(Math.random() * NAMES.length) | 0]);
@@ -4106,7 +4521,7 @@ if (hot?.ready) hot.ready(boot); else boot(hot?.data ?? {});
 /* debugging / automated checks */
 window.__city = {
   get S() { return S; }, ST, D, T, B, BKEY, TOOLS, GOALS, cam, simDay, makePlan, applyPlan, render, refreshAll, setSpeed, selectTool, beginGame, setOverlay,
-  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet,
+  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet, growthNotes, blockOf, blockShown, blockSummary, BLOCKS, BLOCK_KEYS, showBlocked, closeSheet, setArea, expandArea, AREAS, owned, get ownLo() { return ownLo; },
   run(days) { for (let k = 0; k < days; k++) simDay(); },
   place(tid, ax, ay, bx = ax, by = ay) { return applyPlan(tid, makePlan(tid, { ax, ay, bx, by })); },
 };
