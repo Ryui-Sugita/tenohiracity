@@ -351,6 +351,7 @@ button { touch-action: manipulation; cursor: pointer; }
 .name-row .suffix { font: 400 18px/1 var(--f-display); }
 .help { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.6; }
 .confirm { padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--bad) 10%, transparent); display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.confirm.info { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
 /* charts */
 .chart { position: relative; }
@@ -478,7 +479,7 @@ const N = 128, NN = N * N, HW = 32, HH = 16;
 const ZMIN = 0.045, ZMAX = 2.6;
 const START_YEAR = new Date().getFullYear();
 const SAVE_KEY = 'tenohira-city/v1';
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 /* the city starts on the middle 64×64 of the world and grows by merging with its neighbours */
 const AREAS = [
   { m: 32, size: 64 },
@@ -707,6 +708,34 @@ function unb64(str) {
   const bin = atob(str), u8 = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   return u8;
+}
+/* PackBits run-length coding for saves: a header byte below 128 copies the next n+1 bytes,
+   128 and above repeats the next byte n-125 times (3 to 130) */
+function pack(u8) {
+  const out = [], n = u8.length;
+  let i = 0;
+  while (i < n) {
+    let r = 1;
+    while (i + r < n && r < 130 && u8[i + r] === u8[i]) r++;
+    if (r >= 3) { out.push(r + 125, u8[i]); i += r; continue; }
+    let j = i;
+    while (j < n && j - i < 128 && !(j + 2 < n && u8[j] === u8[j + 1] && u8[j] === u8[j + 2])) j++;
+    out.push(j - i - 1);
+    for (let k = i; k < j; k++) out.push(u8[k]);
+    i = j;
+  }
+  return Uint8Array.from(out);
+}
+function unpack(p, len) {
+  const u = new Uint8Array(len);
+  let i = 0, o = 0;
+  while (i < p.length) {
+    const h = p[i++];
+    if (h < 128) { if (o + h + 1 > len) throw new Error('bad data'); for (let k = 0; k <= h; k++) u[o++] = p[i++]; }
+    else { const c = h - 125; if (o + c > len) throw new Error('bad data'); u.fill(p[i++], o, o + c); o += c; }
+  }
+  if (o !== len) throw new Error('bad data');
+  return u;
 }
 const inb = (x, y) => x >= 0 && y >= 0 && x < N && y < N;
 
@@ -4193,6 +4222,54 @@ function buildMenu(body, title) {
   cb.addEventListener('change', () => { S.disasters = cb.checked; save(); });
   sw.append(el('span', null, '火災を発生させる'), cb);
   s2.append(sw);
+  const s4 = section(body, 'データ');
+  s4.append(el('p', 'note', cloud.state === 'cloud'
+    ? '進行状況はこのブラウザと、あなたの Claude アカウント（本人だけが見られる場所）に自動で保存されます。ほかの端末で開いても続きから遊べます。'
+    : cloud.state === 'error'
+      ? 'アカウントへの保存に失敗しました。このブラウザには保存しています。念のため「書き出す」でバックアップしておきましょう。'
+      : '進行状況はこのブラウザにだけ保存されます。Safari などでは、ブラウザを閉じると消えてしまうことがあります。「書き出す」でときどきバックアップしておきましょう。'));
+  if (cloud.hold) {
+    const c = el('div', 'confirm info');
+    c.append(el('p', null, `アカウントに別の保存データ（${describeSave(cloud.hold.state)}）があります。どちらで遊びますか？`));
+    const r = el('div', 'btn-row');
+    const acc = el('button', 'btn primary', 'アカウントの街で再開'); acc.type = 'button';
+    acc.addEventListener('click', () => resolveHold(true));
+    const cur = el('button', 'btn', `いまの${cityName()}を保存`); cur.type = 'button';
+    cur.addEventListener('click', () => resolveHold(false));
+    r.append(acc, cur); c.append(r, el('p', 'note', '選ばなかったほうも消さずにバックアップとして残します。')); s4.append(c);
+  }
+  if (pendingImport) {
+    const c = el('div', 'confirm info');
+    c.append(el('p', null, `${describeSave(pendingImport.state)}を読み込みますか？ いまの${cityName()}は置き換わります（この端末にバックアップを残します）。`));
+    const r = el('div', 'btn-row');
+    const no = el('button', 'btn', 'やめる'); no.type = 'button';
+    no.addEventListener('click', () => confirmImport(false));
+    const yes = el('button', 'btn primary', '読み込む'); yes.type = 'button';
+    yes.addEventListener('click', () => confirmImport(true));
+    r.append(no, yes); c.append(r); s4.append(c);
+  }
+  const io = el('div', 'btn-row');
+  const ex = el('button', 'btn', 'データを書き出す'); ex.type = 'button';
+  ex.addEventListener('click', exportSave);
+  const im = el('button', 'btn', 'ファイルから読み込む'); im.type = 'button';
+  im.addEventListener('click', importSave);
+  io.append(ex, im);
+  s4.append(io);
+  if (!confirmNew) {
+    const b = el('button', 'btn danger', '新しい街をつくる');
+    b.type = 'button';
+    b.addEventListener('click', () => { confirmNew = true; refreshSheet(); });
+    s4.append(b);
+  } else {
+    const c = el('div', 'confirm');
+    c.append(el('p', null, `いまの「${cityName()}」は消えてしまいます。新しい土地で始めますか？`));
+    const r = el('div', 'btn-row');
+    const no = el('button', 'btn', 'やめる'); no.type = 'button';
+    no.addEventListener('click', () => { confirmNew = false; refreshSheet(); });
+    const yes = el('button', 'btn primary', '新しく始める'); yes.type = 'button';
+    yes.addEventListener('click', () => { confirmNew = false; closeSheet(); keepCopy('before-new', storageGet(), true); storageDel(); cloud.explicit = true; cloud.hold = null; startNew(); });
+    r.append(no, yes); c.append(r); s4.append(c);
+  }
   const s3 = section(body, 'あそびかた');
   const ol = el('ol', 'help');
   [
@@ -4207,23 +4284,6 @@ function buildMenu(body, title) {
     '地図のうすい部分は隣の町村です。土地が足りなくなったら「市政」→「市域」で合併すると、市域が64→96→128マス四方に広がります。',
   ].forEach(s => ol.append(el('li', null, s)));
   s3.append(ol);
-  const s4 = section(body, 'データ');
-  s4.append(el('p', 'note', '進行状況はこのブラウザに自動で保存されます。ほかの端末やブラウザとは共有されません。'));
-  if (!confirmNew) {
-    const b = el('button', 'btn danger', '新しい街をつくる');
-    b.type = 'button';
-    b.addEventListener('click', () => { confirmNew = true; refreshSheet(); });
-    s4.append(b);
-  } else {
-    const c = el('div', 'confirm');
-    c.append(el('p', null, `いまの「${cityName()}」は消えてしまいます。新しい土地で始めますか？`));
-    const r = el('div', 'btn-row');
-    const no = el('button', 'btn', 'やめる'); no.type = 'button';
-    no.addEventListener('click', () => { confirmNew = false; refreshSheet(); });
-    const yes = el('button', 'btn primary', '新しく始める'); yes.type = 'button';
-    yes.addEventListener('click', () => { confirmNew = false; closeSheet(); storageDel(); startNew(); });
-    r.append(no, yes); c.append(r); s4.append(c);
-  }
 }
 
 /* --- tutorial --- */
@@ -4278,11 +4338,15 @@ function renderTutorial() {
 const ARR8 = ['terrain', 'tree', 'type', 'level', 'variant', 'fire', 'kind', 'trash'];
 const ARR32 = ['owner', 'built', 'fill'];
 const SCALARS = ['seed', 'name', 'money', 'year', 'month', 'day', 'tax', 'fund', 'loans', 'disasters', 'rank', 'area', 'seen', 'fy', 'goals', 'streak', 'wind', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history'];
+/* version 4 packs every array (PackBits, then base64) and stamps the real time of the save */
 function serialize() {
-  const o = { v: SAVE_VERSION, cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed };
+  const o = { v: SAVE_VERSION, at: Date.now(), cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed };
   for (const k of SCALARS) o[k] = S[k];
-  for (const k of ARR8) o[k] = b64(S[k]);
-  for (const k of ARR32) o[k] = b64(new Uint8Array(S[k].buffer));
+  // the variant of an empty tile is never drawn: zero it so the runs pack well
+  const variant = S.variant.slice();
+  for (let i = 0; i < NN; i++) if (S.type[i] <= T.WIRE) variant[i] = 0;
+  for (const k of ARR8) o[k] = b64(pack(k === 'variant' ? variant : S[k]));
+  for (const k of ARR32) o[k] = b64(pack(new Uint8Array(S[k].buffer)));
   return JSON.stringify(o);
 }
 /* version 1 saves (the first release) are converted in place */
@@ -4341,14 +4405,15 @@ function deserialize(str) {
   const o = JSON.parse(str);
   if (!o || !(o.v >= 1 && o.v <= SAVE_VERSION)) throw new Error('unsupported save');
   const n = o.v < 3 ? 64 : N, s = blankState(o.seed, o.name), src = {};
+  const bytes = (str, len) => (o.v >= 4 ? unpack(unb64(str), len) : unb64(str));
   for (const k of SCALARS) if (o[k] !== undefined) s[k] = o[k];
   for (const k of ARR8) {
-    const u = o[k] ? unb64(o[k]) : new Uint8Array(n * n);
+    const u = o[k] ? bytes(o[k], n * n) : new Uint8Array(n * n);
     if (u.length !== n * n) throw new Error('bad map');
     src[k] = u;
   }
   for (const k of ARR32) {
-    const u = o[k] ? unb64(o[k]) : null;
+    const u = o[k] ? bytes(o[k], n * n * 4) : null;
     if (u && u.length !== n * n * 4) throw new Error('bad map');
     src[k] = u ? new Int32Array(u.buffer) : new Int32Array(n * n).fill(k === 'owner' ? -1 : 0);
   }
@@ -4364,15 +4429,194 @@ function deserialize(str) {
   }
   s.v = SAVE_VERSION;
   if (!(s.area >= 0 && s.area < AREAS.length)) s.area = 0;
-  return { state: s, cam: o.cam, speed: o.speed, migrated: o.v === 1, grown: n !== N && o.v !== 1 };
+  return { state: s, cam: o.cam, speed: o.speed, at: o.at || 0, old: o.v < SAVE_VERSION, migrated: o.v === 1, grown: n !== N && o.v !== 1 };
 }
-function storageGet() { try { return localStorage.getItem(SAVE_KEY); } catch (e) { return null; } }
+function storageGet(key = SAVE_KEY) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function storageSet(key, v) { try { localStorage.setItem(key, v); return true; } catch (e) { return false; } }
 function storageDel() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* storage unavailable */ } }
+/* keep a copy of a save before anything replaces it (an older version's save, one that would not load) */
+function keepCopy(tag, raw, latest) { if (raw && (latest || !storageGet(SAVE_KEY + '/' + tag))) storageSet(SAVE_KEY + '/' + tag, raw); }
 let lastSave = -Infinity;
 function save() {
   if (!started || !S) return;
   lastSave = performance.now();
-  try { localStorage.setItem(SAVE_KEY, serialize()); } catch (e) { /* storage unavailable: play continues without saving */ }
+  let str;
+  try { str = serialize(); } catch (e) { return; }
+  storageSet(SAVE_KEY, str);
+  cloudSave(str);
+}
+
+/* ---------------------------------------------------------
+   アカウントへの保存：claude.ai の中で開いたとき、サインインしている人の
+   保存データを本人専用の場所（db の data/users/<id>/）にも置く。
+   ブラウザの保存は Safari の埋め込み表示などでは消えることがあるため。
+   --------------------------------------------------------- */
+const CLOUD_PART = 180000;   // characters per document (a document holds at most 256 KiB)
+const cloud = {
+  db: null, uid: null, state: 'local',   // local: browser only, cloud: account too, error: account write failed
+  ready: false, hold: null, bootAt: null, bootSeed: null, explicit: false,
+  remote: null, busy: false, queued: null, last: -Infinity, timer: 0,
+};
+const cloudDoc = name => cloud.db.doc(`data/users/${cloud.uid}/${name}`);
+const pause = ms => new Promise(r => setTimeout(r, ms));
+async function retryOnce(fn) {
+  try { return await fn(); } catch (e) {
+    if (!e || e.code !== 'unavailable') throw e;
+    await pause(600 + Math.random() * 900);
+    return fn();
+  }
+}
+async function cloudWrite(name, str, at) {
+  const parts = Math.max(1, Math.ceil(str.length / CLOUD_PART));
+  for (let k = 1; k < parts; k++) await retryOnce(() => cloudDoc(`${name}-${k}`).set({ at, chunk: str.slice(k * CLOUD_PART, (k + 1) * CLOUD_PART) }));
+  // the head goes last: a write cut short leaves the previous head pointing at parts that no longer match
+  await retryOnce(() => cloudDoc(name).set({ at, parts, chunk: str.slice(0, CLOUD_PART) }));
+}
+async function cloudRead(name) {
+  const m = await retryOnce(() => cloudDoc(name).get());
+  if (!m.exists) return null;
+  const d = m.data();
+  let str = d.chunk || '';
+  for (let k = 1; k < (d.parts || 1); k++) {
+    const p = await retryOnce(() => cloudDoc(`${name}-${k}`).get());
+    if (!p.exists || p.data().at !== d.at) return null;
+    str += p.data().chunk || '';
+  }
+  return { str, at: d.at || 0 };
+}
+/* write the newest save to the account: at most every 45 s while playing, right away when the page is hidden */
+function cloudSave(str, now) {
+  if (!cloud.ready || cloud.hold || !started) return;
+  cloud.queued = str || cloud.queued;
+  if (!cloud.queued || cloud.busy) return;
+  const wait = 45000 - (performance.now() - cloud.last);
+  if (!now && wait > 0) {
+    if (!cloud.timer) cloud.timer = setTimeout(() => { cloud.timer = 0; cloudSave(null, true); }, wait);
+    return;
+  }
+  const out = cloud.queued;
+  cloud.queued = null; cloud.busy = true; cloud.last = performance.now();
+  (async () => {
+    // a different city already in the account is kept as a backup before it is replaced
+    if (cloud.remote && cloud.remote.seed !== S.seed) { await cloudWrite('backup', cloud.remote.str, cloud.remote.at); }
+    cloud.remote = null;
+    await cloudWrite('city', out, +(/"at":(\d+)/.exec(out) || [0, Date.now()])[1]);
+    cloud.state = 'cloud';
+  })().catch(() => { cloud.state = 'error'; }).finally(() => {
+    cloud.busy = false;
+    if (sheetKind === 'menu') refreshSheet();
+    if (cloud.queued) cloudSave(null);
+  });
+}
+function cloudSaveNow() { if (started) { try { cloudSave(serialize(), true); } catch (e) { /* nothing to save */ } } }
+function describeSave(st) { return `${st.name}${RANKS[st.rank] ? RANKS[st.rank].suffix : ''}（${st.year}年${st.month}月）`; }
+async function cloudInit() {
+  const c = window.claude;
+  if (!c || typeof c.use !== 'function') return;
+  let db = null, user = null, uid = null;
+  try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); uid = user ? await user.id() : null; } catch (e) { return; }
+  if (!db || !uid) return;
+  cloud.db = db; cloud.uid = uid;
+  let remote = null, rs = null;
+  try { remote = await cloudRead('city'); } catch (e) { return; }
+  if (remote) {
+    try { rs = deserialize(remote.str); } catch (e) { rs = null; }
+    cloud.remote = { str: remote.str, at: remote.at, seed: rs ? rs.state.seed : -1 };
+  }
+  cloud.state = 'cloud';
+  cloud.ready = true;
+  if (rs) {
+    if (!started) {
+      // nothing in this browser (or it was lost): carry on from the account
+      applyLoaded(rs);
+      cloud.remote = null;
+      toast(`アカウントに保存されていた${describeSave(rs.state)}から再開します。`, { kind: 'good', ttl: 7000 });
+      return;
+    }
+    if (!cloud.explicit) {
+      const sameCity = cloud.bootSeed !== null && rs.state.seed === cloud.bootSeed;
+      if (sameCity && remote.at > (cloud.bootAt || 0)) {
+        // the same city, played further on another device
+        keepCopy('before-account', storageGet(), true);
+        applyLoaded(rs);
+        cloud.remote = null;
+        toast(`ほかの端末で進めた${describeSave(rs.state)}から再開します。`, { kind: 'good', ttl: 7000 });
+        return;
+      }
+      if (!sameCity) {
+        // two different cities: let the player choose, and write nothing until then
+        cloud.hold = rs;
+        toast(`アカウントに別の保存データ（${describeSave(rs.state)}）があります。`, { kind: 'info', ttl: 12000, action: { label: '選ぶ', fn: () => openSheet('menu') } });
+        if (sheetKind === 'menu') refreshSheet();
+        return;
+      }
+    }
+  }
+  cloudSaveNow();
+  if (sheetKind === 'menu') refreshSheet();
+}
+function resolveHold(useAccount) {
+  const rs = cloud.hold;
+  if (!rs) return;
+  cloud.hold = null;
+  if (useAccount) {
+    keepCopy('before-account', storageGet(), true);
+    applyLoaded(rs);
+    cloud.remote = null;
+    save();
+    toast(`${describeSave(rs.state)}から再開します。いままでの街はこの端末にバックアップしました。`, { kind: 'good', ttl: 7000 });
+  } else {
+    cloudSaveNow();
+    toast('いまの街をアカウントに保存しました。前の保存データはアカウント内にバックアップしてあります。', { kind: 'good', ttl: 7000 });
+  }
+  if (sheetKind === 'menu') refreshSheet();
+}
+
+/* ---------------------------------------------------------
+   書き出し・読み込み：保存データをファイルにして、別のブラウザや端末へ移す
+   --------------------------------------------------------- */
+async function exportSave() {
+  let str;
+  try { str = serialize(); } catch (e) { toast('書き出せませんでした。', { kind: 'bad' }); return; }
+  const d = new Date(), two = v => String(v).padStart(2, '0');
+  const filename = `tenohira-${S.name}-${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}.json`;
+  let dl = null;
+  try { dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
+  if (dl) {
+    try { await dl.save({ filename, data: str }); toast('保存データを書き出しました。別の端末では「ファイルから読み込む」で続きから遊べます。', { kind: 'good', ttl: 7000 }); }
+    catch (e) { if (!e || e.code !== 'declined') toast('この画面では書き出せませんでした。', { kind: 'warn' }); }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([str], { type: 'application/json' }));
+  a.download = filename;
+  document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+let pendingImport = null;
+function importSave() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json,text/plain';
+  inp.addEventListener('change', async () => {
+    const f = inp.files && inp.files[0];
+    if (!f) return;
+    try { pendingImport = deserialize(await f.text()); } catch (e) { pendingImport = null; toast('このファイルは「てのひら都市」の保存データとして読み込めませんでした。', { kind: 'bad' }); return; }
+    openSheet('menu');
+  });
+  inp.click();
+}
+function confirmImport(yes) {
+  const loaded = pendingImport;
+  pendingImport = null;
+  if (yes && loaded) {
+    keepCopy('before-import', storageGet(), true);
+    cloud.explicit = true; cloud.hold = null;
+    applyLoaded(loaded);
+    save();
+    cloudSaveNow();
+    toast(`${describeSave(loaded.state)}を読み込みました。`, { kind: 'good' });
+  }
+  if (sheetKind === 'menu') refreshSheet();
 }
 /* =========================================================
    起動
@@ -4474,32 +4718,46 @@ function bindUI() {
   window.addEventListener('resize', resize);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
   new ResizeObserver(resize).observe($('#dock'));
-  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
-  window.addEventListener('pagehide', save);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); cloudSave(null, true); } });
+  window.addEventListener('pagehide', () => { save(); cloudSave(null, true); });
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
   if (mq.addEventListener) mq.addEventListener('change', readTheme);
   new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 }
 
-function boot(data) {
+/* switch the running game over to a loaded save (from this browser, the account or a file) */
+function applyLoaded(loaded) {
+  S = loaded.state;
+  setArea(S.area || 0);
+  undoStack.length = 0; cars.length = 0;
+  closeSheet();
+  refreshAll();
+  buildToolbar();
+  $('#welcome').hidden = true;
+  document.body.classList.remove('intro');
+  started = true;
+  resize();
+  if (loaded.cam) { cam.x = loaded.cam.x; cam.y = loaded.cam.y; cam.z = loaded.cam.z; clampCam(); }
+  selectTool('select');
+  setSpeed(clamp(loaded.speed || 1, 1, 3));
+  renderTutorial();
+  roadListDirty = true; blkGen++; dirty = true; hudDirty = true;
+}
+function boot() {
   bindUI();
   readTheme();
   resize();
   let loaded = null;
-  const raw = (data && data.save) || storageGet();
-  if (raw) { try { loaded = deserialize(raw); } catch (e) { loaded = null; } }
+  const raw = storageGet();
+  if (raw) {
+    try { loaded = deserialize(raw); } catch (e) { loaded = null; }
+    // never let a new game overwrite a save that would not load
+    if (!loaded) keepCopy('unreadable', raw);
+    else if (loaded.old) keepCopy('v' + (JSON.parse(raw).v || 1), raw);
+  }
   if (loaded) {
-    S = loaded.state;
-    setArea(S.area || 0);
-    refreshAll();
-    buildToolbar();
-    document.body.classList.remove('intro');
-    started = true;
-    resize();
-    if (loaded.cam) { cam.x = loaded.cam.x; cam.y = loaded.cam.y; cam.z = loaded.cam.z; clampCam(); }
-    selectTool('select');
-    setSpeed(clamp(loaded.speed || 1, 1, 3));
-    renderTutorial();
+    applyLoaded(loaded);
+    cloud.bootAt = loaded.at; cloud.bootSeed = S.seed;
     if (loaded.grown) toast('新しいバージョンになりました。街のまわりに隣の町村が加わり、「市政」→「市域」で合併すると土地を広げられます。育たない区画の理由は「市政」→「統計」と、マップ表示「発展の妨げ」で確かめられます。', { kind: 'info', ttl: 14000 });
     else if (loaded.migrated) toast('新しいバージョンになりました。区画は道路に面している必要があり、住民は道路で通勤します。水道とゴミ処理も加わりました。「市政」→「目標」も見てみましょう。', { kind: 'info', ttl: 12000 });
     else toast(`おかえりなさい。${cityName()}の${S.year}年${S.month}月から再開します。`);
@@ -4507,21 +4765,21 @@ function boot(data) {
     newMap((Math.random() * 2 ** 31) | 0, NAMES[(Math.random() * NAMES.length) | 0]);
     buildToolbar();
     showWelcome();
+    if (raw) toast('保存データを読み込めませんでした。データはこの端末に別に残してあります。', { kind: 'bad', ttl: 10000 });
   }
+  cloudInit();
   updateHint();
   hudDirty = true;
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { dirty = true; resize(); });
   requestAnimationFrame(t => { lastFrame = t; frame(t); });
 }
 
-try { window.claude?.hot?.snapshot?.(() => (started ? { save: serialize() } : {})); } catch (e) { /* not in a viewer */ }
-const hot = window.claude?.hot;
-if (hot?.ready) hot.ready(boot); else boot(hot?.data ?? {});
+boot();
 
 /* debugging / automated checks */
 window.__city = {
   get S() { return S; }, ST, D, T, B, BKEY, TOOLS, GOALS, cam, simDay, makePlan, applyPlan, render, refreshAll, setSpeed, selectTool, beginGame, setOverlay,
-  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet, growthNotes, blockOf, blockShown, blockSummary, BLOCKS, BLOCK_KEYS, showBlocked, closeSheet, setArea, expandArea, AREAS, owned, get ownLo() { return ownLo; },
+  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet, growthNotes, blockOf, blockShown, blockSummary, BLOCKS, BLOCK_KEYS, showBlocked, closeSheet, setArea, expandArea, AREAS, owned, cloud, exportSave, applyLoaded, get ownLo() { return ownLo; },
   run(days) { for (let k = 0; k < days; k++) simDay(); },
   place(tid, ax, ay, bx = ax, by = ay) { return applyPlan(tid, makePlan(tid, { ax, ay, bx, by })); },
 };
