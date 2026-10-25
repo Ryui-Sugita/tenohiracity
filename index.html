@@ -351,6 +351,13 @@ button { touch-action: manipulation; cursor: pointer; }
 .name-row .suffix { font: 400 18px/1 var(--f-display); }
 .help { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.6; }
 .confirm { padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--bad) 10%, transparent); display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.transfer { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--panel-2); }
+.transfer h4 { margin: 0; font-size: 13px; }
+.id-form { display: flex; flex-direction: column; gap: 8px; }
+.id-form input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-size: 16px; }
+.id-form .note:empty { display: none; }
+.id-box { padding: 10px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); text-align: center; font: 700 21px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .06em; user-select: all; -webkit-user-select: all; }
+.welcome .account { display: flex; flex-direction: column; gap: 8px; }
 .confirm.info { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
 /* charts */
@@ -464,10 +471,12 @@ body.intro .dock, body.intro .side, body.intro .hud, body.intro .tut { visibilit
       <button type="button" class="btn" id="btn-reroll">別の土地にする</button>
       <button type="button" class="btn primary" id="btn-start">この土地ではじめる</button>
     </div>
-    <p class="note">1本指でツールを使い、2本指で地図を動かします。進行はこのブラウザに自動保存されます。</p>
+    <div class="account" id="welcome-account" hidden></div>
+    <p class="note" id="welcome-note">1本指でツールを使い、2本指で地図を動かします。進行はこのブラウザに自動保存されます。</p>
   </div>
 </div>
 
+<script src="firebase-config.js"></script>
 <script>
 (() => {
 'use strict';
@@ -746,7 +755,7 @@ let S = null;
 const monthIndex = () => S.year * 12 + S.month - 1;
 function blankState(seed, name) {
   return {
-    v: SAVE_VERSION, seed, name, money: 20000, year: START_YEAR, month: 4, day: 1,
+    v: SAVE_VERSION, seed, rev: 0, name, money: 20000, year: START_YEAR, month: 4, day: 1,
     tax: { r: 7, c: 7, i: 7 },
     fund: { transport: 100, police: 100, fire: 100, health: 100, edu: 100, garbage: 100 },
     loans: [], disasters: true, rank: 0, area: 0, seen: {}, fy: { inc: 0, exp: 0 }, goals: {}, streak: 0, wind: 1,
@@ -1808,6 +1817,7 @@ function refreshAll() {
   flags.power = flags.maps = false;
 }
 function simDay() {
+  S.rev++;
   computeAccess();
   if (flags.power) { computeUtilities(); flags.power = false; }
   if (flags.maps || S.day % 4 === 0) { computeMaps(); flags.maps = false; }
@@ -2125,6 +2135,7 @@ function applyPlan(tid, plan, at) {
   return true;
 }
 function afterChange() {
+  S.rev++;
   computeStatic();
   computeAccess();
   computeUtilities();
@@ -4005,13 +4016,13 @@ function buildMoney(body) {
   const s1 = section(body, '税率');
   const box = el('div', 'sliders');
   [['r', '住宅'], ['c', '商業'], ['i', '工業']].forEach(([k, label]) => box.append(slider('tax-' + k, label, 0, 20, 1, S.tax[k], v => v + '%', v => {
-    S.tax[k] = v; computeApproval(); computeBudget(); hudDirty = true; updateMoneyFlow();
+    S.tax[k] = v; S.rev++; computeApproval(); computeBudget(); hudDirty = true; updateMoneyFlow();
   })));
   s1.append(box, el('p', 'note', '税率は人口の上限ではなく、街が育つ速さと支持率に効きます。12%を超えると出ていく人や会社が出はじめます。'));
   const s2 = section(body, '予算配分');
   const box2 = el('div', 'sliders');
   for (const [k, label] of FUNDS) box2.append(slider('fund-' + k, label.replace(/（.*）/, ''), 50, 150, 10, S.fund[k], v => v + '%', v => {
-    S.fund[k] = v; computeBudget(); hudDirty = true; updateMoneyFlow();
+    S.fund[k] = v; S.rev++; computeBudget(); hudDirty = true; updateMoneyFlow();
   }));
   s2.append(box2, el('p', 'note', '予算を増やすと施設の受け入れ人数と届く範囲が広がります。交通予算は道路の容量にも効きます。月末の再計算で反映されます。'));
   const s3 = section(body, '毎月の収支（見込み）');
@@ -4027,7 +4038,7 @@ function buildMoney(body) {
     const pay = Math.ceil(amt * 1.25 / 60);
     const b = el('button', 'btn', `${yen(amt)} を借りる（月 ${yen(pay)} × 60か月）`);
     b.type = 'button';
-    b.addEventListener('click', () => { S.loans.push({ amt, pay, left: 60 }); S.money += amt; computeBudget(); hudDirty = true; toast(`${yen(amt)}を借り入れました。毎月${yen(pay)}を5年間返済します。`); refreshSheet(); save(); });
+    b.addEventListener('click', () => { S.loans.push({ amt, pay, left: 60 }); S.money += amt; S.rev++; computeBudget(); hudDirty = true; toast(`${yen(amt)}を借り入れました。毎月${yen(pay)}を5年間返済します。`); refreshSheet(); save(); });
     row.append(b); s4.append(row);
   }
   updateMoneyFlow();
@@ -4204,6 +4215,99 @@ function buildLayers(body, title) {
   body.append(grid, el('p', 'note', 'データを色で表示します。表示中は建物が低く描かれます。渋滞・通勤は月の半ばと月末に更新されます。'));
 }
 
+/* --- 引き継ぎID（Firebase） --- */
+let idForm = null, issueDraft = null;
+function refreshMenu() {
+  // never wipe what someone is typing into a form in the menu
+  if (sheetKind !== 'menu') return;
+  const typing = [...$('#sheet-body').querySelectorAll('form input:not([readonly])')].some(i => i.value);
+  if (!typing) refreshSheet();
+}
+function idInput(name, auto, placeholder) {
+  const i = document.createElement('input');
+  i.name = name; i.autocomplete = auto; i.placeholder = placeholder; i.spellcheck = false;
+  if (name === 'password') i.type = 'password'; else i.autocapitalize = 'characters';
+  return i;
+}
+function buildLoginForm(onDone) {
+  const f = el('form', 'id-form');
+  const u = idInput('username', 'username', '引き継ぎID（例：ABCD-EFGH-JKLM）');
+  const p = idInput('password', 'current-password', 'パスワード');
+  const b = el('button', 'btn primary', '続きから遊ぶ'); b.type = 'submit';
+  const msg = el('p', 'note');
+  f.append(u, p, b, msg);
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    b.disabled = true; msg.textContent = 'ログインしています…';
+    try { await signInTransfer(u.value, p.value); msg.textContent = ''; u.value = p.value = ''; if (onDone) onDone(); }
+    catch (err) { msg.textContent = authMsg(err); }
+    finally { b.disabled = false; }
+  });
+  return f;
+}
+function buildTransfer(s4) {
+  const box = el('div', 'transfer');
+  box.append(el('h4', null, '引き継ぎID'));
+  if (cloud.transferId) {
+    const id = el('div', 'id-box', formatId(cloud.transferId));
+    const r = el('div', 'btn-row'), cp = el('button', 'btn', 'IDをコピー'); cp.type = 'button';
+    cp.addEventListener('click', () => {
+      const done = () => toast('引き継ぎIDをコピーしました。'), fail = () => toast('コピーできませんでした。画面のIDを書き写してください。', { kind: 'warn' });
+      try { navigator.clipboard.writeText(formatId(cloud.transferId)).then(done, fail); } catch (e) { fail(); }
+    });
+    r.append(cp);
+    box.append(id, r, el('p', 'note', '別の端末やデータが消えたときは、タイトル画面か「設定」の「引き継ぎIDで続きから遊ぶ」に、このIDと決めたパスワードを入れます。'));
+  } else if (idForm === 'issue') {
+    const id = issueDraft || (issueDraft = newTransferId());
+    const f = el('form', 'id-form');
+    const u = idInput('username', 'username', ''); u.value = formatId(id); u.readOnly = true;
+    const p = idInput('password', 'new-password', 'パスワード（8文字以上）'); p.minLength = 8;
+    const b = el('button', 'btn primary', 'この内容で発行する'); b.type = 'submit';
+    const msg = el('p', 'note', 'IDとパスワードは、スクリーンショットなどで必ず控えてください。パスワードを忘れると引き継げません。');
+    f.append(el('div', 'id-box', formatId(id)), u, p, b, msg);
+    u.hidden = true;   // kept for password managers, which save the ID together with the password
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      b.disabled = true;
+      try {
+        await issueTransferId(id, p.value);
+        p.value = ''; issueDraft = null; idForm = null;
+        toast(`引き継ぎID ${formatId(id)} を発行しました。IDとパスワードを控えておきましょう。`, { kind: 'good', ttl: 9000 });
+        refreshSheet();
+      } catch (err) {
+        if (err && (err.code === 'auth/email-already-in-use' || err.code === 'auth/credential-already-in-use')) { issueDraft = newTransferId(); msg.textContent = 'IDが重なりました。新しいIDでもう一度「発行する」を押してください。'; f.querySelector('.id-box').textContent = formatId(issueDraft); }
+        else msg.textContent = authMsg(err);
+      } finally { b.disabled = false; }
+    });
+    box.append(f);
+  } else {
+    box.append(el('p', 'note', 'IDを発行しておくと、ブラウザのデータが消えたときや、別の端末でも続きから遊べます。'));
+    const b = el('button', 'btn primary', '引き継ぎIDを発行する'); b.type = 'button';
+    b.addEventListener('click', () => { idForm = 'issue'; refreshSheet(); });
+    box.append(b);
+  }
+  if (idForm === 'login') box.append(buildLoginForm(() => { idForm = null; refreshMenu(); }));
+  else {
+    const b = el('button', 'btn', '引き継ぎIDで続きから遊ぶ'); b.type = 'button';
+    b.addEventListener('click', () => { idForm = 'login'; refreshSheet(); });
+    box.append(b);
+  }
+  s4.append(box);
+}
+/* the welcome card offers the same sign-in, for a device that has lost its data */
+function renderWelcomeAccount() {
+  const box = $('#welcome-account');
+  if (!box) return;
+  const on = cloud.kind === 'firebase' && cloud.ready;
+  box.hidden = !on;
+  $('#welcome-note').textContent = '1本指でツールを使い、2本指で地図を動かします。' + (on ? '進行はこの端末とゲームのサーバーに自動保存されます。' : '進行はこのブラウザに自動保存されます。');
+  if (!on) return;
+  box.replaceChildren();
+  const b = el('button', 'btn', '引き継ぎIDで続きから遊ぶ'); b.type = 'button';
+  b.addEventListener('click', () => { box.replaceChildren(buildLoginForm()); const i = box.querySelector('input'); if (i) i.focus(); });
+  box.append(b);
+}
+
 let confirmNew = false;
 function buildMenu(body, title) {
   title.textContent = '設定';
@@ -4211,7 +4315,7 @@ function buildMenu(body, title) {
   const row = el('div', 'name-row');
   const inp = document.createElement('input');
   inp.id = 'rename-city'; inp.maxLength = 8; inp.value = S.name; inp.autocomplete = 'off';
-  inp.addEventListener('change', () => { const v = inp.value.trim(); if (v) { S.name = v; hudDirty = true; save(); } });
+  inp.addEventListener('change', () => { const v = inp.value.trim(); if (v) { S.name = v; S.rev++; hudDirty = true; save(); } });
   row.append(inp, el('span', 'suffix', RANKS[S.rank].suffix));
   s1.append(row);
   const s2 = section(body, 'ゲーム');
@@ -4219,14 +4323,16 @@ function buildMenu(body, title) {
   sw.htmlFor = 'opt-disaster';
   const cb = document.createElement('input');
   cb.type = 'checkbox'; cb.id = 'opt-disaster'; cb.checked = S.disasters;
-  cb.addEventListener('change', () => { S.disasters = cb.checked; save(); });
+  cb.addEventListener('change', () => { S.disasters = cb.checked; S.rev++; save(); });
   sw.append(el('span', null, '火災を発生させる'), cb);
   s2.append(sw);
   const s4 = section(body, 'データ');
-  s4.append(el('p', 'note', cloud.state === 'cloud'
+  s4.append(el('p', 'note', cloud.state === 'cloud' && cloud.kind === 'firebase'
+    ? '進行状況はこの端末と、ゲームのサーバーに自動で保存されます。引き継ぎIDを発行しておくと、データが消えたときや別の端末でも続きから遊べます。'
+    : cloud.state === 'cloud'
     ? '進行状況はこのブラウザと、あなたの Claude アカウント（本人だけが見られる場所）に自動で保存されます。ほかの端末で開いても続きから遊べます。'
     : cloud.state === 'error'
-      ? 'アカウントへの保存に失敗しました。このブラウザには保存しています。念のため「書き出す」でバックアップしておきましょう。'
+      ? (cloud.note || 'アカウントへの保存に失敗しました。このブラウザには保存しています。念のため「書き出す」でバックアップしておきましょう。')
       : '進行状況はこのブラウザにだけ保存されます。Safari などでは、ブラウザを閉じると消えてしまうことがあります。「書き出す」でときどきバックアップしておきましょう。'));
   if (cloud.hold) {
     const c = el('div', 'confirm info');
@@ -4248,6 +4354,7 @@ function buildMenu(body, title) {
     yes.addEventListener('click', () => confirmImport(true));
     r.append(no, yes); c.append(r); s4.append(c);
   }
+  if (cloud.kind === 'firebase' && cloud.ready) buildTransfer(s4);
   const io = el('div', 'btn-row');
   const ex = el('button', 'btn', 'データを書き出す'); ex.type = 'button';
   ex.addEventListener('click', exportSave);
@@ -4267,7 +4374,7 @@ function buildMenu(body, title) {
     const no = el('button', 'btn', 'やめる'); no.type = 'button';
     no.addEventListener('click', () => { confirmNew = false; refreshSheet(); });
     const yes = el('button', 'btn primary', '新しく始める'); yes.type = 'button';
-    yes.addEventListener('click', () => { confirmNew = false; closeSheet(); keepCopy('before-new', storageGet(), true); storageDel(); cloud.explicit = true; cloud.hold = null; startNew(); });
+    yes.addEventListener('click', () => { confirmNew = false; closeSheet(); keepCopy('before-new', storageGet(), true); storageDel(); cloud.allowReplace = true; cloud.hold = null; startNew(); });
     r.append(no, yes); c.append(r); s4.append(c);
   }
   const s3 = section(body, 'あそびかた');
@@ -4337,7 +4444,7 @@ function renderTutorial() {
    ========================================================= */
 const ARR8 = ['terrain', 'tree', 'type', 'level', 'variant', 'fire', 'kind', 'trash'];
 const ARR32 = ['owner', 'built', 'fill'];
-const SCALARS = ['seed', 'name', 'money', 'year', 'month', 'day', 'tax', 'fund', 'loans', 'disasters', 'rank', 'area', 'seen', 'fy', 'goals', 'streak', 'wind', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history'];
+const SCALARS = ['seed', 'rev', 'name', 'money', 'year', 'month', 'day', 'tax', 'fund', 'loans', 'disasters', 'rank', 'area', 'seen', 'fy', 'goals', 'streak', 'wind', 'tut', 'tutDone', 'tutClosed', 'tutMin', 'history'];
 /* version 4 packs every array (PackBits, then base64) and stamps the real time of the save */
 function serialize() {
   const o = { v: SAVE_VERSION, at: Date.now(), cam: { x: cam.x, y: cam.y, z: cam.z }, speed: lastSpeed };
@@ -4447,17 +4554,18 @@ function save() {
 }
 
 /* ---------------------------------------------------------
-   アカウントへの保存：claude.ai の中で開いたとき、サインインしている人の
-   保存データを本人専用の場所（db の data/users/<id>/）にも置く。
-   ブラウザの保存は Safari の埋め込み表示などでは消えることがあるため。
+   アカウントへの保存。ブラウザの保存は Safari などで消えることがあるため、
+   - claude.ai の中で開いたとき：サインインしている人の本人専用の場所（db の data/users/<id>/）
+   - ゲームのサイト（GitHub Pages など）で開いたとき：Firebase（firebase-config.js が設定済みなら）。
+     端末ごとに匿名アカウントで自動保存し、「引き継ぎID」とパスワードで別の端末からも続きを遊べる
+   にも保存し、読み込むときは新しいほうを使う。
    --------------------------------------------------------- */
-const CLOUD_PART = 180000;   // characters per document (a document holds at most 256 KiB)
+const CLOUD_PART = 180000;   // characters per claude.ai db document (a document holds at most 256 KiB)
 const cloud = {
-  db: null, uid: null, state: 'local',   // local: browser only, cloud: account too, error: account write failed
-  ready: false, hold: null, bootAt: null, bootSeed: null, explicit: false,
+  kind: null, db: null, uid: null, state: 'local',   // local: this browser only, cloud: account too, error: account write failed
+  ready: false, hold: null, allowReplace: false, syncedSeed: null, syncedRev: -1, transferId: null, note: '',
   remote: null, busy: false, queued: null, last: -Infinity, timer: 0,
 };
-const cloudDoc = name => cloud.db.doc(`data/users/${cloud.uid}/${name}`);
 const pause = ms => new Promise(r => setTimeout(r, ms));
 async function retryOnce(fn) {
   try { return await fn(); } catch (e) {
@@ -4466,25 +4574,50 @@ async function retryOnce(fn) {
     return fn();
   }
 }
+const claudeDoc = name => cloud.db.doc(`data/users/${cloud.uid}/${name}`);
 async function cloudWrite(name, str, at) {
+  if (cloud.kind === 'firebase') { await retryOnce(() => FB.sdk.setDoc(fbSlot(name), { save: str, at, v: SAVE_VERSION })); return; }
   const parts = Math.max(1, Math.ceil(str.length / CLOUD_PART));
-  for (let k = 1; k < parts; k++) await retryOnce(() => cloudDoc(`${name}-${k}`).set({ at, chunk: str.slice(k * CLOUD_PART, (k + 1) * CLOUD_PART) }));
+  for (let k = 1; k < parts; k++) await retryOnce(() => claudeDoc(`${name}-${k}`).set({ at, chunk: str.slice(k * CLOUD_PART, (k + 1) * CLOUD_PART) }));
   // the head goes last: a write cut short leaves the previous head pointing at parts that no longer match
-  await retryOnce(() => cloudDoc(name).set({ at, parts, chunk: str.slice(0, CLOUD_PART) }));
+  await retryOnce(() => claudeDoc(name).set({ at, parts, chunk: str.slice(0, CLOUD_PART) }));
 }
 async function cloudRead(name) {
-  const m = await retryOnce(() => cloudDoc(name).get());
+  if (cloud.kind === 'firebase') {
+    const snap = await retryOnce(() => FB.sdk.getDoc(fbSlot(name)));
+    if (!snap.exists()) return null;
+    const d = snap.data();
+    return { str: d.save || '', at: d.at || 0 };
+  }
+  const m = await retryOnce(() => claudeDoc(name).get());
   if (!m.exists) return null;
   const d = m.data();
   let str = d.chunk || '';
   for (let k = 1; k < (d.parts || 1); k++) {
-    const p = await retryOnce(() => cloudDoc(`${name}-${k}`).get());
+    const p = await retryOnce(() => claudeDoc(`${name}-${k}`).get());
     if (!p.exists || p.data().at !== d.at) return null;
     str += p.data().chunk || '';
   }
   return { str, at: d.at || 0 };
 }
-/* write the newest save to the account: at most every 45 s while playing, right away when the page is hidden */
+/* the header of a save string: which city (seed), how far it has been played (rev), when it was written */
+const headOf = str => ({
+  seed: +((/"seed":(-?\d+)/.exec(str) || [])[1] ?? NaN),
+  rev: +((/"rev":(\d+)/.exec(str) || [])[1] || 0),
+  at: +((/"at":(\d+)/.exec(str) || [])[1] || 0),
+});
+/* the account's current city, header only */
+async function cloudHead() {
+  if (cloud.kind === 'firebase') {
+    const snap = await retryOnce(() => FB.sdk.getDoc(fbSlot('city')));
+    return snap.exists() ? headOf(snap.data().save || '') : null;
+  }
+  const m = await retryOnce(() => claudeDoc('city').get());
+  return m.exists ? headOf(m.data().chunk || '') : null;
+}
+/* write the newest save to the account: at most every 45 s while playing, right away when the page is hidden.
+   Only when this device has played further than what the account holds; if another device got further,
+   carry on from there instead of overwriting it. */
 function cloudSave(str, now) {
   if (!cloud.ready || cloud.hold || !started) return;
   cloud.queued = str || cloud.queued;
@@ -4494,82 +4627,173 @@ function cloudSave(str, now) {
     if (!cloud.timer) cloud.timer = setTimeout(() => { cloud.timer = 0; cloudSave(null, true); }, wait);
     return;
   }
-  const out = cloud.queued;
-  cloud.queued = null; cloud.busy = true; cloud.last = performance.now();
+  const out = cloud.queued, mine = headOf(out);
+  cloud.queued = null;
+  if (mine.seed === cloud.syncedSeed && mine.rev <= cloud.syncedRev) return;   // nothing new since the last sync
+  cloud.busy = true; cloud.last = performance.now();
   (async () => {
-    // a different city already in the account is kept as a backup before it is replaced
-    if (cloud.remote && cloud.remote.seed !== S.seed) { await cloudWrite('backup', cloud.remote.str, cloud.remote.at); }
-    cloud.remote = null;
-    await cloudWrite('city', out, +(/"at":(\d+)/.exec(out) || [0, Date.now()])[1]);
+    const head = await cloudHead();
+    if (head && head.seed !== mine.seed && !cloud.allowReplace) {
+      // another device put a different city in the account: ask
+      const remote = await cloudRead('city');
+      let rs = null;
+      try { rs = deserialize(remote.str); } catch (e) { rs = null; }
+      if (rs) { holdFor(rs); return; }
+    }
+    if (head && head.seed === mine.seed && head.rev > cloud.syncedRev && head.rev >= mine.rev) {
+      // the same city, played further on another device meanwhile
+      const remote = await cloudRead('city');
+      const rs = remote ? deserialize(remote.str) : null;
+      if (rs && started && S.seed === mine.seed) { takeRemote(rs, 'ほかの端末で進めた'); return; }
+    }
+    if (head && head.seed !== mine.seed) {
+      // a different city is replaced on purpose: keep it as a backup first
+      const remote = await cloudRead('city');
+      if (remote) await cloudWrite('backup', remote.str, remote.at);
+    }
+    await cloudWrite('city', out, mine.at || Date.now());
+    cloud.syncedSeed = mine.seed; cloud.syncedRev = mine.rev; cloud.allowReplace = false;
     cloud.state = 'cloud';
   })().catch(() => { cloud.state = 'error'; }).finally(() => {
     cloud.busy = false;
-    if (sheetKind === 'menu') refreshSheet();
+    refreshMenu();
     if (cloud.queued) cloudSave(null);
   });
 }
 function cloudSaveNow() { if (started) { try { cloudSave(serialize(), true); } catch (e) { /* nothing to save */ } } }
 function describeSave(st) { return `${st.name}${RANKS[st.rank] ? RANKS[st.rank].suffix : ''}（${st.year}年${st.month}月）`; }
-async function cloudInit() {
-  const c = window.claude;
-  if (!c || typeof c.use !== 'function') return;
-  let db = null, user = null, uid = null;
-  try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); uid = user ? await user.id() : null; } catch (e) { return; }
-  if (!db || !uid) return;
-  cloud.db = db; cloud.uid = uid;
-  let remote = null, rs = null;
-  try { remote = await cloudRead('city'); } catch (e) { return; }
-  if (remote) {
-    try { rs = deserialize(remote.str); } catch (e) { rs = null; }
-    cloud.remote = { str: remote.str, at: remote.at, seed: rs ? rs.state.seed : -1 };
-  }
+const whereName = () => (cloud.kind === 'firebase' ? 'サーバー' : 'アカウント');
+function takeRemote(rs, how) {
+  if (started) keepCopy('before-account', storageGet(), true);
+  cloud.syncedSeed = rs.state.seed; cloud.syncedRev = rs.state.rev || 0;
+  applyLoaded(rs);
+  save();
+  toast(`${how}${describeSave(rs.state)}から再開します。`, { kind: 'good', ttl: 7000 });
+}
+function holdFor(rs) {
+  cloud.hold = rs;
+  toast(`${whereName()}に別の保存データ（${describeSave(rs.state)}）があります。`, { kind: 'info', ttl: 12000, action: { label: '選ぶ', fn: () => openSheet('menu') } });
+  refreshMenu();
+}
+/* compare the account's city with the one being played, and carry on from the right one.
+   ask: always let the player choose between two different cities (after signing in with a transfer ID) */
+async function cloudSync(ask) {
+  const remote = await cloudRead('city');
+  let rs = null;
+  if (remote) { try { rs = deserialize(remote.str); } catch (e) { rs = null; } }
+  cloud.syncedSeed = rs ? rs.state.seed : null; cloud.syncedRev = rs ? rs.state.rev || 0 : -1;
   cloud.state = 'cloud';
   cloud.ready = true;
   if (rs) {
-    if (!started) {
-      // nothing in this browser (or it was lost): carry on from the account
-      applyLoaded(rs);
-      cloud.remote = null;
-      toast(`アカウントに保存されていた${describeSave(rs.state)}から再開します。`, { kind: 'good', ttl: 7000 });
-      return;
-    }
-    if (!cloud.explicit) {
-      const sameCity = cloud.bootSeed !== null && rs.state.seed === cloud.bootSeed;
-      if (sameCity && remote.at > (cloud.bootAt || 0)) {
-        // the same city, played further on another device
-        keepCopy('before-account', storageGet(), true);
-        applyLoaded(rs);
-        cloud.remote = null;
-        toast(`ほかの端末で進めた${describeSave(rs.state)}から再開します。`, { kind: 'good', ttl: 7000 });
-        return;
-      }
-      if (!sameCity) {
-        // two different cities: let the player choose, and write nothing until then
-        cloud.hold = rs;
-        toast(`アカウントに別の保存データ（${describeSave(rs.state)}）があります。`, { kind: 'info', ttl: 12000, action: { label: '選ぶ', fn: () => openSheet('menu') } });
-        if (sheetKind === 'menu') refreshSheet();
-        return;
-      }
-    }
+    if (!started) { takeRemote(rs, `${whereName()}に保存されていた`); return; }
+    if (rs.state.seed === S.seed) {
+      if ((rs.state.rev || 0) > S.rev) { takeRemote(rs, 'ほかの端末で進めた'); return; }
+    } else if (ask || !cloud.allowReplace) { holdFor(rs); return; }
   }
   cloudSaveNow();
-  if (sheetKind === 'menu') refreshSheet();
+  refreshMenu();
+}
+async function cloudInit() {
+  const c = window.claude;
+  try {
+    if (c && typeof c.use === 'function') {
+      const [db, user] = await Promise.all([c.use('db'), c.use('user')]);
+      const uid = user ? await user.id() : null;
+      if (!db || !uid) return;
+      cloud.kind = 'claude'; cloud.db = db; cloud.uid = uid;
+    } else if (window.TENOHIRA_FIREBASE && window.TENOHIRA_FIREBASE.apiKey) {
+      if (!(await firebaseInit(window.TENOHIRA_FIREBASE))) return;
+    } else return;
+    await cloudSync(false);
+  } catch (e) {
+    cloud.ready = false; cloud.state = 'error'; cloud.note = '保存サーバーにつながりませんでした。この端末には保存しています。';
+  } finally {
+    renderWelcomeAccount();
+    refreshMenu();
+  }
 }
 function resolveHold(useAccount) {
   const rs = cloud.hold;
   if (!rs) return;
   cloud.hold = null;
   if (useAccount) {
-    keepCopy('before-account', storageGet(), true);
-    applyLoaded(rs);
-    cloud.remote = null;
-    save();
-    toast(`${describeSave(rs.state)}から再開します。いままでの街はこの端末にバックアップしました。`, { kind: 'good', ttl: 7000 });
+    takeRemote(rs, '');
+    toast('いままでの街はこの端末にバックアップしました。', { kind: 'info' });
   } else {
+    cloud.allowReplace = true;
     cloudSaveNow();
-    toast('いまの街をアカウントに保存しました。前の保存データはアカウント内にバックアップしてあります。', { kind: 'good', ttl: 7000 });
+    toast(`いまの街を${whereName()}に保存します。前の保存データは${whereName()}内にバックアップします。`, { kind: 'good', ttl: 7000 });
   }
-  if (sheetKind === 'menu') refreshSheet();
+  refreshMenu();
+}
+
+/* ---------------------------------------------------------
+   Firebase：匿名アカウントで自動保存し、引き継ぎID（12文字）とパスワードで別の端末からログインする。
+   引き継ぎIDは Firebase のメール／パスワード認証のメール欄に「<id>@<authDomain>」として入れるだけで、
+   メールは送らない。保存先は saves/<uid>/slots/city（と backup）。
+   --------------------------------------------------------- */
+const FB = { sdk: null, auth: null, fs: null, domain: '' };
+const fbSlot = name => FB.sdk.doc(FB.fs, 'saves', cloud.uid, 'slots', name);
+const ID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function newTransferId() {
+  const r = new Uint8Array(12);
+  crypto.getRandomValues(r);
+  return Array.from(r, v => ID_CHARS[v % 32]).join('');
+}
+const formatId = id => id.replace(/(.{4})(?=.)/g, '$1-');
+const cleanId = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const idEmail = id => `${id.toLowerCase()}@${FB.domain}`;
+function idFromUser(u) {
+  const m = u && u.email ? /^([a-z0-9]{12})@(.+)$/.exec(u.email) : null;
+  return m && m[2] === FB.domain ? m[1].toUpperCase() : null;
+}
+async function firebaseInit(cfg) {
+  let sdk;
+  try { sdk = await import('./firebase-sdk.js'); } catch (e) { return false; }   // opened as a local file, or offline
+  const app = sdk.initializeApp(cfg);
+  const auth = sdk.initializeAuth(app, { persistence: [sdk.indexedDBLocalPersistence, sdk.browserLocalPersistence] });
+  const fs = sdk.getFirestore(app);
+  if (cfg.emulator) {
+    sdk.connectAuthEmulator(auth, cfg.emulator.auth, { disableWarnings: true });
+    sdk.connectFirestoreEmulator(fs, cfg.emulator.host, cfg.emulator.port);
+  }
+  Object.assign(FB, { sdk, auth, fs, domain: (cfg.authDomain || cfg.projectId + '.firebaseapp.com').toLowerCase() });
+  // the sign-in kept by this browser, or a new anonymous one
+  let user = await new Promise(res => { const off = sdk.onAuthStateChanged(auth, u => { off(); res(u); }); });
+  if (!user) user = (await sdk.signInAnonymously(auth)).user;
+  cloud.kind = 'firebase'; cloud.uid = user.uid; cloud.transferId = idFromUser(user);
+  return true;
+}
+const AUTH_MSG = {
+  'auth/invalid-credential': '引き継ぎIDかパスワードがちがいます。',
+  'auth/wrong-password': '引き継ぎIDかパスワードがちがいます。',
+  'auth/user-not-found': '引き継ぎIDかパスワードがちがいます。',
+  'auth/invalid-email': '引き継ぎIDは12文字の英数字です。',
+  'auth/weak-password': 'パスワードは8文字以上にしてください。',
+  'auth/too-many-requests': '試行回数が多すぎます。しばらく待ってから試してください。',
+  'auth/network-request-failed': 'サーバーにつながりませんでした。通信環境を確かめてください。',
+  'auth/operation-not-allowed': 'サーバーの設定（メール／パスワードのログイン）が有効になっていません。管理者に連絡してください。',
+  'auth/admin-restricted-operation': 'サーバーの設定（匿名ログイン）が有効になっていません。管理者に連絡してください。',
+};
+const authMsg = e => AUTH_MSG[e && e.code] || 'うまくいきませんでした。時間をおいて試してください。';
+/* give this device's account a transfer ID: the anonymous account keeps its uid, so its saves stay */
+async function issueTransferId(id, password) {
+  if (password.length < 8) throw { code: 'auth/weak-password' };
+  const user = FB.auth.currentUser;
+  if (!user) throw { code: 'auth/network-request-failed' };
+  await FB.sdk.linkWithCredential(user, FB.sdk.EmailAuthProvider.credential(idEmail(id), password));
+  cloud.transferId = id;
+  cloudSaveNow();
+}
+/* sign in with a transfer ID on this device and carry on from that city */
+async function signInTransfer(rawId, password) {
+  const id = cleanId(rawId);
+  if (id.length !== 12) throw { code: 'auth/invalid-email' };
+  const { user } = await FB.sdk.signInWithEmailAndPassword(FB.auth, idEmail(id), password);
+  cloud.ready = false; cloud.hold = null; cloud.queued = null; cloud.allowReplace = false;
+  cloud.uid = user.uid; cloud.transferId = id;
+  await cloudSync(true);
+  if (!cloud.hold && started) toast(`引き継ぎID ${formatId(id)} でログインしました。`, { kind: 'good' });
 }
 
 /* ---------------------------------------------------------
@@ -4610,7 +4834,7 @@ function confirmImport(yes) {
   pendingImport = null;
   if (yes && loaded) {
     keepCopy('before-import', storageGet(), true);
-    cloud.explicit = true; cloud.hold = null;
+    cloud.allowReplace = true; cloud.hold = null;
     applyLoaded(loaded);
     save();
     cloudSaveNow();
@@ -4757,7 +4981,6 @@ function boot() {
   }
   if (loaded) {
     applyLoaded(loaded);
-    cloud.bootAt = loaded.at; cloud.bootSeed = S.seed;
     if (loaded.grown) toast('新しいバージョンになりました。街のまわりに隣の町村が加わり、「市政」→「市域」で合併すると土地を広げられます。育たない区画の理由は「市政」→「統計」と、マップ表示「発展の妨げ」で確かめられます。', { kind: 'info', ttl: 14000 });
     else if (loaded.migrated) toast('新しいバージョンになりました。区画は道路に面している必要があり、住民は道路で通勤します。水道とゴミ処理も加わりました。「市政」→「目標」も見てみましょう。', { kind: 'info', ttl: 12000 });
     else toast(`おかえりなさい。${cityName()}の${S.year}年${S.month}月から再開します。`);
@@ -4779,7 +5002,7 @@ boot();
 /* debugging / automated checks */
 window.__city = {
   get S() { return S; }, ST, D, T, B, BKEY, TOOLS, GOALS, cam, simDay, makePlan, applyPlan, render, refreshAll, setSpeed, selectTool, beginGame, setOverlay,
-  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet, growthNotes, blockOf, blockShown, blockSummary, BLOCKS, BLOCK_KEYS, showBlocked, closeSheet, setArea, expandArea, AREAS, owned, cloud, exportSave, applyLoaded, get ownLo() { return ownLo; },
+  computeTraffic, computeServices, computeGarbage, computeUtilities, computeApproval, serialize, deserialize, openSheet, growthNotes, blockOf, blockShown, blockSummary, BLOCKS, BLOCK_KEYS, showBlocked, closeSheet, setArea, expandArea, AREAS, owned, cloud, exportSave, applyLoaded, issueTransferId, signInTransfer, newTransferId, FB, get ownLo() { return ownLo; },
   run(days) { for (let k = 0; k < days; k++) simDay(); },
   place(tid, ax, ay, bx = ax, by = ay) { return applyPlan(tid, makePlan(tid, { ax, ay, bx, by })); },
 };

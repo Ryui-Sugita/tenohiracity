@@ -6,7 +6,9 @@
 
 - インストール不要。`index.html` ひとつで動きます（外部ライブラリなし）
 - タッチ操作に対応（1本指でツール、2本指で移動・ズーム）。PC ではマウスとキーボードでも遊べます
-- 進行状況はブラウザに自動保存されます（以前のバージョンのセーブデータも引き継げます）。claude.ai で開いてサインインしている場合は、本人だけが見られる Claude アカウント内にも保存され、ほかの端末でも続きから遊べます
+- 進行状況はブラウザに自動保存されます（以前のバージョンのセーブデータも引き継げます）
+- GitHub Pages などで公開し Firebase を設定すると、サーバーにも自動保存され、「引き継ぎID」とパスワードで別の端末からも続きを遊べます（設定方法は下記）
+- claude.ai で開いてサインインしている場合は、本人だけが見られる Claude アカウント内にも保存され、ほかの端末でも続きから遊べます
 - 「設定」→「データ」から保存データをファイルに書き出し、別のブラウザや端末で読み込めます
 - 「ホーム画面に追加」すると全画面のアプリとして起動できます
 
@@ -62,9 +64,27 @@
 
 ### 保存データについて
 
-- ブラウザの保存（localStorage）は、Safari で claude.ai の中に埋め込まれた状態で遊ぶと、ブラウザを閉じたときに消えることがあります（Safari の「サイト越えトラッキングを防ぐ」による制限）。そのため claude.ai では、サインインしている人の保存データをアカウントにも置き、読み込み時は新しいほうを使います
-- サインインしていない人や、組織外から閲覧のみで開いている人はアカウントに保存できないため、「データを書き出す」でバックアップしてください
+- ブラウザの保存（localStorage）は、Safari などで消えることがあります（claude.ai に埋め込まれた状態では、ブラウザを閉じると消えることがあり、ふつうのサイトでも長く開かないと消されることがあります）。そのため、サーバーやアカウントにも保存し、読み込むときは「より先まで遊んだほう」を使います
+  - **ゲームのサイト（GitHub Pages など）で開いたとき**：Firebase に保存します（`firebase-config.js` を設定した場合）。端末ごとに自動でログインして保存し、「設定」→「データ」で **引き継ぎID**（12文字）を発行してパスワードを決めておくと、データが消えたときや別の端末でも、タイトル画面の「引き継ぎIDで続きから遊ぶ」から再開できます。メールアドレスなどの個人情報は使いません
+  - **claude.ai で開いたとき**：サインインしていて、編集者か参加者の権限がある人は、本人だけが見られる Claude アカウント内に保存します
+- 別の端末で先まで進めていた場合は、そちらから再開します（古い端末を開いたままでも、サーバーのデータを古い状態で上書きしません）。別の街どうしの場合は、どちらで遊ぶか選べて、選ばなかったほうもバックアップとして残ります
+- 「設定」→「データ」から保存データをファイルに書き出して、別のブラウザや端末で読み込むこともできます
 - 読み込めなかった保存データや、旧バージョンから変換する前のデータは、上書きせずに別のキー（`tenohira-city/v1/unreadable` など）に残します
+
+### Firebase の設定（サーバー保存・引き継ぎID）
+
+Firebase の無料プラン（Spark）で動きます。クレジットカードの登録は不要です。
+
+1. [Firebase コンソール](https://console.firebase.google.com/) で「プロジェクトを作成」（Google アナリティクスは不要）
+2. **Authentication** →「始める」→「ログイン方法」で **匿名** と **メール / パスワード** を有効にする（メールリンクは不要）
+3. **Firestore Database** →「データベースを作成」→ 本番環境モード、ロケーションは `asia-northeast1`（東京）など → 作成後「ルール」タブに `firestore.rules` の内容を貼り付けて「公開」
+4. **プロジェクトの設定**（歯車）→「マイアプリ」→ ウェブ（`</>`）でアプリを登録 → 表示された `apiKey`・`authDomain`・`projectId`・`appId` を `firebase-config.js` に貼り付ける（これらは公開して問題ない値です）
+5. Authentication →「設定」→「承認済みドメイン」に公開先のドメイン（GitHub Pages なら `<ユーザー名>.github.io`）を追加
+6. （おすすめ）[Google Cloud コンソール](https://console.cloud.google.com/apis/credentials) で、このプロジェクトの「Browser key」に「ウェブサイトの制限」として公開先の URL（`https://<ユーザー名>.github.io/*`）を設定
+
+保存データは `saves/<ユーザーID>/slots/city`（と `backup`）に置かれ、ルールにより本人以外は読み書きできません。引き継ぎIDは Firebase のメール／パスワード認証のメール欄に `<ID>@<authDomain>` として登録しているだけで、メールは送信しません。
+
+動作確認は Firebase のエミュレーターでもできます（Java が必要）：`npx firebase-tools emulators:start --only auth,firestore --project demo-tenohira` を実行し、`firebase-config.js` に `projectId: 'demo-tenohira'`、`apiKey: 'demo-key'`、`authDomain: 'demo-tenohira.firebaseapp.com'`、`emulator: { auth: 'http://127.0.0.1:9099', host: '127.0.0.1', port: 8080 }` を書いて、`python3 -m http.server` で開きます。
 
 ## 起動方法
 
@@ -80,6 +100,9 @@
 | --- | --- |
 | `index.html` | ゲーム本体（HTML・CSS・JavaScript をすべて含む） |
 | `manifest.webmanifest` | ホーム画面に追加したときのアプリ情報 |
+| `firebase-config.js` | Firebase の設定（空ならブラウザ保存のみ） |
+| `firebase-sdk.js` | Firebase JS SDK のうち、ゲームが使う部分（認証と Firestore Lite）をまとめたもの。サーバー保存を使うときだけ読み込みます |
+| `firestore.rules`, `firebase.json` | 保存データのアクセスルールと、Firebase CLI・エミュレーター用の設定 |
 | `icon.svg`, `icon-*.png` | アプリアイコン |
 
 ## しくみ（開発者向け）
@@ -88,6 +111,8 @@
 - シミュレーションは市域とそのまわり6マスだけを計算するので、市域が狭いうちは軽く動きます。128×128 マスをすべて開発した場合（人口60万人超）でも、PC で1か月あたり約0.1〜0.2秒です。これ以上マスを増やすとスマホでは重くなるため、128×128 を上限にしています
 - 64×64 マスの旧バージョンのセーブデータは、世界の中央に置かれ、地図の端につながっていた道路は隣の町村の道路として外へのびます
 - 保存データは配列を PackBits で圧縮してから Base64 にしています（128×128 マスを開発しきっても約50KB）
+- 保存データには「どれだけ遊んだか」を表す番号（`rev`、1日進むごと・操作ごとに増える）が入っていて、端末どうしの新旧はこの番号で比べます
+- `firebase-sdk.js` の作り直し方：`npm install firebase@12.19.0 esbuild` のあと、`initializeApp`（firebase/app）、`initializeAuth`・`indexedDBLocalPersistence`・`browserLocalPersistence`・`onAuthStateChanged`・`signInAnonymously`・`signInWithEmailAndPassword`・`linkWithCredential`・`EmailAuthProvider`・`connectAuthEmulator`（firebase/auth）、`getFirestore`・`doc`・`getDoc`・`setDoc`・`connectFirestoreEmulator`（firebase/firestore/lite）を export する入口ファイルを `npx esbuild <入口> --bundle --format=esm --minify --target=es2019 --legal-comments=eof --outfile=firebase-sdk.js` でまとめます
 - シミュレーションは1日ごとに進みます。通勤は道路網上の最短経路（ダイクストラ法）で職場に割り当て、前月の混雑度で所要時間を重み付けします。公共施設とゴミ回収も同じ道路網で、近い区画から受け入れ人数を割り当てます
 - 電力・水道は発電所・給水施設からの幅優先探索で、近い順に能力を配分します
 - 区画は需要・地価・汚染・通勤・働き手の充足などに応じて 1〜4 段階に発展・衰退します

@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// 保存データは saves/<ユーザーID>/slots/<city|backup> に置き、本人だけが読み書きできる。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /saves/{uid}/slots/{slot} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && slot in ['city', 'backup']
+        && request.resource.data.keys().hasOnly(['save', 'at', 'v'])
+        && request.resource.data.save is string
+        && request.resource.data.save.size() < 800000
+        && request.resource.data.at is number
+        && request.resource.data.v is number;
+    }
+  }
+}
