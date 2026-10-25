@@ -7,8 +7,8 @@
  * ここに書く値は公開して問題ないものです（データはルールで本人だけに守られます）。
  */
 window.TENOHIRA_FIREBASE = {
-  apiKey: '',
+  apiKey: 'AIzaSyA5f3bWR1pa0Erq2F9LlpY6xjcMLt4vJwY',
   authDomain: 'tenohiracity.firebaseapp.com',
   projectId: 'tenohiracity',
-  appId: '',
+  appId: '1:258112161338:web:028482ab1ae8047880d703',
 };
