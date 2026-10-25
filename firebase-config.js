@@ -8,7 +8,7 @@
  */
 window.TENOHIRA_FIREBASE = {
   apiKey: '',
-  authDomain: '',
-  projectId: '',
+  authDomain: 'tenohiracity.firebaseapp.com',
+  projectId: 'tenohiracity',
   appId: '',
 };
